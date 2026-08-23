@@ -4,18 +4,6 @@ All notable changes to FOSSStudio are documented here.
 
 ## Unreleased
 
-- **A come-and-chat tag on the YouTube picture.** While the show is
-  live on both YouTube and its own channel page, the YouTube output
-  carries a small pill in the lower left - "Come and chat live at"
-  plus the channel address, bare, no https:// - pointing viewers at
-  the chat. It appears nowhere else: the channel page, the saved
-  copy and the hosts' screens stay identical and untagged, and it
-  only exists while the chat is actually reachable (channel output
-  on). The address is the custom channel domain when one is set,
-  otherwise the /live page. Burning a different picture into one
-  output means ffmpeg runs two encodes instead of the shared one for
-  the duration of the overlap - expect roughly double the encoding
-  CPU only while both outputs run together.
 - The backdrop system consolidated where the decisions actually
   happen. Themes now holds just the two uploads - the podcast logo
   and the wallpaper. Everything else lives in the host panel's

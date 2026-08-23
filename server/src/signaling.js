@@ -13,7 +13,6 @@ import {
 import { iceServers } from "./turn.js";
 import { isAuthedRequest } from "./auth.js";
 import { getSettings, updateSettings, findSession, findSound, findIntro } from "./settings.js";
-import { findById } from "./users.js";
 import { notifyUser } from "./push.js";
 import {
   startRecording, stopRecording, activeRecording,
@@ -127,12 +126,6 @@ export function attachSignaling() {
               control: room.control,
               streaming: liveOutputs(room.id),
               recordingSince: activeRecording(room.id)?.startedAt || null,
-              // The address viewers chat at, bare (no scheme) - the
-              // host's browser draws the come-and-chat tag from it
-              chatTag: peer.role === "host"
-                ? ((await getSettings(room.ownerId)).channelDomain
-                    || `${config.domain}/live/${(await findById(room.ownerId))?.username || ""}`)
-                : null,
               theme: {
                 // The pinned theme: identical for everyone until the
                 // room empties, however the settings change meanwhile.
@@ -215,11 +208,6 @@ export function attachSignaling() {
               }
             }
             // Episode-title chip, composited top-centre of the video
-            if (typeof data.chatTag === "string" && data.chatTag.startsWith(PREFIX) &&
-                data.chatTag.length <= 400_000) {
-              await fs.writeFile(path.join(dir, "__chattag.png"),
-                Buffer.from(data.chatTag.slice(PREFIX.length), "base64"));
-            }
             if (typeof data.title === "string" && data.title.startsWith(PREFIX) &&
                 data.title.length <= 400_000) {
               const buf = Buffer.from(data.title.slice(PREFIX.length), "base64");
