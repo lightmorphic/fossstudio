@@ -4,6 +4,16 @@ All notable changes to FOSSStudio are documented here.
 
 ## Unreleased
 
+- The logo background generator grows from two styles to six:
+  **Scatter** (the 3D random collage), **Mosaic** (the dense flat
+  pattern), and a new lined-up family all drawn as a lighter shade of
+  the base colour - **Grid** (rows and rows of the same logo, same
+  size, same shade, perfectly aligned), **Brick** (rows offset half a
+  step), **Diagonal** (the whole grid tilted, monogram-wallpaper
+  style), and **Watermark** (one large faint logo). For the lined-up
+  styles, Shuffle steps the size - and the watermark's corner -
+  instead of re-rolling. Solid-backed logos also lost the faint
+  rectangular halo their canvas used to leave around big stamps.
 - The logo background generator now has two styles and a colour row:
   the ghosted 3D **collage**, and a dense flat **pattern** - the
   logo reduced to a one-colour silhouette and stamped edge to edge in

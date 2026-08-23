@@ -1025,7 +1025,11 @@
     for (let i = 0; i < d.data.length; i += 4) {
       const lum = (d.data[i] * 0.299 + d.data[i + 1] * 0.587 + d.data[i + 2] * 0.114) / 255;
       d.data[i] = tc[0]; d.data[i + 1] = tc[1]; d.data[i + 2] = tc[2];
-      d.data[i + 3] = hasAlpha ? d.data[i + 3] : Math.round(lum * 255);
+      // Floor the luminance mask: a solid logo's dark backing sits
+      // well under 0.3 and must map to fully transparent, or every
+      // stamp carries a faint rectangular halo of its canvas
+      d.data[i + 3] = hasAlpha ? d.data[i + 3]
+        : Math.round(Math.max(0, (lum - 0.3) / 0.7) * 255);
     }
     x.putImageData(d, 0, 0);
     // Trim to the visible bounding box, so stamps pack by their marks
@@ -1088,7 +1092,70 @@
     x.fillRect(0, 0, W, H);
   }
 
-  let logoBgStyle = "collage";
+  // The uniform family: rows and rows of the same logo, one shade,
+  // one size, lined up. Shuffle steps the size instead of re-rolling.
+  const GRID_SIZES = [44, 64, 92, 130];
+  let logoBgStep = 1;
+
+  function drawLogoGrid(canvas, img, baseColour, { offset = 0, angle = 0 } = {}) {
+    const x = canvas.getContext("2d");
+    const W = canvas.width, H = canvas.height;
+    x.setTransform(1, 0, 0, 1, 0, 0);
+    x.filter = "none";
+    x.globalAlpha = 1;
+    x.fillStyle = baseColour;
+    x.fillRect(0, 0, W, H);
+    const stamp = makeStamp(img, mixHex(baseColour, "#ffffff", 0.16));
+    const ar = stamp.width / stamp.height;
+    const h = GRID_SIZES[logoBgStep % GRID_SIZES.length];
+    const w = h * ar;
+    const gapX = w * 0.55, gapY = h * 0.75;
+    const pitchX = w + gapX, pitchY = h + gapY;
+    x.translate(W / 2, H / 2);
+    if (angle) x.rotate(angle);
+    // overdraw past the edges so a rotated grid still covers the frame
+    const spanX = Math.ceil((Math.hypot(W, H) / 2 + pitchX) / pitchX);
+    const spanY = Math.ceil((Math.hypot(W, H) / 2 + pitchY) / pitchY);
+    for (let row = -spanY; row <= spanY; row++) {
+      const shift = offset ? (row & 1 ? pitchX / 2 : 0) : 0;
+      for (let col = -spanX; col <= spanX; col++) {
+        x.drawImage(stamp, col * pitchX + shift - w / 2, row * pitchY - h / 2, w, h);
+      }
+    }
+    x.setTransform(1, 0, 0, 1, 0, 0);
+  }
+
+  function drawLogoWatermark(canvas, img, baseColour) {
+    const x = canvas.getContext("2d");
+    const W = canvas.width, H = canvas.height;
+    x.setTransform(1, 0, 0, 1, 0, 0);
+    x.filter = "none";
+    x.globalAlpha = 1;
+    x.fillStyle = baseColour;
+    x.fillRect(0, 0, W, H);
+    const stamp = makeStamp(img, mixHex(baseColour, "#ffffff", 0.12));
+    const ar = stamp.width / stamp.height;
+    // Shuffle cycles the corner: bottom-right, bottom-left, top-right, centre
+    const h = H * 0.52;
+    const w = h * ar;
+    const m = H * 0.06;
+    const spots = [
+      [W - w - m, H - h - m], [m, H - h - m], [W - w - m, m],
+      [(W - w) / 2, (H - h) / 2]
+    ];
+    const [px, py] = spots[logoBgStep % spots.length];
+    x.drawImage(stamp, px, py, w, h);
+  }
+
+  const LOGO_BG_STYLES = [
+    { id: "scatter", label: "Scatter", draw: (c, i, b) => drawLogoCollage(c, i, b) },
+    { id: "mosaic", label: "Mosaic", draw: (c, i, b) => drawLogoPattern(c, i, b) },
+    { id: "grid", label: "Grid", draw: (c, i, b) => drawLogoGrid(c, i, b) },
+    { id: "brick", label: "Brick", draw: (c, i, b) => drawLogoGrid(c, i, b, { offset: 1 }) },
+    { id: "diagonal", label: "Diagonal", draw: (c, i, b) => drawLogoGrid(c, i, b, { offset: 1, angle: -0.32 }) },
+    { id: "watermark", label: "Watermark", draw: (c, i, b) => drawLogoWatermark(c, i, b) }
+  ];
+  let logoBgStyle = "scatter";
   let logoBgBase = null; // null = the host's background colour
 
   let logoBgImg = null;
@@ -1108,6 +1175,7 @@
     $("logoBgHint").hidden = true;
     $("logoBgShuffle").disabled = false;
     $("logoBgUse").disabled = false;
+    renderLogoBgStyles();
     renderLogoBgColours(base);
     logoBgImg = new Image();
     logoBgImg.onload = () => redrawLogoBg(base);
@@ -1117,9 +1185,26 @@
   function redrawLogoBg(fallbackBase) {
     if (!logoBgImg || !logoBgImg.complete) return;
     const base = logoBgBase || fallbackBase || currentBg || "#14161a";
-    const canvas = $("logoBgCanvas");
-    if (logoBgStyle === "pattern") drawLogoPattern(canvas, logoBgImg, base);
-    else drawLogoCollage(canvas, logoBgImg, base);
+    const style = LOGO_BG_STYLES.find((st) => st.id === logoBgStyle) || LOGO_BG_STYLES[0];
+    style.draw($("logoBgCanvas"), logoBgImg, base);
+  }
+
+  function renderLogoBgStyles() {
+    const row = $("logoBgStyles");
+    row.innerHTML = "";
+    for (const st of LOGO_BG_STYLES) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "btn";
+      b.textContent = st.label;
+      b.setAttribute("aria-pressed", String(st.id === logoBgStyle));
+      b.onclick = () => {
+        logoBgStyle = st.id;
+        renderLogoBgStyles();
+        redrawLogoBg();
+      };
+      row.appendChild(b);
+    }
   }
 
   // The generator's base colour uses the SAME picker as the session
@@ -1159,19 +1244,12 @@
     };
   }
 
-  $("logoBgStyleCollage").onclick = () => {
-    logoBgStyle = "collage";
-    $("logoBgStyleCollage").setAttribute("aria-pressed", "true");
-    $("logoBgStylePattern").setAttribute("aria-pressed", "false");
+  $("logoBgShuffle").onclick = () => {
+    // The random styles re-roll; the lined-up ones step their size
+    // (and the watermark its corner) - shuffle always changes something
+    logoBgStep++;
     redrawLogoBg();
   };
-  $("logoBgStylePattern").onclick = () => {
-    logoBgStyle = "pattern";
-    $("logoBgStyleCollage").setAttribute("aria-pressed", "false");
-    $("logoBgStylePattern").setAttribute("aria-pressed", "true");
-    redrawLogoBg();
-  };
-  $("logoBgShuffle").onclick = () => redrawLogoBg();
   $("logoBgUse").onclick = () => {
     $("logoBgCanvas").toBlob(async (blob) => {
       if (!blob) return;
