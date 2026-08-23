@@ -11,11 +11,12 @@ All notable changes to FOSSStudio are documented here.
   All three backdrops are pinned as copies when the room forms, so
   the one-look-per-show rule still holds against dashboard edits;
   only this deliberate control changes anything, and a recording
-  keeps the backdrop it started with, like the title position. Themes
-  gains a matching selector for what sessions open with, the
-  generated logo background now saves to its own slot (no longer
-  overwriting the wallpaper), and the logo section now recommends a
-  transparent PNG.
+  keeps the backdrop it started with, like the title position. Every
+  session opens on the flat colour - the wallpaper and logo
+  background are the looks the host switches to, and the control only
+  offers what actually exists. The generated logo background saves to
+  its own slot (no longer overwriting the wallpaper), and the logo
+  section now recommends a transparent PNG.
 - The logo background generator grows from two styles to six:
   **Scatter** (the 3D random collage), **Mosaic** (the dense flat
   pattern), and a new lined-up family all drawn as a lighter shade of
