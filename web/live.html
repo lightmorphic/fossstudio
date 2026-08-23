@@ -20,12 +20,14 @@
     <main class="player-wrap">
       <video id="player" playsinline controls hidden></video>
       <div id="offline" class="offline">
-        <img id="offlineLogo" class="offline-logo" alt="" hidden>
-        <svg id="offlineIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M4.9 19.1a10 10 0 0 1 0-14.2M7.8 16.2a6 6 0 0 1 0-8.4M19.1 4.9a10 10 0 0 1 0 14.2M16.2 7.8a6 6 0 0 1 0 8.4"/><circle cx="12" cy="12" r="2"/>
-        </svg>
-        <p><b id="offlineTitle">Off air (for now)</b></p>
-        <p class="soft">The moment the show starts, this page drops everything and plays it. Until then the skies are thick with Big Tech - hop in the ship and defend the open web.</p>
+        <div class="offline-copy">
+          <img id="offlineLogo" class="offline-logo" alt="" hidden>
+          <svg id="offlineIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4.9 19.1a10 10 0 0 1 0-14.2M7.8 16.2a6 6 0 0 1 0-8.4M19.1 4.9a10 10 0 0 1 0 14.2M16.2 7.8a6 6 0 0 1 0 8.4"/><circle cx="12" cy="12" r="2"/>
+          </svg>
+          <p><b id="offlineTitle">Off air (for now)</b></p>
+          <p class="soft">The moment the show starts, this page drops everything and plays it. Until then the skies are thick with Big Tech - hop in the ship and defend the open web.</p>
+        </div>
         <div id="game" class="game" role="application" aria-label="Vendor Lock while you wait: Asteroids where the rocks are Big Tech logos. Arrow keys turn, thrust and brake, space fires, H is hyperspace; on touch screens the cabinet has its own buttons"></div>
       </div>
     </main>
