@@ -105,11 +105,11 @@ dashboard.
   grid, or a single corner watermark, all from your logo's silhouette - the
   base colour picked exactly like the session background (the same
   eleven swatches plus a hex code), shuffled in the dashboard until
-  one feels right, saved as its own backdrop. A selector in Themes picks what
-  sessions open with - and the host can **switch the backdrop live
-  mid-show** from the host panel (colour, wallpaper or logo
-  background), a new look for a new segment, on every screen and the
-  stream at once.
+  one feels right, saved as its own backdrop. Every session opens on the colour;
+  the host can **switch the backdrop live mid-show** from the host
+  panel (colour, wallpaper or logo background - only what's actually
+  uploaded is offered), a new look for a new segment, on every screen
+  and the stream at once.
 - **One look per show:** the theme (wallpaper, background colour, logo,
   episode title) is pinned the moment the first person joins and holds
   until the session empties - everyone, the recording and the stream see

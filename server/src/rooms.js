@@ -78,11 +78,9 @@ export async function pinTheme(room, session, settings) {
       theme[`${kind}Url`] = `/api/room-theme/${room.id}/${kind}`;
     } catch { /* source vanished: theme falls back to the colour */ }
   }
-  const wanted = settings.backgroundMode
-    || (settings.wallpaper ? "wallpaper" : "colour");
-  theme.active = wanted === "wallpaper" && theme.wallpaperPath ? "wallpaper"
-    : wanted === "logobg" && theme.logobgPath ? "logobg"
-    : "colour";
+  // Every session opens on the flat colour; the wallpaper and logo
+  // background are pinned alongside as the looks the host can switch
+  // to live from the host controls
   room.theme = theme;
 }
 
