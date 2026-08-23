@@ -4,6 +4,9 @@ All notable changes to FOSSStudio are documented here.
 
 ## Unreleased
 
+- A server that hits a fatal error at boot (a taken port, say) now
+  exits instead of lingering broken in memory forever - Docker
+  restarts it fresh, and the alert email still goes out first.
 - The backdrop system consolidated where the decisions actually
   happen. Themes now holds just the two uploads - the podcast logo
   and the wallpaper. Everything else lives in the host panel's
