@@ -13,9 +13,10 @@ All notable changes to FOSSStudio are documented here.
 - A third background option beside the colour and the wallpaper
   upload: **Logo background**. The collage style is a dense field of
   hundreds of small copies of your podcast logo, each turned in its
-  own 3D lean with its own size and shade - crisp, not ghosted - over
-  your background colour, with a gentle vignette calming the centre
-  where the tiles sit. Generated in the dashboard, shuffled until one
+  own 3D lean with its own size - drawn as lighter and darker shades
+  of the background colour itself, filling the frame completely with
+  overlap kept to the edges, with a gentle vignette calming the
+  centre where the tiles sit. Generated in the dashboard, shuffled until one
   feels right, and saved through the ordinary wallpaper slot, so
   recordings and streams carry it like any other wallpaper.
 - fossstudio.org rebuilt as a run-sheet: light and dark modes with a
