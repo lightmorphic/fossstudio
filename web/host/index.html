@@ -127,7 +127,12 @@
             <button class="btn" id="logoBgStyleCollage" aria-pressed="true">Collage</button>
             <button class="btn" id="logoBgStylePattern" aria-pressed="false">Pattern</button>
             <span style="flex-basis:100%"></span>
-            <div id="logoBgColours" style="display:flex; gap:0.35rem; flex-wrap:wrap"></div>
+            <div class="bg-picker">
+              <div class="swatches" id="logoBgSwatches"></div>
+              <div class="hex-field">
+                <input type="text" id="logoBgHex" placeholder="#14161a" maxlength="7" spellcheck="false" aria-label="Generator base colour hex code">
+              </div>
+            </div>
           </div>
           <canvas id="logoBgCanvas" width="1920" height="1080" style="width:100%; aspect-ratio:16/9; border-radius:10px; border:1px solid var(--border); display:block; background:var(--bg)"></canvas>
           <div style="display:flex; gap:0.6rem; margin-top:0.8rem; align-items:center">

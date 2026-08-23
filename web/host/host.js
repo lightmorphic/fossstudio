@@ -1088,9 +1088,6 @@
     x.fillRect(0, 0, W, H);
   }
 
-  // Base-colour choices for the generator: the host's own background
-  // first, then a small set of studio-friendly hues
-  const LOGO_BG_COLOURS = ["#14161a", "#2e7d64", "#2b5a8a", "#5a3d8a", "#8a3d55", "#7d6a2e", "#01655c", "#3a3f47"];
   let logoBgStyle = "collage";
   let logoBgBase = null; // null = the host's background colour
 
@@ -1125,24 +1122,41 @@
     else drawLogoCollage(canvas, logoBgImg, base);
   }
 
+  // The generator's base colour uses the SAME picker as the session
+  // background above: the eleven palette swatches plus a hex box.
+  // With nothing picked it follows the host's background colour.
   function renderLogoBgColours(hostBg) {
-    const row = $("logoBgColours");
-    row.innerHTML = "";
-    const opts = [hostBg || "#14161a", ...LOGO_BG_COLOURS.filter((c) => c !== (hostBg || "#14161a"))];
-    for (const [i, c] of opts.entries()) {
+    const wrap = $("logoBgSwatches");
+    wrap.innerHTML = "";
+    for (const hex of PALETTE) {
       const b = document.createElement("button");
-      b.type = "button";
-      b.className = "hp-swatch";
-      b.style.background = c;
-      b.style.width = "1.6rem";
-      b.style.height = "1.6rem";
-      b.style.borderRadius = "0.45rem";
-      b.style.border = "1px solid var(--border)";
-      b.dataset.tip = i === 0 ? "Your background colour" : c;
-      b.setAttribute("aria-label", i === 0 ? "Your background colour" : `Base colour ${c}`);
-      b.onclick = () => { logoBgBase = i === 0 ? null : c; redrawLogoBg(hostBg); };
-      row.appendChild(b);
+      b.className = "swatch" + (hex === logoBgBase ? " active" : "");
+      b.style.background = hex;
+      b.dataset.tip = hex;
+      b.setAttribute("aria-label", `Base colour ${hex}`);
+      b.onclick = () => {
+        logoBgBase = hex;
+        if (document.activeElement !== $("logoBgHex")) $("logoBgHex").value = hex;
+        renderLogoBgColours(hostBg);
+        redrawLogoBg(hostBg);
+      };
+      wrap.appendChild(b);
     }
+    $("logoBgHex").onchange = () => {
+      let v = $("logoBgHex").value.trim();
+      if (v && !v.startsWith("#")) v = "#" + v;
+      if (/^#[0-9a-fA-F]{6}$/.test(v)) {
+        logoBgBase = v.toLowerCase();
+        renderLogoBgColours(hostBg);
+        redrawLogoBg(hostBg);
+      } else if (v === "") {
+        logoBgBase = null; // back to the host's own background colour
+        renderLogoBgColours(hostBg);
+        redrawLogoBg(hostBg);
+      } else {
+        $("logoBgHex").value = logoBgBase || "";
+      }
+    };
   }
 
   $("logoBgStyleCollage").onclick = () => {
