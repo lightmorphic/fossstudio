@@ -407,40 +407,10 @@ api.delete("/sessions/:id", requireAuth, async (req, res) => {
 // Pinned per-room theme assets (copies frozen at the room's first join).
 // Link-gated like the session itself: the room id is the session id.
 api.get("/room-theme/:roomId/:kind", async (req, res) => {
-  if (!["logo", "wallpaper", "logobg"].includes(req.params.kind)) return res.status(404).end();
+  if (!["logo", "wallpaper", "backdrop"].includes(req.params.kind)) return res.status(404).end();
   const p = getRoom(req.params.roomId)?.theme?.[`${req.params.kind}Path`];
   if (!p) return res.status(404).end();
   res.sendFile(p);
-});
-
-// The generated logo background gets its own slot, separate from the
-// uploaded wallpaper, so the two are both available to switch between
-// during a show
-api.post("/logobg", requireAuth,
-  express.raw({ type: ["image/png"], limit: "8mb" }),
-  async (req, res) => {
-    if (!Buffer.isBuffer(req.body) || req.body.length === 0) {
-      return res.status(400).json({ error: "Send a PNG image." });
-    }
-    const name = `logobg-${req.user.uid}.png`;
-    const dir = path.join(config.dataDir, "uploads");
-    await fs.mkdir(dir, { recursive: true });
-    await fs.writeFile(path.join(dir, name), req.body);
-    await updateSettings(req.user.uid, { logoBackground: name });
-    res.json({ ok: true });
-  });
-api.get("/logobg", requireAuth, async (req, res) => {
-  const s = await getSettings(req.user.uid);
-  if (!s.logoBackground) return res.status(404).end();
-  res.sendFile(path.join(config.dataDir, "uploads", path.basename(s.logoBackground)));
-});
-api.delete("/logobg", requireAuth, async (req, res) => {
-  const s = await getSettings(req.user.uid);
-  if (s.logoBackground) {
-    await fs.unlink(path.join(config.dataDir, "uploads", path.basename(s.logoBackground))).catch(() => {});
-  }
-  await updateSettings(req.user.uid, { logoBackground: null });
-  res.json({ ok: true });
 });
 
 // Podcast logo (part of the theme): shown above the episode title on

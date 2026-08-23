@@ -100,17 +100,6 @@
           </div>
         </div>
         <div class="panel">
-          <h2>Background colour</h2>
-          <p class="hint" style="margin-bottom:0.5rem">Shown behind the video grid - every session opens with this colour. The wallpaper and logo background below are extra looks the host can switch to live, from the Backdrop button in the host controls. Click a colour (or type a hex code) and it's saved straight away.</p>
-          <div class="bg-picker">
-            <div class="swatches" id="bgSwatches"></div>
-            <div class="hex-field">
-              <input type="text" id="bgHex" placeholder="#14161a" maxlength="7" spellcheck="false" aria-label="Background colour hex code">
-              <span class="msg ok" id="bgMsg" hidden>✓ Saved</span>
-            </div>
-          </div>
-        </div>
-        <div class="panel">
           <h2>Wallpaper</h2>
           <div class="wallpaper-preview" id="wallpaperPreview">No wallpaper set</div>
           <div style="display:flex; gap:0.6rem; margin-top:0.8rem">
@@ -118,13 +107,8 @@
             <button class="btn" id="wallpaperRemove">Remove</button>
             <input type="file" id="wallpaperFile" accept="image/jpeg,image/png,image/webp" hidden>
           </div>
-          <p class="hint" style="margin-top:0.5rem">Shown behind the video grid. 1920×1080 pixels is the ideal size (anything with the same 16:9 shape works). JPEG, PNG or WebP, up to 8 MB.</p>
+          <p class="hint" style="margin-top:0.5rem">One of the looks the host can switch to live, from the Backdrop button in the host controls - alongside solid colours and generated logo layouts, all picked there during the show. 1920×1080 pixels is the ideal size (anything with the same 16:9 shape works). JPEG, PNG or WebP, up to 8 MB.</p>
         </div>
-        <div class="panel">
-          <h2>Logo background</h2>
-          <p class="hint" style="margin-bottom:0.5rem">A third option: a background generated from your logo, right here. Six styles - from a 3D scatter of hundreds of turned copies to neat lined-up rows and a single corner watermark - in whichever colour suits the show. Shuffle until one feels right, then save it: it becomes its own backdrop, separate from the wallpaper, so shows can switch between all three.</p>
-          <div style="display:flex; gap:0.5rem; margin-bottom:0.6rem; flex-wrap:wrap; align-items:center">
-            <div id="logoBgStyles" style="display:flex; gap:0.5rem; flex-wrap:wrap"></div>
             <span style="flex-basis:100%"></span>
             <div class="bg-picker">
               <div class="swatches" id="logoBgSwatches"></div>
