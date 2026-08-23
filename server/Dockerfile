@@ -45,4 +45,9 @@ USER node
 ENV NODE_ENV=production
 ENV WEB_DIR=/app/web
 ENV DATA_DIR=/data
+# Cap the JS heap well above real usage (~80MB observed under load): a
+# leak degrades into a clean restart instead of eating the host's RAM.
+# Only the app's own heap - ffmpeg and mediasoup children are separate
+# processes and unaffected.
+ENV NODE_OPTIONS=--max-old-space-size=256
 CMD ["node", "src/index.js"]

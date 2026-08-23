@@ -21,8 +21,17 @@ services:
     restart: unless-stopped
     network_mode: host
     env_file: .env
+    # Caddy's needs are small and predictable; a cap means a leak here
+    # can never starve the app mid-show
+    mem_limit: 256m
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Read-only view of the app's data so Caddy can serve the live
+      # HLS files straight from disk (see hls_offload in the Caddyfile)
+      # instead of proxying every viewer's per-second fetches through
+      # the app process. Mounted whole (not data/live alone) so Docker
+      # never pre-creates a root-owned subfolder inside the app's data.
+      - ${DATA_PATH:-./data}:/srv/appdata:ro
       - ${CADDY_SITES_PATH:-./caddy-sites}:/etc/caddy/sites:ro
       # Static web roots for those extra sites (see CADDY_WWW_PATH in
       # .env.example): a site file serves files with root * /srv/www/<name>.
@@ -36,6 +45,7 @@ services:
     restart: unless-stopped
     network_mode: host
     env_file: .env
+    mem_limit: 256m
     command: >
       --realm=${DOMAIN}
       --use-auth-secret
