@@ -100,7 +100,7 @@ dashboard.
   is invisible to everyone in the session and can never appear in the
   recording. Copy it from the session row in the dashboard.
 - **Backgrounds three ways:** a flat colour, an uploaded wallpaper, or
-  a generated **logo background** in two styles - a ghosted 3D collage,
+  a generated **logo background** in two styles - a 3D collage of hundreds of small turned copies,
   or a dense flat pattern stamped from your logo's silhouette - in any
   of nine base colours, shuffled in the dashboard until one feels
   right, saved as the wallpaper.

@@ -968,27 +968,25 @@
     x.fillStyle = baseColour;
     x.fillRect(0, 0, W, H);
     const ar = img.width / img.height;
-    // Back layer: a few enormous, blurred, barely-there copies for depth
-    const place = (count, minS, maxS, minA, maxA, blur) => {
-      for (let i = 0; i < count; i++) {
-        const w = minS + Math.random() * (maxS - minS);
-        const h = w / ar;
-        const px = Math.random() * W, py = Math.random() * H;
-        const rot = (Math.random() - 0.5) * 1.6;           // up to ~46 deg
-        const tiltX = (Math.random() - 0.5) * 0.7;         // skew = the 3D lean
-        const tiltY = (Math.random() - 0.5) * 0.7;
-        const squash = 0.55 + Math.random() * 0.45;        // foreshortening
-        x.setTransform(1, 0, 0, 1, px, py);
-        x.rotate(rot);
-        x.transform(1, tiltY, tiltX, squash, 0, 0);
-        x.globalAlpha = minA + Math.random() * (maxA - minA);
-        x.filter = blur ? `blur(${blur + Math.random() * blur}px)` : "none";
-        x.drawImage(img, -w / 2, -h / 2, w, h);
-      }
-    };
-    place(5, 700, 1300, 0.02, 0.04, 6);   // deep, huge, soft
-    place(14, 220, 520, 0.03, 0.06, 2);   // middle distance
-    place(16, 80, 220, 0.04, 0.08, 0);    // near, small, crisp-ish
+    // A dense field of small copies - no giant ghosts, no blur. Each
+    // stamp gets its own 3D lean (rotation, skew, foreshortening),
+    // size and shade, so the wall reads as hundreds of little logos
+    // turned every which way.
+    const count = 300 + Math.floor(Math.random() * 80);
+    for (let i = 0; i < count; i++) {
+      const w = 44 + Math.random() * 96;                 // small, varied
+      const h = w / ar;
+      const px = Math.random() * W, py = Math.random() * H;
+      const rot = (Math.random() - 0.5) * 1.8;           // up to ~52 deg
+      const tiltX = (Math.random() - 0.5) * 0.8;         // skew = the 3D lean
+      const tiltY = (Math.random() - 0.5) * 0.8;
+      const squash = 0.5 + Math.random() * 0.5;          // foreshortening
+      x.setTransform(1, 0, 0, 1, px, py);
+      x.rotate(rot);
+      x.transform(1, tiltY, tiltX, squash, 0, 0);
+      x.globalAlpha = 0.10 + Math.random() * 0.18;       // shades, not ghosts
+      x.drawImage(img, -w / 2, -h / 2, w, h);
+    }
     // Gentle vignette so tiles sit on a calmer centre
     x.setTransform(1, 0, 0, 1, 0, 0);
     x.filter = "none";
