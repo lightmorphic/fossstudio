@@ -122,7 +122,13 @@
         </div>
         <div class="panel">
           <h2>Logo background</h2>
-          <p class="hint" style="margin-bottom:0.5rem">A third option: your logo, scattered and tilted in dozens of ghosted positions over your background colour - a very subtle collage, generated right here. Shuffle until one feels right, then set it as the wallpaper.</p>
+          <p class="hint" style="margin-bottom:0.5rem">A third option: a background generated from your logo, right here. Two styles - a ghosted 3D collage, or a dense flat pattern - in whichever colour suits the show. Shuffle until one feels right, then set it as the wallpaper.</p>
+          <div style="display:flex; gap:0.5rem; margin-bottom:0.6rem; flex-wrap:wrap; align-items:center">
+            <button class="btn" id="logoBgStyleCollage" aria-pressed="true">Collage</button>
+            <button class="btn" id="logoBgStylePattern" aria-pressed="false">Pattern</button>
+            <span style="flex-basis:100%"></span>
+            <div id="logoBgColours" style="display:flex; gap:0.35rem; flex-wrap:wrap"></div>
+          </div>
           <canvas id="logoBgCanvas" width="1920" height="1080" style="width:100%; aspect-ratio:16/9; border-radius:10px; border:1px solid var(--border); display:block; background:var(--bg)"></canvas>
           <div style="display:flex; gap:0.6rem; margin-top:0.8rem; align-items:center">
             <button class="btn" id="logoBgShuffle">Shuffle</button>

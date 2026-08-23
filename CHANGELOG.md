@@ -4,6 +4,12 @@ All notable changes to FOSSStudio are documented here.
 
 ## Unreleased
 
+- The logo background generator now has two styles and a colour row:
+  the ghosted 3D **collage**, and a dense flat **pattern** - the
+  logo reduced to a one-colour silhouette and stamped edge to edge in
+  jittered rows, like a classic icon wallpaper. Eight base colours
+  plus your own background colour; logos without transparency work
+  too (bright marks become the stamp, the dark backing falls away).
 - A third background option beside the colour and the wallpaper
   upload: **Logo background**. Your podcast logo scattered and tilted
   in dozens of ghosted positions over your background colour - big
