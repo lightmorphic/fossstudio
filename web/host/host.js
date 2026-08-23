@@ -1000,6 +1000,93 @@
     x.fillRect(0, 0, W, H);
   }
 
+  // The dense flat mosaic, like a classic icon-pattern wallpaper: the
+  // logo reduced to a one-colour silhouette, stamped edge to edge in
+  // jittered rows over the chosen base colour. Logos with transparency
+  // use their own alpha as the silhouette; solid logos use luminance,
+  // so bright marks become the stamp and a dark backing falls away.
+  function makeStamp(img, tint) {
+    const c = document.createElement("canvas");
+    c.width = img.width; c.height = img.height;
+    const x = c.getContext("2d");
+    x.drawImage(img, 0, 0);
+    const d = x.getImageData(0, 0, c.width, c.height);
+    let transparent = 0;
+    for (let i = 3; i < d.data.length; i += 4) if (d.data[i] < 40) transparent++;
+    const hasAlpha = transparent > d.data.length / 4 * 0.05;
+    const tc = [parseInt(tint.slice(1, 3), 16), parseInt(tint.slice(3, 5), 16), parseInt(tint.slice(5, 7), 16)];
+    for (let i = 0; i < d.data.length; i += 4) {
+      const lum = (d.data[i] * 0.299 + d.data[i + 1] * 0.587 + d.data[i + 2] * 0.114) / 255;
+      d.data[i] = tc[0]; d.data[i + 1] = tc[1]; d.data[i + 2] = tc[2];
+      d.data[i + 3] = hasAlpha ? d.data[i + 3] : Math.round(lum * 255);
+    }
+    x.putImageData(d, 0, 0);
+    // Trim to the visible bounding box, so stamps pack by their marks
+    // rather than by whatever padding the source file carried
+    let minX = c.width, minY = c.height, maxX = 0, maxY = 0;
+    for (let py = 0; py < c.height; py++) {
+      for (let px = 0; px < c.width; px++) {
+        if (d.data[(py * c.width + px) * 4 + 3] > 30) {
+          if (px < minX) minX = px; if (px > maxX) maxX = px;
+          if (py < minY) minY = py; if (py > maxY) maxY = py;
+        }
+      }
+    }
+    if (maxX <= minX || maxY <= minY) return c;
+    const t = document.createElement("canvas");
+    t.width = maxX - minX + 1; t.height = maxY - minY + 1;
+    t.getContext("2d").drawImage(c, -minX, -minY);
+    return t;
+  }
+
+  function mixHex(hex, withHex, t) {
+    const a = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    const b = [1, 3, 5].map((i) => parseInt(withHex.slice(i, i + 2), 16));
+    return "#" + a.map((v, i) => Math.round(v + (b[i] - v) * t).toString(16).padStart(2, "0")).join("");
+  }
+
+  function drawLogoPattern(canvas, img, baseColour) {
+    const x = canvas.getContext("2d");
+    const W = canvas.width, H = canvas.height;
+    x.setTransform(1, 0, 0, 1, 0, 0);
+    x.filter = "none";
+    x.globalAlpha = 1;
+    x.fillStyle = baseColour;
+    x.fillRect(0, 0, W, H);
+    const tint = mixHex(baseColour, "#ffffff", 0.46);
+    const stamp = makeStamp(img, tint);
+    const ar = stamp.width / stamp.height;
+    let y = -20;
+    while (y < H + 40) {
+      const rowH = 36 + Math.random() * 34;
+      let px = -20 + Math.random() * -30;
+      while (px < W + 40) {
+        const h = rowH * (0.82 + Math.random() * 0.36);
+        const w = h * ar;
+        x.setTransform(1, 0, 0, 1, px + w / 2, y + rowH / 2);
+        x.rotate((Math.random() - 0.5) * 0.24);
+        x.globalAlpha = 0.16 + Math.random() * 0.14;
+        x.drawImage(stamp, -w / 2, -h / 2, w, h);
+        px += w + 5 + Math.random() * 8;
+      }
+      y += rowH + 6 + Math.random() * 7;
+    }
+    // the reference's soft dark corners
+    x.setTransform(1, 0, 0, 1, 0, 0);
+    x.globalAlpha = 1;
+    const g = x.createRadialGradient(W / 2, H / 2, H * 0.3, W / 2, H / 2, H * 1.05);
+    g.addColorStop(0, "rgba(0,0,0,0)");
+    g.addColorStop(1, "rgba(0,0,0,0.3)");
+    x.fillStyle = g;
+    x.fillRect(0, 0, W, H);
+  }
+
+  // Base-colour choices for the generator: the host's own background
+  // first, then a small set of studio-friendly hues
+  const LOGO_BG_COLOURS = ["#14161a", "#2e7d64", "#2b5a8a", "#5a3d8a", "#8a3d55", "#7d6a2e", "#01655c", "#3a3f47"];
+  let logoBgStyle = "collage";
+  let logoBgBase = null; // null = the host's background colour
+
   let logoBgImg = null;
   async function initLogoBg() {
     const canvas = $("logoBgCanvas");
@@ -1017,15 +1104,53 @@
     $("logoBgHint").hidden = true;
     $("logoBgShuffle").disabled = false;
     $("logoBgUse").disabled = false;
+    renderLogoBgColours(base);
     logoBgImg = new Image();
-    logoBgImg.onload = () => drawLogoCollage(canvas, logoBgImg, base);
+    logoBgImg.onload = () => redrawLogoBg(base);
     logoBgImg.src = `/api/logo?${Date.now()}`;
   }
-  $("logoBgShuffle").onclick = async () => {
-    if (!logoBgImg) return;
-    const s = await apiFetch("/api/settings");
-    drawLogoCollage($("logoBgCanvas"), logoBgImg, s.bg || "#14161a");
+
+  function redrawLogoBg(fallbackBase) {
+    if (!logoBgImg || !logoBgImg.complete) return;
+    const base = logoBgBase || fallbackBase || currentBg || "#14161a";
+    const canvas = $("logoBgCanvas");
+    if (logoBgStyle === "pattern") drawLogoPattern(canvas, logoBgImg, base);
+    else drawLogoCollage(canvas, logoBgImg, base);
+  }
+
+  function renderLogoBgColours(hostBg) {
+    const row = $("logoBgColours");
+    row.innerHTML = "";
+    const opts = [hostBg || "#14161a", ...LOGO_BG_COLOURS.filter((c) => c !== (hostBg || "#14161a"))];
+    for (const [i, c] of opts.entries()) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "hp-swatch";
+      b.style.background = c;
+      b.style.width = "1.6rem";
+      b.style.height = "1.6rem";
+      b.style.borderRadius = "0.45rem";
+      b.style.border = "1px solid var(--border)";
+      b.dataset.tip = i === 0 ? "Your background colour" : c;
+      b.setAttribute("aria-label", i === 0 ? "Your background colour" : `Base colour ${c}`);
+      b.onclick = () => { logoBgBase = i === 0 ? null : c; redrawLogoBg(hostBg); };
+      row.appendChild(b);
+    }
+  }
+
+  $("logoBgStyleCollage").onclick = () => {
+    logoBgStyle = "collage";
+    $("logoBgStyleCollage").setAttribute("aria-pressed", "true");
+    $("logoBgStylePattern").setAttribute("aria-pressed", "false");
+    redrawLogoBg();
   };
+  $("logoBgStylePattern").onclick = () => {
+    logoBgStyle = "pattern";
+    $("logoBgStyleCollage").setAttribute("aria-pressed", "false");
+    $("logoBgStylePattern").setAttribute("aria-pressed", "true");
+    redrawLogoBg();
+  };
+  $("logoBgShuffle").onclick = () => redrawLogoBg();
   $("logoBgUse").onclick = () => {
     $("logoBgCanvas").toBlob(async (blob) => {
       if (!blob) return;
