@@ -739,8 +739,6 @@
 
   // ---------- Backdrop generators (shared shapes with the old
   // dashboard generator, now living where the choice is made) ----------
-  const GRID_SIZES = [44, 64, 92, 130];
-  let logoBgStep = 1;
   function makeStamp(img, tint) {
     const c = document.createElement("canvas");
     c.width = img.width; c.height = img.height;
@@ -875,7 +873,7 @@
     x.fillRect(0, 0, W, H);
     const stamp = makeStamp(img, mixHex(baseColour, "#ffffff", 0.16));
     const ar = stamp.width / stamp.height;
-    const h = GRID_SIZES[logoBgStep % GRID_SIZES.length];
+    const h = 64;
     const w = h * ar;
     const gapX = w * 0.55, gapY = h * 0.75;
     const pitchX = w + gapX, pitchY = h + gapY;
@@ -902,16 +900,11 @@
     x.fillRect(0, 0, W, H);
     const stamp = makeStamp(img, mixHex(baseColour, "#ffffff", 0.12));
     const ar = stamp.width / stamp.height;
-    // Shuffle cycles the corner: bottom-right, bottom-left, top-right, centre
+    // Bottom-right, the classic watermark corner
     const h = H * 0.52;
     const w = h * ar;
     const m = H * 0.06;
-    const spots = [
-      [W - w - m, H - h - m], [m, H - h - m], [W - w - m, m],
-      [(W - w) / 2, (H - h) / 2]
-    ];
-    const [px, py] = spots[logoBgStep % spots.length];
-    x.drawImage(stamp, px, py, w, h);
+    x.drawImage(stamp, W - w - m, H - h - m, w, h);
   }
 
   // ---------- Backdrop: switch the show's background live ----------
