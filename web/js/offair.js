@@ -88,13 +88,13 @@ window.OffAir = (() => {
   }
 
   // ---------- game state ----------
-  const BLOCK_W = 976, BLOCK_H = 244;
+  const BLOCK_W = 976, BLOCK_H = 488;
   let box = null, cabinet = null, cv = null, ctx = null;
   let elScore, elWave, elLives, elPause, elSound, stage;
   let running = false, raf = 0;
   let W = 0, H = 0, dpr = 1, VIEW = 1;
 
-  /* Sized for the short strip. */
+  /* Sized for the cabinet. */
   const TIER = { 3: { r: 54, score: 20, spd: [26, 62] }, 2: { r: 31, score: 50, spd: [52, 104] }, 1: { r: 18, score: 100, spd: [86, 152] } };
   const MAXSHOTS = 4;
 
@@ -489,7 +489,7 @@ window.OffAir = (() => {
     box.style.setProperty("--fit", s);
     box.style.height = Math.round(BLOCK_H * s) + "px";
     const pxW = Math.max(320, stage.clientWidth), pxH = Math.max(120, stage.clientHeight);
-    /* A 244px-tall block cannot hold arcade-sized rocks, so the world is
+    /* Short cabinets cannot hold arcade-sized rocks, so the world is
        kept roomy and drawn at VIEW scale instead of shrinking the game. */
     VIEW = Math.max(0.5, Math.min(1, pxH / 560));
     W = pxW / VIEW; H = pxH / VIEW;

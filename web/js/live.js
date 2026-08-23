@@ -278,7 +278,7 @@
     if (s.title) {
       els.title.textContent = s.title;
       document.title = `${s.title} - live`;
-      $("offlineTitle").textContent = `${s.title} isn't live right now`;
+      $("offlineTitle").textContent = `${s.title} is between shows`;
     }
     // The show's own logo on the offline page, when one is uploaded;
     // the stock icon stays for everyone else
