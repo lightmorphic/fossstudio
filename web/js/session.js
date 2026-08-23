@@ -39,6 +39,8 @@
     hpBannerColorsBtn: $("hpBannerColorsBtn"), hpTitleColorsBtn: $("hpTitleColorsBtn"),
     hpBannerPop: $("hpBannerPop"), hpTitlePop: $("hpTitlePop"),
     hpTitleSwatches: $("hpTitleSwatches"), hpTitleHex: $("hpTitleHex"),
+    hpBackdropBtn: $("hpBackdropBtn"), hpBackdropPop: $("hpBackdropPop"),
+    hpBackdropSwatches: $("hpBackdropSwatches"), hpBackdropHex: $("hpBackdropHex"),
     soundboardBtn: $("soundboardBtn"), soundBar: $("soundBar"),
     soundBarList: $("soundBarList"), soundBarClose: $("soundBarClose"),
     introOverlay: $("introOverlay"), introVideo: $("introVideo"),
@@ -485,6 +487,9 @@
   // ---------- Theme ----------
 
   function applyTheme(theme) {
+    if (theme.backdrops) backdrops = theme.backdrops;
+    if (theme.backdrop) backdropMode = theme.backdrop;
+    if (isHost) renderBackdropUI();
     document.title = theme.title ? `${theme.title} - live` : "FOSSStudio - live";
     document.getElementById("bannerTitle").textContent = theme.title || "";
     const logo = document.getElementById("bannerLogo");
@@ -720,14 +725,64 @@
 
   // The colour tools sit behind two small buttons - the panel stays
   // calm until colours are wanted
-  const togglePop = (btn, pop, other) => () => {
-    other.hidden = true;
+  const togglePop = (pop, ...others) => () => {
+    for (const o of others) o.hidden = true;
     pop.hidden = !pop.hidden;
     els.hpBannerColorsBtn.classList.toggle("active", !els.hpBannerPop.hidden);
     els.hpTitleColorsBtn.classList.toggle("active", !els.hpTitlePop.hidden);
+    els.hpBackdropBtn.classList.toggle("active", !els.hpBackdropPop.hidden);
   };
-  els.hpBannerColorsBtn.onclick = togglePop(els.hpBannerColorsBtn, els.hpBannerPop, els.hpTitlePop);
-  els.hpTitleColorsBtn.onclick = togglePop(els.hpTitleColorsBtn, els.hpTitlePop, els.hpBannerPop);
+  els.hpBannerColorsBtn.onclick = togglePop(els.hpBannerPop, els.hpTitlePop, els.hpBackdropPop);
+  els.hpTitleColorsBtn.onclick = togglePop(els.hpTitlePop, els.hpBannerPop, els.hpBackdropPop);
+  els.hpBackdropBtn.onclick = togglePop(els.hpBackdropPop, els.hpBannerPop, els.hpTitlePop);
+
+  // ---------- Backdrop: switch the show's background live ----------
+  // Colour, the pinned wallpaper, or the pinned logo background - a
+  // segment per kind, the palette shown for colour. Availability comes
+  // from the pinned theme (a host without a wallpaper can't pick one).
+  let backdrops = { wallpaper: false, logobg: false };
+  let backdropMode = "colour";
+  function renderBackdropUI() {
+    const segs = [
+      ["hpBackdropColour", "colour", true],
+      ["hpBackdropWallpaper", "wallpaper", backdrops.wallpaper],
+      ["hpBackdropLogo", "logobg", backdrops.logobg]
+    ];
+    for (const [id, mode, available] of segs) {
+      const b = $(id);
+      b.setAttribute("aria-pressed", String(backdropMode === mode));
+      b.disabled = !available;
+      if (!available) b.dataset.tip = mode === "wallpaper"
+        ? "No wallpaper uploaded in Themes" : "No logo background saved in Themes";
+      else b.removeAttribute("data-tip");
+    }
+    $("hpBackdropPalette").style.display = backdropMode === "colour" ? "" : "none";
+    els.hpBackdropSwatches.innerHTML = "";
+    for (const hex of BANNER_COLOURS) {
+      const sw = document.createElement("button");
+      sw.className = "hp-swatch" + (backdropMode === "colour" && hex === (control.backdrop?.colour || null) ? " active" : "");
+      sw.style.background = hex;
+      sw.dataset.tip = hex;
+      sw.setAttribute("aria-label", `Backdrop colour ${hex}`);
+      sw.onclick = () => sendBackdrop("colour", hex);
+      els.hpBackdropSwatches.appendChild(sw);
+    }
+  }
+  function sendBackdrop(mode, colour) {
+    backdropMode = mode;
+    renderBackdropUI();
+    request("hostControl", { action: "backdrop", mode, colour: colour || null })
+      .catch(() => { /* refused (e.g. nothing pinned): the control event restores state */ });
+  }
+  $("hpBackdropColour").onclick = () => sendBackdrop("colour");
+  $("hpBackdropWallpaper").onclick = () => sendBackdrop("wallpaper");
+  $("hpBackdropLogo").onclick = () => sendBackdrop("logobg");
+  els.hpBackdropHex.onchange = () => {
+    let v = els.hpBackdropHex.value.trim();
+    if (v && !v.startsWith("#")) v = "#" + v;
+    if (/^#[0-9a-fA-F]{6}$/.test(v)) sendBackdrop("colour", v.toLowerCase());
+    else els.hpBackdropHex.value = "";
+  };
 
   // Background colour of the logo/title block. The first swatch is the
   // default dark; light backgrounds flip the text dark automatically.
@@ -865,6 +920,10 @@
       els.hpMuteAllBtn.classList.toggle("active", allMuted);
       els.hpMuteAllBtn.textContent = allMuted ? "Unmute all" : "Mute all";
       updateServerRecTip(); // the row dot's mute line follows
+    }
+    if (control.backdrop?.mode && control.backdrop.mode !== backdropMode) {
+      backdropMode = control.backdrop.mode;
+      if (isHost) renderBackdropUI();
     }
     applyLayout();
     applyTitleBg();
@@ -2047,6 +2106,17 @@
       };
       eventHandlers.consumerClosed = ({ consumerId }) => dropConsumer(consumerId);
       eventHandlers.control = (c) => applyControl(c);
+      eventHandlers.theme = (t) => {
+        // The host switched the backdrop: colour and/or image
+        if (t.bg) els.grid.style.backgroundColor = t.bg;
+        if (t.wallpaper) {
+          els.grid.style.backgroundImage = `url(${t.wallpaper})`;
+          els.session.classList.add("wallpapered");
+        } else {
+          els.grid.style.backgroundImage = "";
+          els.session.classList.remove("wallpapered");
+        }
+      };
       eventHandlers.recordingStarted = ({ mode, upload }) => {
         if (mode === "browser" && upload) startSelfRecording(upload);
         else setRecIndicator(true);
@@ -2120,6 +2190,17 @@
       };
       eventHandlers.consumerClosed = ({ consumerId }) => dropConsumer(consumerId);
       eventHandlers.control = (c) => applyControl(c);
+      eventHandlers.theme = (t) => {
+        // The host switched the backdrop: colour and/or image
+        if (t.bg) els.grid.style.backgroundColor = t.bg;
+        if (t.wallpaper) {
+          els.grid.style.backgroundImage = `url(${t.wallpaper})`;
+          els.session.classList.add("wallpapered");
+        } else {
+          els.grid.style.backgroundImage = "";
+          els.session.classList.remove("wallpapered");
+        }
+      };
       eventHandlers.overlay = playDomOverlay;
       eventHandlers.intro = playDomIntro;
       drainEarlyEvents();

@@ -157,6 +157,10 @@
       <button id="hpTitleColorsBtn" class="hp-btn">Title colour</button>
       <button type="button" class="info-btn" data-tip="Banner colours: the colour of everyone's name banners.&#10;Title colour: the background of the logo/title block.&#10;Each opens swatches and a hex box." aria-label="About the colour tools"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5h.01"/></svg></button>
     </div>
+    <div class="hp-row">
+      <button id="hpBackdropBtn" class="hp-btn">Backdrop</button>
+      <button type="button" class="info-btn" data-tip="Switch the show's background live - between segments, say.&#10;Colour: any of the palette, applied to every screen and the stream.&#10;Wallpaper: the image uploaded in Themes.&#10;Logo: the generated logo background saved in Themes.&#10;A recording keeps the backdrop it started with." aria-label="About the backdrop control"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5h.01"/></svg></button>
+    </div>
     <!-- Both palettes share one layout: three rows of six, the hex box
          filling the right half of the third row -->
     <div id="hpBannerPop" class="hp-pop" hidden>
@@ -173,6 +177,17 @@
       <div class="hp-palette">
         <div id="hpTitleSwatches" style="display:contents"></div>
         <input type="text" id="hpTitleHex" class="hp-hex" maxlength="7" spellcheck="false" placeholder="#hex" aria-label="Title block colour hex code">
+      </div>
+    </div>
+    <div id="hpBackdropPop" class="hp-pop" hidden>
+      <div class="hp-seg" role="group" aria-label="Backdrop kind">
+        <button id="hpBackdropColour" class="hp-btn" aria-pressed="true">Colour</button>
+        <button id="hpBackdropWallpaper" class="hp-btn" aria-pressed="false">Wallpaper</button>
+        <button id="hpBackdropLogo" class="hp-btn" aria-pressed="false">Logo</button>
+      </div>
+      <div class="hp-palette" id="hpBackdropPalette" style="margin-top:0.4rem">
+        <div id="hpBackdropSwatches" style="display:contents"></div>
+        <input type="text" id="hpBackdropHex" class="hp-hex" maxlength="7" spellcheck="false" placeholder="#hex" aria-label="Backdrop colour hex code">
       </div>
     </div>
     <hr class="hp-divider">

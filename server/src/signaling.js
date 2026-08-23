@@ -7,7 +7,8 @@ import fs from "node:fs/promises";
 import { config } from "./config.js";
 import { createWebRtcTransport } from "./media.js";
 import {
-  getOrCreateRoom, addPeer, removePeer, peerSummary, broadcast, pinTheme
+  getOrCreateRoom, addPeer, removePeer, peerSummary, broadcast, pinTheme,
+  activeBackdropUrl
 } from "./rooms.js";
 import { iceServers } from "./turn.js";
 import { isAuthedRequest } from "./auth.js";
@@ -127,11 +128,18 @@ export function attachSignaling() {
               recordingSince: activeRecording(room.id)?.startedAt || null,
               theme: {
                 // The pinned theme: identical for everyone until the
-                // room empties, however the settings change meanwhile
+                // room empties, however the settings change meanwhile.
+                // The backdrop within it can be switched live by the
+                // host, between copies pinned at first join.
                 title: room.title,
                 logo: room.theme.logoUrl,
                 bg: room.theme.bg,
-                wallpaper: room.theme.wallpaperUrl
+                wallpaper: activeBackdropUrl(room),
+                backdrop: room.theme.active,
+                backdrops: {
+                  wallpaper: !!room.theme.wallpaperPath,
+                  logobg: !!room.theme.logobgPath
+                }
               },
               peers: [...room.peers.values()]
                 .filter((p) => p.id !== peer.id && p.role !== "viewer")
@@ -337,6 +345,30 @@ export function attachSignaling() {
                 const recScale = activeRecording(room.id);
                 if (recScale) recScale.titleScale = s;
                 if (isStreaming(room.id)) refreshStream(room.id);
+                break;
+              }
+              case "backdrop": {
+                // Switch the show's backdrop live: flat colour, the
+                // pinned wallpaper, or the pinned logo background.
+                // Everyone's screen and the stream follow; a recording
+                // keeps the backdrop it started with, like titlePos.
+                const mode = String(data.mode || "");
+                if (!["colour", "wallpaper", "logobg"].includes(mode)) return fail("bad backdrop");
+                const t = room.theme;
+                if (mode === "wallpaper" && !t.wallpaperPath) return fail("No wallpaper uploaded.");
+                if (mode === "logobg" && !t.logobgPath) return fail("No logo background saved.");
+                if (data.colour != null) {
+                  if (!/^#[0-9a-fA-F]{6}$/.test(String(data.colour))) return fail("bad colour");
+                  t.bg = String(data.colour).toLowerCase();
+                }
+                t.active = mode;
+                t.rev++;
+                c.backdrop = { mode, colour: t.bg };
+                broadcast(room, null, {
+                  event: "theme",
+                  data: { bg: t.bg, wallpaper: activeBackdropUrl(room) }
+                });
+                if (isStreaming(room.id)) refreshStream(room.id, 5000);
                 break;
               }
               case "titleBg": {

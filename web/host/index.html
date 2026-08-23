@@ -90,8 +90,18 @@
       <!-- Settings: themes (accent + wallpaper) -->
       <section id="pane-themes" class="stack" hidden>
         <div class="panel">
+          <h2>Background</h2>
+          <p class="hint" style="margin-bottom:0.6rem">What sessions open with. During a show, the host panel's <b>Backdrop</b> button switches between all three live - handy when a new segment wants a new look.</p>
+          <div style="display:flex; gap:0.5rem; flex-wrap:wrap">
+            <button class="btn" id="bgModeColour" aria-pressed="false">Colour</button>
+            <button class="btn" id="bgModeWallpaper" aria-pressed="false">Wallpaper</button>
+            <button class="btn" id="bgModeLogobg" aria-pressed="false">Logo background</button>
+            <span class="msg ok" id="bgModeMsg" hidden>✓ Saved</span>
+          </div>
+        </div>
+        <div class="panel">
           <h2>Podcast logo</h2>
-          <p class="hint" style="margin-bottom:0.5rem">Shown above the episode title on the video - and baked into recordings and streams. About 250×50 pixels works best. PNG with transparency looks nicest; JPEG or WebP also fine, up to 2 MB.</p>
+          <p class="hint" style="margin-bottom:0.5rem">Shown above the episode title on the video - and baked into recordings and streams. About 250×50 pixels works best. <b>A PNG with a transparent background is strongly recommended</b> - it sits cleanly on the video, and the generated logo backgrounds come out much sharper from it. JPEG or WebP also work, up to 2 MB.</p>
           <div class="wallpaper-preview" id="logoPreview" style="aspect-ratio: 5 / 1; background-size: contain; background-repeat: no-repeat; background-position: center">No logo uploaded</div>
           <div style="display:flex; gap:0.6rem; margin-top:0.8rem">
             <button class="btn" id="logoPick">Upload logo</button>
@@ -122,7 +132,7 @@
         </div>
         <div class="panel">
           <h2>Logo background</h2>
-          <p class="hint" style="margin-bottom:0.5rem">A third option: a background generated from your logo, right here. Six styles - from a 3D scatter of hundreds of turned copies to neat lined-up rows and a single corner watermark - in whichever colour suits the show. Shuffle until one feels right, then set it as the wallpaper.</p>
+          <p class="hint" style="margin-bottom:0.5rem">A third option: a background generated from your logo, right here. Six styles - from a 3D scatter of hundreds of turned copies to neat lined-up rows and a single corner watermark - in whichever colour suits the show. Shuffle until one feels right, then save it: it becomes its own backdrop, separate from the wallpaper, so shows can switch between all three.</p>
           <div style="display:flex; gap:0.5rem; margin-bottom:0.6rem; flex-wrap:wrap; align-items:center">
             <div id="logoBgStyles" style="display:flex; gap:0.5rem; flex-wrap:wrap"></div>
             <span style="flex-basis:100%"></span>
@@ -136,8 +146,8 @@
           <canvas id="logoBgCanvas" width="1920" height="1080" style="width:100%; aspect-ratio:16/9; border-radius:10px; border:1px solid var(--border); display:block; background:var(--bg)"></canvas>
           <div style="display:flex; gap:0.6rem; margin-top:0.8rem; align-items:center">
             <button class="btn" id="logoBgShuffle">Shuffle</button>
-            <button class="btn primary" id="logoBgUse">Use as wallpaper</button>
-            <span class="msg ok" id="logoBgMsg" hidden>✓ Set as wallpaper</span>
+            <button class="btn primary" id="logoBgUse">Save for shows</button>
+            <span class="msg ok" id="logoBgMsg" hidden>✓ Saved</span>
           </div>
           <p class="hint" id="logoBgHint" style="margin-top:0.5rem" hidden>Upload a logo first - the collage is drawn from it.</p>
         </div>

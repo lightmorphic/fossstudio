@@ -683,6 +683,8 @@
     updateWallpaperPreview(s.wallpaper);
     updateLogoPreview(!!s.logo);
     updateAdPreview(!!s.adBanner);
+    bgMode = s.backgroundMode || (s.wallpaper ? "wallpaper" : "colour");
+    renderBgMode();
     initLogoBg().catch(() => {});
   }
 
@@ -954,6 +956,24 @@
     }).then(async (r) => { if (!r.ok) throw new Error((await r.json()).error); });
     updateWallpaperPreview("yes");
   };
+  // ---------- background mode: what sessions open with ----------
+  let bgMode = null;
+  function renderBgMode() {
+    for (const [id, mode] of [["bgModeColour", "colour"], ["bgModeWallpaper", "wallpaper"], ["bgModeLogobg", "logobg"]]) {
+      $(id).setAttribute("aria-pressed", String(bgMode === mode));
+    }
+  }
+  async function saveBgMode(mode) {
+    bgMode = mode;
+    renderBgMode();
+    await apiFetch("/api/settings", { method: "PUT", body: JSON.stringify({ backgroundMode: mode }) });
+    $("bgModeMsg").hidden = false;
+    setTimeout(() => { $("bgModeMsg").hidden = true; }, 2000);
+  }
+  $("bgModeColour").onclick = () => saveBgMode("colour");
+  $("bgModeWallpaper").onclick = () => saveBgMode("wallpaper");
+  $("bgModeLogobg").onclick = () => saveBgMode("logobg");
+
   // ---------- logo background: the collage generator ----------
   // The host's logo scattered in dozens of ghosted, tilted positions
   // over their background colour - drawn here in the browser, saved
@@ -1253,8 +1273,9 @@
   $("logoBgUse").onclick = () => {
     $("logoBgCanvas").toBlob(async (blob) => {
       if (!blob) return;
-      await fetch("/api/wallpaper", { method: "POST", headers: { "Content-Type": "image/png" }, body: blob });
-      updateWallpaperPreview(true);
+      // Its own slot, separate from the uploaded wallpaper, so shows
+      // can switch between colour, wallpaper and this one live
+      await fetch("/api/logobg", { method: "POST", headers: { "Content-Type": "image/png" }, body: blob });
       $("logoBgMsg").hidden = false;
       setTimeout(() => { $("logoBgMsg").hidden = true; }, 2200);
     }, "image/png");

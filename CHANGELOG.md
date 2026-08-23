@@ -4,6 +4,18 @@ All notable changes to FOSSStudio are documented here.
 
 ## Unreleased
 
+- **Switch the backdrop live, mid-show.** The host panel gains a
+  Backdrop control: flat colour (full palette and hex), the uploaded
+  wallpaper, or the saved logo background - one click and every
+  screen and the stream follow, so a new segment can get a new look.
+  All three backdrops are pinned as copies when the room forms, so
+  the one-look-per-show rule still holds against dashboard edits;
+  only this deliberate control changes anything, and a recording
+  keeps the backdrop it started with, like the title position. Themes
+  gains a matching selector for what sessions open with, the
+  generated logo background now saves to its own slot (no longer
+  overwriting the wallpaper), and the logo section now recommends a
+  transparent PNG.
 - The logo background generator grows from two styles to six:
   **Scatter** (the 3D random collage), **Mosaic** (the dense flat
   pattern), and a new lined-up family all drawn as a lighter shade of

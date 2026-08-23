@@ -58,11 +58,17 @@ export async function pinTheme(room, session, settings) {
   const theme = {
     bg: settings.bg || null,
     logoUrl: null, logoPath: null,
-    wallpaperUrl: null, wallpaperPath: null
+    wallpaperUrl: null, wallpaperPath: null,
+    logobgUrl: null, logobgPath: null,
+    // Which backdrop the show wears right now. All three are pinned,
+    // so the host can switch between them live without the dashboard
+    // being able to change what any of them look like mid-show.
+    active: "colour",
+    rev: 0
   };
   const dir = path.join(config.dataDir, "banners", room.id);
   await fs.mkdir(dir, { recursive: true });
-  for (const [kind, file] of [["logo", settings.logo], ["wallpaper", settings.wallpaper]]) {
+  for (const [kind, file] of [["logo", settings.logo], ["wallpaper", settings.wallpaper], ["logobg", settings.logoBackground]]) {
     if (!file) continue;
     const src = path.join(config.dataDir, "uploads", path.basename(file));
     const dst = path.join(dir, `theme-${kind}${path.extname(file)}`);
@@ -72,7 +78,30 @@ export async function pinTheme(room, session, settings) {
       theme[`${kind}Url`] = `/api/room-theme/${room.id}/${kind}`;
     } catch { /* source vanished: theme falls back to the colour */ }
   }
+  const wanted = settings.backgroundMode
+    || (settings.wallpaper ? "wallpaper" : "colour");
+  theme.active = wanted === "wallpaper" && theme.wallpaperPath ? "wallpaper"
+    : wanted === "logobg" && theme.logobgPath ? "logobg"
+    : "colour";
   room.theme = theme;
+}
+
+// The image behind the show under the current backdrop choice - null
+// means the flat colour. One helper, used by clients' URLs, the stream
+// compositor and recording pinning alike, so they can never disagree.
+export function activeBackdropPath(room) {
+  const t = room.theme;
+  if (!t) return null;
+  if (t.active === "wallpaper") return t.wallpaperPath;
+  if (t.active === "logobg") return t.logobgPath;
+  return null;
+}
+export function activeBackdropUrl(room) {
+  const t = room.theme;
+  if (!t) return null;
+  if (t.active === "wallpaper" && t.wallpaperPath) return `${t.wallpaperUrl}?v=${t.rev}`;
+  if (t.active === "logobg" && t.logobgPath) return `${t.logobgUrl}?v=${t.rev}`;
+  return null;
 }
 
 export function addPeer(room, { name, tagline, role, socket }) {

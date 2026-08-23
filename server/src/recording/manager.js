@@ -16,6 +16,7 @@
 // finishes the job, instead of the recording being stuck on
 // "processing" forever with no active render behind it.
 import crypto from "node:crypto";
+import { activeBackdropPath } from "../rooms.js";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { config } from "../config.js";
@@ -167,7 +168,7 @@ export async function startRecording(room, mode) {
   // Background for the composite: the room's pinned theme, so the video
   // matches what everyone saw even if settings changed mid-session
   rec.bg = room.theme?.bg || null;
-  rec.wallpaper = room.theme?.wallpaperPath || null;
+  rec.wallpaper = activeBackdropPath(room) || null;
   await fs.mkdir(path.join(recDir(recId), "raw"), { recursive: true });
   active.set(room.id, rec);
 
