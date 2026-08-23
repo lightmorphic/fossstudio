@@ -11,13 +11,13 @@ All notable changes to FOSSStudio are documented here.
   plus your own background colour; logos without transparency work
   too (bright marks become the stamp, the dark backing falls away).
 - A third background option beside the colour and the wallpaper
-  upload: **Logo background**. Your podcast logo scattered and tilted
-  in dozens of ghosted positions over your background colour - big
-  blurred copies deep in the frame, small crisp ones near, a gentle
-  vignette calming the centre where the tiles sit. Generated in the
-  dashboard, shuffled until one feels right, and saved through the
-  ordinary wallpaper slot, so recordings and streams carry it like
-  any other wallpaper.
+  upload: **Logo background**. The collage style is a dense field of
+  hundreds of small copies of your podcast logo, each turned in its
+  own 3D lean with its own size and shade - crisp, not ghosted - over
+  your background colour, with a gentle vignette calming the centre
+  where the tiles sit. Generated in the dashboard, shuffled until one
+  feels right, and saved through the ordinary wallpaper slot, so
+  recordings and streams carry it like any other wallpaper.
 - fossstudio.org rebuilt as a run-sheet: light and dark modes with a
   remembered toggle, cue-numbered sections, screenshots of the current
   UI in broadcast-monitor frames (fresh fake guests included), an
