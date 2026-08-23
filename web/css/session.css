@@ -938,6 +938,15 @@ body.dim-ui .host-panel:hover { opacity: 1; }
 .hp-row:has(> .info-btn) { flex-wrap: nowrap; gap: 0.2rem; }
 .hp-row:has(> .info-btn) .hp-btn { flex: 1 1 auto; min-width: 0; padding-inline: 0.3rem; }
 
+/* The backdrop pop's segmented kind switch */
+.hp-seg { display: flex; gap: 0.2rem; }
+.hp-seg .hp-btn { flex: 1 1 auto; min-width: 0; padding-inline: 0.3rem; }
+.hp-seg .hp-btn[aria-pressed="true"] {
+  background: var(--lm-accent);
+  color: var(--lm-on-accent);
+  border-color: transparent;
+}
+
 /* Tooltips ride the shared bubble: css/tip.css + js/tip.js */
 
 /* OBS clean feed (?output=1): nothing on screen but the show itself */

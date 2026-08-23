@@ -24,6 +24,12 @@ export async function updateSettings(uid, patch) {
   if (patch.adBanner === null || typeof patch.adBanner === "string") {
     clean.adBanner = patch.adBanner;
   }
+  if (patch.logoBackground === null || typeof patch.logoBackground === "string") {
+    clean.logoBackground = patch.logoBackground;
+  }
+  if (["colour", "wallpaper", "logobg"].includes(patch.backgroundMode)) {
+    clean.backgroundMode = patch.backgroundMode;
+  }
   if (typeof patch.streamUrl === "string") {
     const u = patch.streamUrl.trim();
     // file: destinations are for automated tests only

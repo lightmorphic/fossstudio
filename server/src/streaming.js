@@ -12,6 +12,7 @@ import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { config } from "./config.js";
 import { titleWidth, LAYOUT, tileLayout } from "./composite.js";
+import { activeBackdropPath } from "./rooms.js";
 import { notifyLive } from "./livechat.js";
 import { saveIndex } from "./recording/manager.js";
 
@@ -330,7 +331,7 @@ async function launch(state) {
   // The room's pinned theme, so the stream matches what everyone sees
   // even if settings changed mid-session
   const bgIdx = nextIdx++;
-  const wall = room.theme?.wallpaperPath;
+  const wall = activeBackdropPath(room);
   let bgArgs = null;
   if (wall && await fs.access(wall).then(() => true, () => false)) {
     // Pre-scale the wallpaper to the canvas once (cheaper than per-frame)

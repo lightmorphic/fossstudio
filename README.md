@@ -105,12 +105,18 @@ dashboard.
   grid, or a single corner watermark, all from your logo's silhouette - the
   base colour picked exactly like the session background (the same
   eleven swatches plus a hex code), shuffled in the dashboard until
-  one feels right, saved as the wallpaper.
+  one feels right, saved as its own backdrop. A selector in Themes picks what
+  sessions open with - and the host can **switch the backdrop live
+  mid-show** from the host panel (colour, wallpaper or logo
+  background), a new look for a new segment, on every screen and the
+  stream at once.
 - **One look per show:** the theme (wallpaper, background colour, logo,
   episode title) is pinned the moment the first person joins and holds
   until the session empties - everyone, the recording and the stream see
   the same thing, even if settings change or the session is renamed
-  mid-show.
+  mid-show. The host's live backdrop switch is the one deliberate
+  exception, and it switches between copies pinned at that same
+  moment; a recording keeps the backdrop it started with.
 - **Noise suppression:** RNNoise in the guest's browser (WASM worklet).
 - **Email:** SMTP configured in the dashboard; all outgoing mail uses a
   branded HTML template with a plain-text fallback.
