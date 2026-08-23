@@ -229,7 +229,14 @@ migrateIntros().then((n) => {
 
 process.on("uncaughtException", (err) => {
   console.error("uncaught exception:", err.stack || err.message);
-  sendAlertEmail("FOSSStudio hit an error", String(err.stack || err.message)).catch(() => {});
+  // Exit once the alert is away (or after 3s regardless): a process
+  // that limps on after an uncaught throw is in an unknown state - a
+  // failed port bind used to leave a zombie server squatting RAM
+  // forever. Dying cleanly lets Docker restart it fresh.
+  const bye = () => process.exit(1);
+  sendAlertEmail("FOSSStudio hit an error", String(err.stack || err.message))
+    .catch(() => {}).finally(bye);
+  setTimeout(bye, 3000).unref();
 });
 process.on("unhandledRejection", (err) => {
   console.error("unhandled rejection:", err?.stack || String(err));
