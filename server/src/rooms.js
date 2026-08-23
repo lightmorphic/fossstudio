@@ -59,16 +59,17 @@ export async function pinTheme(room, session, settings) {
     bg: settings.bg || null,
     logoUrl: null, logoPath: null,
     wallpaperUrl: null, wallpaperPath: null,
-    logobgUrl: null, logobgPath: null,
-    // Which backdrop the show wears right now. All three are pinned,
-    // so the host can switch between them live without the dashboard
-    // being able to change what any of them look like mid-show.
+    // A backdrop the host generates during the show (their logo laid
+    // out in a chosen style and colour) lands here
+    backdropUrl: null, backdropPath: null,
+    // Which backdrop the show wears right now. The pinned copies mean
+    // the dashboard can't change what any look means mid-show.
     active: "colour",
     rev: 0
   };
   const dir = path.join(config.dataDir, "banners", room.id);
   await fs.mkdir(dir, { recursive: true });
-  for (const [kind, file] of [["logo", settings.logo], ["wallpaper", settings.wallpaper], ["logobg", settings.logoBackground]]) {
+  for (const [kind, file] of [["logo", settings.logo], ["wallpaper", settings.wallpaper]]) {
     if (!file) continue;
     const src = path.join(config.dataDir, "uploads", path.basename(file));
     const dst = path.join(dir, `theme-${kind}${path.extname(file)}`);
@@ -91,14 +92,14 @@ export function activeBackdropPath(room) {
   const t = room.theme;
   if (!t) return null;
   if (t.active === "wallpaper") return t.wallpaperPath;
-  if (t.active === "logobg") return t.logobgPath;
+  if (t.active === "generated") return t.backdropPath;
   return null;
 }
 export function activeBackdropUrl(room) {
   const t = room.theme;
   if (!t) return null;
   if (t.active === "wallpaper" && t.wallpaperPath) return `${t.wallpaperUrl}?v=${t.rev}`;
-  if (t.active === "logobg" && t.logobgPath) return `${t.logobgUrl}?v=${t.rev}`;
+  if (t.active === "generated" && t.backdropPath) return `${t.backdropUrl}?v=${t.rev}`;
   return null;
 }
 

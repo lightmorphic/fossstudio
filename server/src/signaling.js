@@ -138,7 +138,7 @@ export function attachSignaling() {
                 backdrop: room.theme.active,
                 backdrops: {
                   wallpaper: !!room.theme.wallpaperPath,
-                  logobg: !!room.theme.logobgPath
+                  logo: !!room.theme.logoPath
                 }
               },
               peers: [...room.peers.values()]
@@ -348,22 +348,39 @@ export function attachSignaling() {
                 break;
               }
               case "backdrop": {
-                // Switch the show's backdrop live: flat colour, the
-                // pinned wallpaper, or the pinned logo background.
+                // Switch the show's backdrop live. Two ideas only:
+                // colour (solid, or the host's browser generates a
+                // logo layout in that colour and sends the PNG along,
+                // like banner snapshots), or the pinned wallpaper.
                 // Everyone's screen and the stream follow; a recording
                 // keeps the backdrop it started with, like titlePos.
                 const mode = String(data.mode || "");
-                if (!["colour", "wallpaper", "logobg"].includes(mode)) return fail("bad backdrop");
+                if (!["colour", "wallpaper", "generated"].includes(mode)) return fail("bad backdrop");
                 const t = room.theme;
-                if (mode === "wallpaper" && !t.wallpaperPath) return fail("No wallpaper uploaded.");
-                if (mode === "logobg" && !t.logobgPath) return fail("No logo background saved.");
+                if (mode === "wallpaper" && !t.wallpaperPath) return fail("No wallpaper uploaded in Themes.");
                 if (data.colour != null) {
                   if (!/^#[0-9a-fA-F]{6}$/.test(String(data.colour))) return fail("bad colour");
                   t.bg = String(data.colour).toLowerCase();
+                  // The in-show pick is the colour setting now - it
+                  // persists as the next session's starting colour
+                  updateSettings(room.ownerId, { bg: t.bg }).catch(() => {});
+                }
+                if (mode === "generated") {
+                  const PREFIX = "data:image/png;base64,";
+                  if (typeof data.png !== "string" || !data.png.startsWith(PREFIX) ||
+                      data.png.length > 6_000_000) {
+                    return fail("bad backdrop image");
+                  }
+                  const buf = Buffer.from(data.png.slice(PREFIX.length), "base64");
+                  const dir = path.join(config.dataDir, "banners", room.id);
+                  await fs.mkdir(dir, { recursive: true });
+                  await fs.writeFile(path.join(dir, "theme-backdrop.png"), buf);
+                  t.backdropPath = path.join(dir, "theme-backdrop.png");
+                  t.backdropUrl = `/api/room-theme/${room.id}/backdrop`;
                 }
                 t.active = mode;
                 t.rev++;
-                c.backdrop = { mode, colour: t.bg };
+                c.backdrop = { mode, colour: t.bg, style: data.style || null };
                 broadcast(room, null, {
                   event: "theme",
                   data: { bg: t.bg, wallpaper: activeBackdropUrl(room) }

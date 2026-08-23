@@ -183,11 +183,14 @@
       <div class="hp-seg" role="group" aria-label="Backdrop kind">
         <button id="hpBackdropColour" class="hp-btn" aria-pressed="true">Colour</button>
         <button id="hpBackdropWallpaper" class="hp-btn" aria-pressed="false">Wallpaper</button>
-        <button id="hpBackdropLogo" class="hp-btn" aria-pressed="false">Logo</button>
       </div>
-      <div class="hp-palette" id="hpBackdropPalette" style="margin-top:0.4rem">
-        <div id="hpBackdropSwatches" style="display:contents"></div>
-        <input type="text" id="hpBackdropHex" class="hp-hex" maxlength="7" spellcheck="false" placeholder="#hex" aria-label="Backdrop colour hex code">
+      <div id="hpBackdropColourTools">
+        <div class="hp-palette" style="margin-top:0.4rem">
+          <div id="hpBackdropSwatches" style="display:contents"></div>
+          <input type="text" id="hpBackdropHex" class="hp-hex" maxlength="7" spellcheck="false" placeholder="#hex" aria-label="Backdrop colour hex code">
+        </div>
+        <!-- Solid, or the logo laid out in the picked colour -->
+        <div class="hp-styles" id="hpBackdropStyles" role="group" aria-label="Backdrop style"></div>
       </div>
     </div>
     <hr class="hp-divider">

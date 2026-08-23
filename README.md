@@ -99,17 +99,14 @@ dashboard.
   Browser Source and stream the show from OBS to any platform. The feed
   is invisible to everyone in the session and can never appear in the
   recording. Copy it from the session row in the dashboard.
-- **Backgrounds three ways:** a flat colour, an uploaded wallpaper, or
-  a generated **logo background** in six styles - a 3D scatter of hundreds of small turned copies,
-  a dense flat mosaic, aligned rows, brick offset, a tilted diagonal
-  grid, or a single corner watermark, all from your logo's silhouette - the
-  base colour picked exactly like the session background (the same
-  eleven swatches plus a hex code), shuffled in the dashboard until
-  one feels right, saved as its own backdrop. Every session opens on the colour;
-  the host can **switch the backdrop live mid-show** from the host
-  panel (colour, wallpaper or logo background - only what's actually
-  uploaded is offered), a new look for a new segment, on every screen
-  and the stream at once.
+- **Backdrops, switched live mid-show:** the host panel's Backdrop
+  control holds it all - pick a colour (palette or hex) and wear it
+  solid, or as any of six logo layouts generated on the spot from
+  your logo in that colour (a 3D scatter, a dense mosaic, aligned
+  rows, brick offset, a tilted diagonal grid, or a single corner
+  watermark) - or switch to the uploaded wallpaper. A new look for a
+  new segment, on every screen and the stream at once; sessions open
+  on the colour you used last.
 - **One look per show:** the theme (wallpaper, background colour, logo,
   episode title) is pinned the moment the first person joins and holds
   until the session empties - everyone, the recording and the stream see

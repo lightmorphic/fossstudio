@@ -488,7 +488,8 @@
 
   function applyTheme(theme) {
     if (theme.backdrops) backdrops = theme.backdrops;
-    if (theme.backdrop) backdropMode = theme.backdrop;
+    if (theme.backdrop) backdropMode = theme.backdrop === "wallpaper" ? "wallpaper" : "colour";
+    if (theme.bg) backdropColour = theme.bg;
     if (isHost) renderBackdropUI();
     document.title = theme.title ? `${theme.title} - live` : "FOSSStudio - live";
     document.getElementById("bannerTitle").textContent = theme.title || "";
@@ -736,51 +737,283 @@
   els.hpTitleColorsBtn.onclick = togglePop(els.hpTitlePop, els.hpBannerPop, els.hpBackdropPop);
   els.hpBackdropBtn.onclick = togglePop(els.hpBackdropPop, els.hpBannerPop, els.hpTitlePop);
 
+  // ---------- Backdrop generators (shared shapes with the old
+  // dashboard generator, now living where the choice is made) ----------
+  const GRID_SIZES = [44, 64, 92, 130];
+  let logoBgStep = 1;
+  function makeStamp(img, tint) {
+    const c = document.createElement("canvas");
+    c.width = img.width; c.height = img.height;
+    const x = c.getContext("2d");
+    x.drawImage(img, 0, 0);
+    const d = x.getImageData(0, 0, c.width, c.height);
+    let transparent = 0;
+    for (let i = 3; i < d.data.length; i += 4) if (d.data[i] < 40) transparent++;
+    const hasAlpha = transparent > d.data.length / 4 * 0.05;
+    const tc = [parseInt(tint.slice(1, 3), 16), parseInt(tint.slice(3, 5), 16), parseInt(tint.slice(5, 7), 16)];
+    for (let i = 0; i < d.data.length; i += 4) {
+      const lum = (d.data[i] * 0.299 + d.data[i + 1] * 0.587 + d.data[i + 2] * 0.114) / 255;
+      d.data[i] = tc[0]; d.data[i + 1] = tc[1]; d.data[i + 2] = tc[2];
+      // Floor the luminance mask: a solid logo's dark backing sits
+      // well under 0.3 and must map to fully transparent, or every
+      // stamp carries a faint rectangular halo of its canvas
+      d.data[i + 3] = hasAlpha ? d.data[i + 3]
+        : Math.round(Math.max(0, (lum - 0.3) / 0.7) * 255);
+    }
+    x.putImageData(d, 0, 0);
+    // Trim to the visible bounding box, so stamps pack by their marks
+    // rather than by whatever padding the source file carried
+    let minX = c.width, minY = c.height, maxX = 0, maxY = 0;
+    for (let py = 0; py < c.height; py++) {
+      for (let px = 0; px < c.width; px++) {
+        if (d.data[(py * c.width + px) * 4 + 3] > 30) {
+          if (px < minX) minX = px; if (px > maxX) maxX = px;
+          if (py < minY) minY = py; if (py > maxY) maxY = py;
+        }
+      }
+    }
+    if (maxX <= minX || maxY <= minY) return c;
+    const t = document.createElement("canvas");
+    t.width = maxX - minX + 1; t.height = maxY - minY + 1;
+    t.getContext("2d").drawImage(c, -minX, -minY);
+    return t;
+  }
+  function mixHex(hex, withHex, t) {
+    const a = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    const b = [1, 3, 5].map((i) => parseInt(withHex.slice(i, i + 2), 16));
+    return "#" + a.map((v, i) => Math.round(v + (b[i] - v) * t).toString(16).padStart(2, "0")).join("");
+  }
+  function drawLogoCollage(canvas, img, baseColour) {
+    const x = canvas.getContext("2d");
+    const W = canvas.width, H = canvas.height;
+    x.setTransform(1, 0, 0, 1, 0, 0);
+    x.filter = "none";
+    x.globalAlpha = 1;
+    x.fillStyle = baseColour;
+    x.fillRect(0, 0, W, H);
+    // The logos are drawn as SHADES of the base colour, not in their
+    // own colours: four silhouette stamps mixed different distances
+    // towards white and black, picked per copy for depth
+    const shades = [
+      mixHex(baseColour, "#ffffff", 0.16),
+      mixHex(baseColour, "#ffffff", 0.30),
+      mixHex(baseColour, "#ffffff", 0.46),
+      mixHex(baseColour, "#000000", 0.22)
+    ].map((t) => makeStamp(img, t));
+    const ar = shades[0].width / shades[0].height;
+    // Jittered grid placement: one copy per cell fills the frame with
+    // no empty patches, while overlap is capped at neighbours' edges
+    const cellH = 58 + Math.random() * 14;
+    const cellW = cellH * Math.min(Math.max(ar, 0.7), 2.4);
+    for (let row = -1; row * cellH < H + cellH; row++) {
+      for (let col = -1; col * cellW < W + cellW; col++) {
+        const cx = col * cellW + cellW / 2 + (Math.random() - 0.5) * cellW * 0.4;
+        const cy = row * cellH + cellH / 2 + (Math.random() - 0.5) * cellH * 0.4;
+        const h = cellH * (0.8 + Math.random() * 0.55);
+        const w = h * ar;
+        x.setTransform(1, 0, 0, 1, cx, cy);
+        x.rotate((Math.random() - 0.5) * 1.6);            // up to ~46 deg
+        x.transform(1, (Math.random() - 0.5) * 0.5,       // the 3D lean
+                    (Math.random() - 0.5) * 0.5,
+                    0.62 + Math.random() * 0.38, 0, 0);   // foreshortening
+        x.globalAlpha = 0.75 + Math.random() * 0.25;      // the shade IS the colour
+        x.drawImage(shades[Math.floor(Math.random() * shades.length)], -w / 2, -h / 2, w, h);
+      }
+    }
+    // Gentle vignette so tiles sit on a calmer centre
+    x.setTransform(1, 0, 0, 1, 0, 0);
+    x.filter = "none";
+    x.globalAlpha = 1;
+    const g = x.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H);
+    g.addColorStop(0, "rgba(0,0,0,0)");
+    g.addColorStop(1, "rgba(0,0,0,0.22)");
+    x.fillStyle = g;
+    x.fillRect(0, 0, W, H);
+  }
+  function drawLogoPattern(canvas, img, baseColour) {
+    const x = canvas.getContext("2d");
+    const W = canvas.width, H = canvas.height;
+    x.setTransform(1, 0, 0, 1, 0, 0);
+    x.filter = "none";
+    x.globalAlpha = 1;
+    x.fillStyle = baseColour;
+    x.fillRect(0, 0, W, H);
+    const tint = mixHex(baseColour, "#ffffff", 0.46);
+    const stamp = makeStamp(img, tint);
+    const ar = stamp.width / stamp.height;
+    let y = -20;
+    while (y < H + 40) {
+      const rowH = 36 + Math.random() * 34;
+      let px = -20 + Math.random() * -30;
+      while (px < W + 40) {
+        const h = rowH * (0.82 + Math.random() * 0.36);
+        const w = h * ar;
+        x.setTransform(1, 0, 0, 1, px + w / 2, y + rowH / 2);
+        x.rotate((Math.random() - 0.5) * 0.24);
+        x.globalAlpha = 0.16 + Math.random() * 0.14;
+        x.drawImage(stamp, -w / 2, -h / 2, w, h);
+        px += w + 5 + Math.random() * 8;
+      }
+      y += rowH + 6 + Math.random() * 7;
+    }
+    // the reference's soft dark corners
+    x.setTransform(1, 0, 0, 1, 0, 0);
+    x.globalAlpha = 1;
+    const g = x.createRadialGradient(W / 2, H / 2, H * 0.3, W / 2, H / 2, H * 1.05);
+    g.addColorStop(0, "rgba(0,0,0,0)");
+    g.addColorStop(1, "rgba(0,0,0,0.3)");
+    x.fillStyle = g;
+    x.fillRect(0, 0, W, H);
+  }
+  function drawLogoGrid(canvas, img, baseColour, { offset = 0, angle = 0 } = {}) {
+    const x = canvas.getContext("2d");
+    const W = canvas.width, H = canvas.height;
+    x.setTransform(1, 0, 0, 1, 0, 0);
+    x.filter = "none";
+    x.globalAlpha = 1;
+    x.fillStyle = baseColour;
+    x.fillRect(0, 0, W, H);
+    const stamp = makeStamp(img, mixHex(baseColour, "#ffffff", 0.16));
+    const ar = stamp.width / stamp.height;
+    const h = GRID_SIZES[logoBgStep % GRID_SIZES.length];
+    const w = h * ar;
+    const gapX = w * 0.55, gapY = h * 0.75;
+    const pitchX = w + gapX, pitchY = h + gapY;
+    x.translate(W / 2, H / 2);
+    if (angle) x.rotate(angle);
+    // overdraw past the edges so a rotated grid still covers the frame
+    const spanX = Math.ceil((Math.hypot(W, H) / 2 + pitchX) / pitchX);
+    const spanY = Math.ceil((Math.hypot(W, H) / 2 + pitchY) / pitchY);
+    for (let row = -spanY; row <= spanY; row++) {
+      const shift = offset ? (row & 1 ? pitchX / 2 : 0) : 0;
+      for (let col = -spanX; col <= spanX; col++) {
+        x.drawImage(stamp, col * pitchX + shift - w / 2, row * pitchY - h / 2, w, h);
+      }
+    }
+    x.setTransform(1, 0, 0, 1, 0, 0);
+  }
+  function drawLogoWatermark(canvas, img, baseColour) {
+    const x = canvas.getContext("2d");
+    const W = canvas.width, H = canvas.height;
+    x.setTransform(1, 0, 0, 1, 0, 0);
+    x.filter = "none";
+    x.globalAlpha = 1;
+    x.fillStyle = baseColour;
+    x.fillRect(0, 0, W, H);
+    const stamp = makeStamp(img, mixHex(baseColour, "#ffffff", 0.12));
+    const ar = stamp.width / stamp.height;
+    // Shuffle cycles the corner: bottom-right, bottom-left, top-right, centre
+    const h = H * 0.52;
+    const w = h * ar;
+    const m = H * 0.06;
+    const spots = [
+      [W - w - m, H - h - m], [m, H - h - m], [W - w - m, m],
+      [(W - w) / 2, (H - h) / 2]
+    ];
+    const [px, py] = spots[logoBgStep % spots.length];
+    x.drawImage(stamp, px, py, w, h);
+  }
+
   // ---------- Backdrop: switch the show's background live ----------
   // Colour, the pinned wallpaper, or the pinned logo background - a
   // segment per kind, the palette shown for colour. Availability comes
   // from the pinned theme (a host without a wallpaper can't pick one).
-  let backdrops = { wallpaper: false, logobg: false };
+  // Two kinds: Colour (solid, or the logo laid out in the picked
+  // colour and style, generated right here and pushed like a banner
+  // snapshot) - or the pinned Wallpaper.
+  const BACKDROP_STYLES = [
+    ["solid", "Solid"], ["scatter", "Scatter"], ["mosaic", "Mosaic"],
+    ["grid", "Grid"], ["brick", "Brick"], ["diagonal", "Diagonal"], ["watermark", "Watermark"]
+  ];
+  let backdrops = { wallpaper: false, logo: false };
   let backdropMode = "colour";
+  let backdropColour = null;
+  let backdropStyle = "solid";
+  let backdropLogoImg = null;
+
   function renderBackdropUI() {
-    const segs = [
-      ["hpBackdropColour", "colour", true],
-      ["hpBackdropWallpaper", "wallpaper", backdrops.wallpaper],
-      ["hpBackdropLogo", "logobg", backdrops.logobg]
-    ];
-    for (const [id, mode, available] of segs) {
-      const b = $(id);
-      b.setAttribute("aria-pressed", String(backdropMode === mode));
-      b.disabled = !available;
-      if (!available) b.dataset.tip = mode === "wallpaper"
-        ? "No wallpaper uploaded in Themes" : "No logo background saved in Themes";
-      else b.removeAttribute("data-tip");
-    }
-    $("hpBackdropPalette").style.display = backdropMode === "colour" ? "" : "none";
+    $("hpBackdropColour").setAttribute("aria-pressed", String(backdropMode !== "wallpaper"));
+    const wp = $("hpBackdropWallpaper");
+    wp.setAttribute("aria-pressed", String(backdropMode === "wallpaper"));
+    wp.disabled = !backdrops.wallpaper;
+    if (!backdrops.wallpaper) wp.dataset.tip = "No wallpaper uploaded in Themes";
+    else wp.removeAttribute("data-tip");
+    $("hpBackdropColourTools").style.display = backdropMode === "wallpaper" ? "none" : "";
     els.hpBackdropSwatches.innerHTML = "";
     for (const hex of BANNER_COLOURS) {
       const sw = document.createElement("button");
-      sw.className = "hp-swatch" + (backdropMode === "colour" && hex === (control.backdrop?.colour || null) ? " active" : "");
+      sw.className = "hp-swatch" + (hex === backdropColour ? " active" : "");
       sw.style.background = hex;
       sw.dataset.tip = hex;
       sw.setAttribute("aria-label", `Backdrop colour ${hex}`);
-      sw.onclick = () => sendBackdrop("colour", hex);
+      sw.onclick = () => { backdropColour = hex; els.hpBackdropHex.value = hex; applyBackdropChoice(); };
       els.hpBackdropSwatches.appendChild(sw);
     }
+    const row = $("hpBackdropStyles");
+    row.innerHTML = "";
+    for (const [id, label] of BACKDROP_STYLES) {
+      const b = document.createElement("button");
+      b.className = "hp-btn";
+      b.textContent = label;
+      b.setAttribute("aria-pressed", String(backdropStyle === id));
+      const needsLogo = id !== "solid";
+      b.disabled = needsLogo && !backdrops.logo;
+      if (b.disabled) b.dataset.tip = "Upload a logo in Themes for the logo layouts";
+      b.onclick = () => { backdropStyle = id; applyBackdropChoice(); };
+      row.appendChild(b);
+    }
   }
-  function sendBackdrop(mode, colour) {
-    backdropMode = mode;
+
+  function backdropLogo() {
+    // The room's pinned logo, loaded once - the layouts draw from it
+    if (backdropLogoImg) return Promise.resolve(backdropLogoImg);
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => { backdropLogoImg = img; resolve(img); };
+      img.onerror = reject;
+      img.src = document.getElementById("bannerLogo")?.src || "";
+    });
+  }
+
+  async function applyBackdropChoice() {
+    backdropMode = "colour";
     renderBackdropUI();
-    request("hostControl", { action: "backdrop", mode, colour: colour || null })
-      .catch(() => { /* refused (e.g. nothing pinned): the control event restores state */ });
+    const colour = backdropColour || control.backdrop?.colour || "#14161a";
+    if (backdropStyle === "solid") {
+      request("hostControl", { action: "backdrop", mode: "colour", colour, style: "solid" })
+        .catch(() => {});
+      return;
+    }
+    try {
+      const img = await backdropLogo();
+      const canvas = document.createElement("canvas");
+      canvas.width = 1920; canvas.height = 1080;
+      const draw = {
+        scatter: () => drawLogoCollage(canvas, img, colour),
+        mosaic: () => drawLogoPattern(canvas, img, colour),
+        grid: () => drawLogoGrid(canvas, img, colour),
+        brick: () => drawLogoGrid(canvas, img, colour, { offset: 1 }),
+        diagonal: () => drawLogoGrid(canvas, img, colour, { offset: 1, angle: -0.32 }),
+        watermark: () => drawLogoWatermark(canvas, img, colour)
+      }[backdropStyle];
+      draw();
+      request("hostControl", {
+        action: "backdrop", mode: "generated", colour, style: backdropStyle,
+        png: canvas.toDataURL("image/png")
+      }).catch(() => {});
+    } catch { /* logo failed to load: nothing sent */ }
   }
-  $("hpBackdropColour").onclick = () => sendBackdrop("colour");
-  $("hpBackdropWallpaper").onclick = () => sendBackdrop("wallpaper");
-  $("hpBackdropLogo").onclick = () => sendBackdrop("logobg");
+
+  $("hpBackdropColour").onclick = () => { backdropMode = "colour"; renderBackdropUI(); };
+  $("hpBackdropWallpaper").onclick = () => {
+    backdropMode = "wallpaper";
+    renderBackdropUI();
+    request("hostControl", { action: "backdrop", mode: "wallpaper" }).catch(() => {});
+  };
   els.hpBackdropHex.onchange = () => {
     let v = els.hpBackdropHex.value.trim();
     if (v && !v.startsWith("#")) v = "#" + v;
-    if (/^#[0-9a-fA-F]{6}$/.test(v)) sendBackdrop("colour", v.toLowerCase());
+    if (/^#[0-9a-fA-F]{6}$/.test(v)) { backdropColour = v.toLowerCase(); applyBackdropChoice(); }
     else els.hpBackdropHex.value = "";
   };
 
@@ -921,8 +1154,10 @@
       els.hpMuteAllBtn.textContent = allMuted ? "Unmute all" : "Mute all";
       updateServerRecTip(); // the row dot's mute line follows
     }
-    if (control.backdrop?.mode && control.backdrop.mode !== backdropMode) {
-      backdropMode = control.backdrop.mode;
+    if (control.backdrop) {
+      backdropMode = control.backdrop.mode === "wallpaper" ? "wallpaper" : "colour";
+      if (control.backdrop.colour) backdropColour = control.backdrop.colour;
+      if (control.backdrop.style) backdropStyle = control.backdrop.style;
       if (isHost) renderBackdropUI();
     }
     applyLayout();

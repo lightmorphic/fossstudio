@@ -4,6 +4,16 @@ All notable changes to FOSSStudio are documented here.
 
 ## Unreleased
 
+- The backdrop system consolidated where the decisions actually
+  happen. Themes now holds just the two uploads - the podcast logo
+  and the wallpaper. Everything else lives in the host panel's
+  Backdrop control, two ideas only: **Colour** (pick a colour, then
+  Solid or any of the six logo layouts, generated on the spot from
+  the show's pinned logo in exactly that colour) or **Wallpaper**.
+  The colour picked in-show becomes the next session's starting
+  colour, and the layouts need nothing saved in advance - which also
+  removes the confusing "no logo background saved" refusal a host
+  with a perfectly good logo could hit.
 - **Switch the backdrop live, mid-show.** The host panel gains a
   Backdrop control: flat colour (full palette and hex), the uploaded
   wallpaper, or the saved logo background - one click and every
