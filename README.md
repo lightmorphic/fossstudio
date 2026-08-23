@@ -63,7 +63,12 @@ dashboard.
   count); it shows "not live" between shows, switching itself without
   anyone refreshing. A separate "YouTube" button pushes RTMP too -
   either output alone or both at once, one shared encode, each with
-  its own clock. When the channel stream ends, the exact video the
+  its own clock. When both run together, the YouTube picture alone
+  gains a small "Come and chat live at <your address>" tag in the
+  lower left, steering that audience to your chat - it never appears
+  on the channel page, the recording or the hosts' screens, and it
+  vanishes the moment the channel output stops. (The two different
+  pictures cost a second encode while the overlap lasts.) When the channel stream ends, the exact video the
   audience watched is stitched losslessly into a ready recording.
   While live, the chat docks into the host's session view so the host
   reads and answers the room under their banner name without leaving
