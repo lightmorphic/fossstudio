@@ -295,7 +295,6 @@
 
   // ---------- Mirror ----------
 
-  let chatTagText = null; // the bare address on the come-and-chat tag
   let mirrored = true;
   function applyMirror() {
     // The mirror is for the preview only - checking yourself works
@@ -1197,42 +1196,10 @@
     const title = hasBlock ? drawTitlePng(titleText) : null;
     // Only send when something actually changed - while live, the server
     // relaunches the stream to pick banners up, which costs a short blip
-    const chatTag = chatTagText ? drawChatTagPng(chatTagText) : null;
-    const payload = JSON.stringify([images, title, chatTag]);
+    const payload = JSON.stringify([images, title]);
     if (payload === lastBannerPayload || !Object.keys(images).length) return;
     lastBannerPayload = payload;
-    await request("bannerSnapshots", { images, title, chatTag });
-  }
-
-  // The come-and-chat pill for the YouTube output: a quiet dark
-  // capsule, the invitation in white, the address in the accent.
-  // Bottom-left of the YouTube picture only - the server overlays it
-  // solely on the RTMP leg, and only while the chat page is live too.
-  function drawChatTagPng(address) {
-    const c = document.createElement("canvas");
-    const x = c.getContext("2d");
-    const padX = 30, h = 84, r = h / 2;
-    const f1 = "600 26px Manrope, sans-serif";
-    const f2 = "800 30px Manrope, sans-serif";
-    const lead = "Come and chat live at  ";
-    x.font = f1;
-    const w1 = x.measureText(lead).width;
-    x.font = f2;
-    const w2 = x.measureText(address).width;
-    const W = Math.ceil(w1 + w2 + padX * 2);
-    c.width = W; c.height = h;
-    x.beginPath();
-    x.roundRect(0, 0, W, h, r);
-    x.fillStyle = "rgba(14, 16, 20, 0.78)";
-    x.fill();
-    x.textBaseline = "middle";
-    x.font = f1;
-    x.fillStyle = "#eceef1";
-    x.fillText(lead, padX, h / 2 + 1);
-    x.font = f2;
-    x.fillStyle = "#fbc711";
-    x.fillText(address, padX + w1, h / 2 + 1);
-    return c.toDataURL("image/png");
+    await request("bannerSnapshots", { images, title });
   }
 
   // The logo/title block for the composite, drawn at a 532px design
@@ -2273,7 +2240,6 @@
       isHost = info.role === "host";
       applyControl(info.control);
       applyTheme(info.theme);
-      if (info.chatTag) chatTagText = info.chatTag;
       els.hostPanel.hidden = !isHost; // sidebar is always open for the host
       els.dimBtn.hidden = !isHost;    // dimming is a host tool
       els.soundboardBtn.hidden = !isHost; // soundboard is a host tool
@@ -2430,7 +2396,6 @@
       selfId = info.peerId;
       applyControl(info.control);
       applyTheme(info.theme);
-      if (info.chatTag) chatTagText = info.chatTag;
       device = new mediasoupClient.Device();
       await device.load({ routerRtpCapabilities: info.routerRtpCapabilities });
       const params = await request("createTransport", { direction: "recv" });

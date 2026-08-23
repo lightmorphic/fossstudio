@@ -164,7 +164,13 @@ export async function stopOutput(roomId, target) {
 // either way. Each relaunch appends to the same playlist with a
 // discontinuity marker, so viewers ride through the blip and the
 // finished playlist is the whole show in order.
-async function hlsPieces(state, gen) {
+async function destArgs(state, gen) {
+  // RTMP-only launches skip the HLS side entirely
+  if (!state.outputs.channel) {
+    return state.rtmpUrl.startsWith("file:")
+      ? [state.rtmpUrl.slice(5)]
+      : ["-f", "flv", "-y", state.rtmpUrl];
+  }
   const dir = state.liveDir;
   const playlist = path.join(dir, "live.m3u8");
   // fMP4 segments with one init per generation: append_list rewrites
@@ -175,17 +181,6 @@ async function hlsPieces(state, gen) {
   const init = `init-${gen}.mp4`;
   const appending = await fs.access(playlist).then(() => true, () => false);
   const flags = `omit_endlist${appending ? "+append_list+discont_start" : ""}`;
-  return { playlist, seg, init, flags };
-}
-
-async function destArgs(state, gen) {
-  // RTMP-only launches skip the HLS side entirely
-  if (!state.outputs.channel) {
-    return state.rtmpUrl.startsWith("file:")
-      ? [state.rtmpUrl.slice(5)]
-      : ["-f", "flv", "-y", state.rtmpUrl];
-  }
-  const { playlist, seg, init, flags } = await hlsPieces(state, gen);
   if (!state.outputs.rtmp) {
     // A 60-entry sliding window keeps the manifest ~2KB however long
     // the show runs - with 1s segments an all-entries playlist grows
@@ -198,9 +193,7 @@ async function destArgs(state, gen) {
       "-hls_segment_filename", seg, "-y", playlist];
   }
   // tee: same encoded packets to both. onfail=ignore on the RTMP leg so
-  // a YouTube hiccup never kills the own-page stream. (Only reached
-  // when there's no come-and-chat tag to burn into the RTMP leg -
-  // with a tag the launch builds two encodes instead.)
+  // a YouTube hiccup never kills the own-page stream.
   const rtmpLeg = state.rtmpUrl.startsWith("file:")
     ? `[f=flv:onfail=ignore]${state.rtmpUrl.slice(5)}`
     : `[f=flv:onfail=ignore]${state.rtmpUrl}`;
@@ -447,19 +440,8 @@ async function launch(state) {
     finalLabel = "[vfin]";
   }
 
-  // The come-and-chat tag: burned into the YOUTUBE picture only, and
-  // only while the chat page is live alongside it - which forces two
-  // encodes instead of the shared tee, the price of the two outputs
-  // showing different pictures
-  const chatTagPng = path.join(config.dataDir, "banners", room.id, "__chattag.png");
-  const wantTag = state.outputs.channel && state.outputs.rtmp &&
-    await fs.access(chatTagPng).then(() => true, () => false);
-
-  const VID = ["-pix_fmt", "yuv420p",
-    "-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency",
-    "-b:v", "2500k", "-maxrate", "2500k", "-bufsize", "5000k", "-g", "30"];
-  const AUD = ["-c:a", "aac", "-b:a", "128k", "-ar", "44100"];
-  const HEAD = [
+  const dest = await destArgs(state, gen);
+  const ffArgs = [
     "-nostdin", "-loglevel", "warning", "-y",
     // the whitelist/probing flags are per-input options: precede every -i
     ...inputs.flatMap((x) => [
@@ -471,45 +453,15 @@ async function launch(state) {
     ...maskArgs,
     ...bannerArgs,
     ...titleArgs,
-    ...overlayArgs
+    ...overlayArgs,
+    "-filter_complex", `${grid};${amix}${titleFilter}${overlayFilter}`,
+    "-map", finalLabel, "-map", "[aout]",
+    "-pix_fmt", "yuv420p",
+    "-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency",
+    "-b:v", "2500k", "-maxrate", "2500k", "-bufsize", "5000k", "-g", "30",
+    "-c:a", "aac", "-b:a", "128k", "-ar", "44100",
+    ...dest
   ];
-
-  let ffArgs;
-  if (wantTag) {
-    const tagIdx = nextIdx++;
-    const { playlist, seg, init, flags } = await hlsPieces(state, gen);
-    const rtmpTarget = state.rtmpUrl.startsWith("file:")
-      ? ["-f", "flv", "-y", state.rtmpUrl.slice(5)]
-      : ["-f", "flv", state.rtmpUrl];
-    const tagFilter = `;${finalLabel}split=2[vh][vt];` +
-      `[${tagIdx}:v]scale=460:-2[tg];` +
-      // high enough that it never sits on the bottom-left name plate
-      `[vt][tg]overlay=x=24:y=main_h-overlay_h-main_h/6:eof_action=repeat[vy];` +
-      `[aout]asplit=2[ah][ay]`;
-    ffArgs = [
-      ...HEAD,
-      "-loop", "1", "-framerate", "5", "-i", chatTagPng,
-      "-filter_complex", `${grid};${amix}${titleFilter}${overlayFilter}${tagFilter}`,
-      // clean picture -> the channel page
-      "-map", "[vh]", "-map", "[ah]", ...VID, ...AUD,
-      "-f", "hls", "-hls_time", "1", "-hls_list_size", "60",
-      "-hls_flags", flags, "-hls_segment_type", "fmp4",
-      "-hls_fmp4_init_filename", init,
-      "-hls_segment_filename", seg, "-y", playlist,
-      // tagged picture -> YouTube
-      "-map", "[vy]", "-map", "[ay]", ...VID, ...AUD,
-      ...rtmpTarget
-    ];
-  } else {
-    const dest = await destArgs(state, gen);
-    ffArgs = [
-      ...HEAD,
-      "-filter_complex", `${grid};${amix}${titleFilter}${overlayFilter}`,
-      "-map", finalLabel, "-map", "[aout]",
-      ...VID, ...AUD,
-      ...dest
-    ];
-  }
   if (process.env.STREAM_DEBUG) console.error(`stream[${room.id}] ffmpeg ${ffArgs.join(" ")}`);
   cleanup.ffmpeg = spawn("ffmpeg", ffArgs);
   cleanup.ffmpeg.stderr.on("data", (d) => {
