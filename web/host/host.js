@@ -967,25 +967,34 @@
     x.globalAlpha = 1;
     x.fillStyle = baseColour;
     x.fillRect(0, 0, W, H);
-    const ar = img.width / img.height;
-    // A dense field of small copies - no giant ghosts, no blur. Each
-    // stamp gets its own 3D lean (rotation, skew, foreshortening),
-    // size and shade, so the wall reads as hundreds of little logos
-    // turned every which way.
-    const count = 300 + Math.floor(Math.random() * 80);
-    for (let i = 0; i < count; i++) {
-      const w = 44 + Math.random() * 96;                 // small, varied
-      const h = w / ar;
-      const px = Math.random() * W, py = Math.random() * H;
-      const rot = (Math.random() - 0.5) * 1.8;           // up to ~52 deg
-      const tiltX = (Math.random() - 0.5) * 0.8;         // skew = the 3D lean
-      const tiltY = (Math.random() - 0.5) * 0.8;
-      const squash = 0.5 + Math.random() * 0.5;          // foreshortening
-      x.setTransform(1, 0, 0, 1, px, py);
-      x.rotate(rot);
-      x.transform(1, tiltY, tiltX, squash, 0, 0);
-      x.globalAlpha = 0.10 + Math.random() * 0.18;       // shades, not ghosts
-      x.drawImage(img, -w / 2, -h / 2, w, h);
+    // The logos are drawn as SHADES of the base colour, not in their
+    // own colours: four silhouette stamps mixed different distances
+    // towards white and black, picked per copy for depth
+    const shades = [
+      mixHex(baseColour, "#ffffff", 0.16),
+      mixHex(baseColour, "#ffffff", 0.30),
+      mixHex(baseColour, "#ffffff", 0.46),
+      mixHex(baseColour, "#000000", 0.22)
+    ].map((t) => makeStamp(img, t));
+    const ar = shades[0].width / shades[0].height;
+    // Jittered grid placement: one copy per cell fills the frame with
+    // no empty patches, while overlap is capped at neighbours' edges
+    const cellH = 58 + Math.random() * 14;
+    const cellW = cellH * Math.min(Math.max(ar, 0.7), 2.4);
+    for (let row = -1; row * cellH < H + cellH; row++) {
+      for (let col = -1; col * cellW < W + cellW; col++) {
+        const cx = col * cellW + cellW / 2 + (Math.random() - 0.5) * cellW * 0.4;
+        const cy = row * cellH + cellH / 2 + (Math.random() - 0.5) * cellH * 0.4;
+        const h = cellH * (0.8 + Math.random() * 0.55);
+        const w = h * ar;
+        x.setTransform(1, 0, 0, 1, cx, cy);
+        x.rotate((Math.random() - 0.5) * 1.6);            // up to ~46 deg
+        x.transform(1, (Math.random() - 0.5) * 0.5,       // the 3D lean
+                    (Math.random() - 0.5) * 0.5,
+                    0.62 + Math.random() * 0.38, 0, 0);   // foreshortening
+        x.globalAlpha = 0.75 + Math.random() * 0.25;      // the shade IS the colour
+        x.drawImage(shades[Math.floor(Math.random() * shades.length)], -w / 2, -h / 2, w, h);
+      }
     }
     // Gentle vignette so tiles sit on a calmer centre
     x.setTransform(1, 0, 0, 1, 0, 0);
