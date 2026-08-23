@@ -4,6 +4,14 @@ All notable changes to FOSSStudio are documented here.
 
 ## Unreleased
 
+- **Vendor Lock replaces Asteroids in the waiting room.** The watch
+  page's off-air game is now an arcade cabinet where the rocks are
+  Big Tech logos (traced from the CC0 simple-icons set), the saucer
+  is an auditor, and losing is "TOTAL LOCK-IN". Arrow keys turn,
+  thrust and brake, space fires, H is hyperspace; touch screens get
+  cabinet buttons, and there's a sound toggle and pause built into
+  the HUD. Still pure canvas: no assets, no storage, no requests,
+  system fonts only. The website's playable demo is the same game.
 - Three resource trims from a CPU/RAM audit. Caddy now serves the
   live HLS playlist and segments straight from a read-only view of
   the data folder, so viewers no longer cost the app process anything

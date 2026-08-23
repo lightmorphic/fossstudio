@@ -70,8 +70,9 @@ dashboard.
   the studio.
 - **Live chat:** beside the video on the watch page - it appears when
   the show does. Off air, the page is a little waiting room instead:
-  a built-in Asteroids (arrow keys and space, touch buttons on
-  phones) keeps early arrivals company until the stream starts. Viewers pick a
+  Vendor Lock - an Asteroids where the rocks are Big Tech logos and
+  losing is total lock-in (arrow keys and space, touch buttons on
+  phones) - keeps early arrivals company until the stream starts. Viewers pick a
   name and join in - no accounts, and nobody leaves the window. Words
   on the banned list are masked, never deleted: first and last letter
   kept, stars between ("f\*\*\*k"), whole words only, so ordinary words
