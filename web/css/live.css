@@ -69,14 +69,19 @@ body {
 }
 #player { width: 100%; height: 100%; max-height: calc(100dvh - 3.2rem); }
 .offline {
-  /* Sit high in the player area rather than centred: the taller game
-     cabinet below needs the room, and the logo and title read first */
-  align-self: start;
+  /* Fill the player area: the logo-to-text block centres itself in
+     the free space above the game, so it reads mid-viewport instead
+     of hugging the top edge */
+  align-self: stretch;
+  justify-self: stretch;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  align-items: center;
   text-align: center;
   color: var(--muted);
-  padding: 1.4rem 2rem 2rem;
+  padding: 1rem 2rem 1.6rem;
 }
-.offline svg { width: 3rem; height: 3rem; margin-bottom: 1rem; color: #565d6b; }
+.offline-copy svg { width: 3rem; height: 3rem; margin-bottom: 1rem; color: #565d6b; }
 .offline .offline-logo {
   width: 5.5rem;
   height: 5.5rem;
@@ -84,8 +89,14 @@ body {
   border-radius: 16px;
   margin: 0 auto 1rem;
 }
-.offline b { color: var(--text); font-size: 1.1rem; }
-.offline .soft { margin-top: 0.4rem; font-size: 0.9rem; }
+.offline-copy b { color: var(--text); font-size: 1.1rem; }
+.offline .soft {
+  /* Narrow enough to wrap into two or three lines, never one long one */
+  max-width: 30rem;
+  margin: 0.4rem auto 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
 /* ---------- Vendor Lock (the waiting-room game) ---------- */
 /* The cabinet is a fixed 976x244 block; --fit (set in offair.js from
    the card's width) scales the whole thing down proportionally. */
@@ -123,7 +134,7 @@ body {
 .vl-hud {
   flex: 0 0 auto;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 1.1rem;
   padding: 0.3rem 0.7rem;
   border-bottom: 1px solid #16202f;
@@ -133,7 +144,7 @@ body {
   color: var(--vl-ink-dim);
   font-variant-numeric: tabular-nums;
 }
-.vl-hud > span { display: flex; align-items: baseline; gap: 0.4rem; }
+.vl-hud > span { display: flex; align-items: center; gap: 0.4rem; }
 .vl-hud b { color: var(--vl-phosphor); font-weight: 600; letter-spacing: 0.1em; }
 .vl-val { font-size: 1.05rem; font-weight: 700; color: #e9f2fb; letter-spacing: 0.02em; }
 .vl-spacer { flex: 1; }
