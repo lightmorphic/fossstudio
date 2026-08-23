@@ -101,9 +101,10 @@ dashboard.
   recording. Copy it from the session row in the dashboard.
 - **Backgrounds three ways:** a flat colour, an uploaded wallpaper, or
   a generated **logo background** in two styles - a 3D collage of hundreds of small turned copies,
-  or a dense flat pattern stamped from your logo's silhouette - in any
-  of nine base colours, shuffled in the dashboard until one feels
-  right, saved as the wallpaper.
+  or a dense flat pattern stamped from your logo's silhouette - the
+  base colour picked exactly like the session background (the same
+  eleven swatches plus a hex code), shuffled in the dashboard until
+  one feels right, saved as the wallpaper.
 - **One look per show:** the theme (wallpaper, background colour, logo,
   episode title) is pinned the moment the first person joins and holds
   until the session empties - everyone, the recording and the stream see
