@@ -83,15 +83,137 @@ body {
 }
 .offline b { color: var(--text); font-size: 1.1rem; }
 .offline .soft { margin-top: 0.4rem; font-size: 0.9rem; }
+/* ---------- Vendor Lock (the waiting-room game) ---------- */
+/* The cabinet is a fixed 976x244 block; --fit (set in offair.js from
+   the card's width) scales the whole thing down proportionally. */
 .offline .game {
+  --vl-void: #04060b;
+  --vl-phosphor: #63f5e4;
+  --vl-phosphor-dim: #2c7e77;
+  --vl-ink: #c9d6e4;
+  --vl-ink-dim: #6c7c90;
+  --vl-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  position: relative;
   display: block;
-  width: min(94vw, 50rem);
+  width: min(94vw, 61rem);
   margin: 1.6rem auto 0;
-  background: var(--panel);
-  border: 1px solid var(--line);
+  overflow: hidden;
   border-radius: 12px;
   touch-action: none; /* the touch pads must never scroll the page */
 }
+.vl-cabinet {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 976px;
+  height: 244px;
+  transform: translateX(-50%) scale(var(--fit, 1));
+  transform-origin: 50% 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #16202f;
+  border-radius: 12px;
+  background: radial-gradient(120% 140% at 50% 0%, #0a1220 0%, var(--vl-void) 62%);
+  font-family: var(--vl-mono);
+  color: var(--vl-ink);
+}
+.vl-hud {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  padding: 0.3rem 0.7rem;
+  border-bottom: 1px solid #16202f;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--vl-ink-dim);
+  font-variant-numeric: tabular-nums;
+}
+.vl-hud > span { display: flex; align-items: baseline; gap: 0.4rem; }
+.vl-hud b { color: var(--vl-phosphor); font-weight: 600; letter-spacing: 0.1em; }
+.vl-val { font-size: 1.05rem; font-weight: 700; color: #e9f2fb; letter-spacing: 0.02em; }
+.vl-spacer { flex: 1; }
+.vl-btn {
+  background: transparent;
+  border: 1px solid #24354b;
+  color: var(--vl-ink);
+  font: inherit;
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.18rem 0.45rem;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.vl-btn:hover { color: var(--vl-phosphor); border-color: var(--vl-phosphor-dim); }
+.vl-btn:focus-visible { outline: 2px solid var(--vl-phosphor); outline-offset: 2px; }
+.vl-lives { display: flex; gap: 0.3rem; align-items: center; }
+.vl-lives svg { display: block; width: 10px; height: 12px; }
+.vl-stage { position: relative; flex: 1 1 auto; min-height: 0; }
+.vl-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.vl-scan {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.22) 0 1px, transparent 1px 3px);
+  mix-blend-mode: multiply;
+}
+.vl-vig {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(105% 80% at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.72) 100%);
+}
+.vl-keys {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: nowrap;
+  gap: 0.9rem;
+  padding: 0.28rem 0.5rem;
+  border-top: 1px solid #16202f;
+  font-size: 0.68rem;
+  color: var(--vl-ink);
+  letter-spacing: 0.04em;
+}
+.vl-keys span { display: flex; align-items: center; gap: 0.3rem; white-space: nowrap; }
+.vl-keys kbd {
+  font: inherit;
+  font-size: 0.64rem;
+  color: var(--vl-phosphor);
+  font-weight: 500;
+  border: 1px solid var(--vl-phosphor-dim);
+  border-radius: 3px;
+  padding: 0.08rem 0.3rem;
+  background: rgba(99, 245, 228, 0.08);
+}
+.vl-touch .vl-keys { display: none; }
+.vl-pads {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: none;
+  padding: 0.7rem;
+  gap: 0.6rem;
+  justify-content: space-between;
+  pointer-events: none;
+}
+.vl-grp { display: flex; gap: 0.6rem; pointer-events: auto; }
+.vl-pads button {
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 50%;
+  background: rgba(99, 245, 228, 0.07);
+  border: 1px solid var(--vl-phosphor-dim);
+  color: var(--vl-phosphor);
+  font-family: var(--vl-mono);
+  font-size: 0.6rem;
+  touch-action: none;
+  user-select: none;
+}
+.vl-touch .vl-pads { display: flex; }
+@media (prefers-reduced-motion: reduce) { .vl-scan { display: none; } }
 
 /* ---------- chat ---------- */
 .chat {
