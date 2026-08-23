@@ -4,6 +4,16 @@ All notable changes to FOSSStudio are documented here.
 
 ## Unreleased
 
+- Three resource trims from a CPU/RAM audit. Caddy now serves the
+  live HLS playlist and segments straight from a read-only view of
+  the data folder, so viewers no longer cost the app process anything
+  per second (setups without that mount fall through to the app
+  exactly as before). The stream engine's per-input probe buffers
+  halved (20M to 10M) - tens of MB back during a big live show, with
+  the same margin over ffmpeg's defaults. And the app's JS heap is
+  capped at 256MB (usage sits around 80MB), with modest memory caps
+  on the Caddy and coturn containers, so a leak in any of them
+  degrades into a clean restart instead of starving the box mid-show.
 - A server that hits a fatal error at boot (a taken port, say) now
   exits instead of lingering broken in memory forever - Docker
   restarts it fresh, and the alert email still goes out first.

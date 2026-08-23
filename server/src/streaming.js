@@ -446,7 +446,7 @@ async function launch(state) {
     // the whitelist/probing flags are per-input options: precede every -i
     ...inputs.flatMap((x) => [
       "-protocol_whitelist", "file,udp,rtp",
-      "-analyzeduration", "20M", "-probesize", "20M",
+      "-analyzeduration", "10M", "-probesize", "10M",
       "-i", x.sdpPath
     ]),
     ...bgArgs,

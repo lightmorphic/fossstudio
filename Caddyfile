@@ -13,9 +13,47 @@
 # glob is harmless when the folder is empty).
 import /etc/caddy/sites/*.caddy
 
+# HLS offload: while a show is live, every viewer fetches the playlist
+# and a segment every second - serving those straight from disk keeps
+# the app process out of the per-viewer path entirely. The file matcher
+# only fires when the file actually exists under the read-only mount,
+# so a missing mount or a finished show falls through to the app
+# unchanged. The filename whitelist mirrors the app's own route.
+(hls_offload) {
+	# The playlist grows while live - never cache it
+	@hlsplaylist {
+		path_regexp hpl ^/live/([a-zA-Z0-9_-]{4,32})/media/live\.m3u8$
+		file {
+			root /srv/appdata/live
+			try_files /{re.hpl.1}/live.m3u8
+		}
+	}
+	handle @hlsplaylist {
+		root * /srv/appdata/live
+		rewrite * {file_match.relative}
+		header Cache-Control "no-store"
+		file_server
+	}
+	# Finished segments never change - a short cache keeps viewers cheap
+	@hlssegment {
+		path_regexp hseg ^/live/([a-zA-Z0-9_-]{4,32})/media/(seg-\d+-\d+\.m4s|init-\d+\.mp4)$
+		file {
+			root /srv/appdata/live
+			try_files /{re.hseg.1}/{re.hseg.2}
+		}
+	}
+	handle @hlssegment {
+		root * /srv/appdata/live
+		rewrite * {file_match.relative}
+		header Cache-Control "public, max-age=60"
+		file_server
+	}
+}
+
 {$DOMAIN} {
 	encode zstd gzip
 	header Strict-Transport-Security "max-age=31536000"
+	import hls_offload
 	reverse_proxy 127.0.0.1:{$HTTP_PORT}
 }
 
@@ -31,6 +69,7 @@ https:// {
 	}
 	encode zstd gzip
 	header Strict-Transport-Security "max-age=31536000"
+	import hls_offload
 	reverse_proxy 127.0.0.1:{$HTTP_PORT}
 }
 
