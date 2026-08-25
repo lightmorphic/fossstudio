@@ -4,6 +4,19 @@ All notable changes to FOSSStudio are documented here.
 
 ## Unreleased
 
+- **One-click session blocking.** When a session link has been shared
+  openly and someone abuses it, the host panel now has a block button
+  on every guest's row: the first click arms it (it turns red and
+  asks), the second removes them and bars them from every session on
+  the server - matched by IP address and by a persistent marker their
+  browser presents, so a changed address alone doesn't walk them back
+  in. Blocks are instant, listed in the dashboard under "Blocked from
+  sessions", and just as instantly reversible there; every block and
+  unblock lands in a durable moderation log, and the stored address
+  never reaches any browser. Honest print: a determined person with a
+  fresh network and a cleared browser can still get past an IP block -
+  this stops the casual repeat offender, which is nearly always the
+  real problem.
 - **Vendor Lock replaces Asteroids in the waiting room.** The watch
   page's off-air game is now an arcade cabinet where the rocks are
   Big Tech logos (traced from the CC0 simple-icons set), the saucer

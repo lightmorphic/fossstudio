@@ -13,6 +13,7 @@ import {
 import { iceServers } from "./turn.js";
 import { isAuthedRequest } from "./auth.js";
 import { getSettings, updateSettings, findSession, findSound, findIntro } from "./settings.js";
+import { isSessionBlocked, addSessionBlock } from "./blocklist.js";
 import { notifyUser } from "./push.js";
 import {
   startRecording, stopRecording, activeRecording,
@@ -65,6 +66,8 @@ export function attachSignaling() {
 
   wss.on("connection", async (socket, req) => {
     const url = new URL(req.url, "http://localhost");
+    const clientIp = req.headers["x-forwarded-for"]?.split(",")[0]?.trim()
+      || req.socket.remoteAddress;
     const roomId = url.searchParams.get("room") || "";
     if (!ROOM_ID_RE.test(roomId)) {
       socket.close(4400, "bad room id");
@@ -106,7 +109,19 @@ export function attachSignaling() {
             // may open one (same trust level as joining as a guest).
             const role = canHost && data.role === "host" ? "host"
               : data.role === "viewer" ? "viewer" : "guest";
+            // The browser's persistent marker, sent alongside the IP:
+            // together they are what a session block matches on. Hosts
+            // are never blocked - their login is the gate.
+            const marker = /^[a-zA-Z0-9-]{8,64}$/.test(String(data.marker || ""))
+              ? data.marker : null;
+            if (role !== "host" &&
+                await isSessionBlocked({ ip: clientIp, marker })) {
+              return fail("You have been blocked from this studio's sessions.");
+            }
             peer = addPeer(room, { name, tagline, role, socket });
+            peer.ip = clientIp;
+            peer.marker = marker;
+            peer.uid = auth?.uid || null;
             room.control.noise[peer.id] = !!data.noiseOn;
             // Everyone arrives muted - host included, even alone; you
             // unmute yourself when you're ready to talk
@@ -315,6 +330,21 @@ export function attachSignaling() {
                 if (!target) return fail("no such guest");
                 c.muted[target.id] = !!data.muted;
                 if (!data.muted) delete c.hands[target.id];
+                break;
+              }
+              case "block": {
+                // One click: bar this guest from every session on the
+                // server (by IP and device marker), and drop them now.
+                // Reversible from the dashboard's block list.
+                const target = room.peers.get(data.peerId);
+                if (!target) return fail("no such guest");
+                if (target.role === "host") return fail("Hosts can't be blocked.");
+                await addSessionBlock({
+                  name: target.name, ip: target.ip || null,
+                  marker: target.marker || null, by: peer.uid
+                });
+                // The close handler does the cleanup and the peerLeft
+                target.socket.close(4403, "blocked");
                 break;
               }
               case "titlePos": {

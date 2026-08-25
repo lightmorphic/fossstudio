@@ -892,6 +892,12 @@ body.dim-ui .host-panel:hover { opacity: 1; }
 /* Guest-card controls are icons; hovering shows the shared bubble */
 .hp-guest .hp-guest-ico { display: grid; place-items: center; padding: 0.22rem 0.4rem; }
 .hp-guest .hp-guest-ico svg { width: 0.95rem; height: 0.95rem; }
+/* The block button armed by its first click: red and asking */
+.hp-guest .blockp.armed {
+  background: #f34236;
+  border-color: #f34236;
+  color: #fff;
+}
 .you-ico { display: inline-grid; place-items: center; color: var(--lm-accent); flex: 0 0 auto; }
 .you-ico svg { width: 0.85rem; height: 0.85rem; }
 .hp-name-line > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
