@@ -88,6 +88,15 @@ dashboard.
   click to undo), and every ban, unban and hide is logged server-side
   with the time, name and address. Viewer addresses never reach any
   client.
+- **Session blocking:** for when a session link has been shared openly
+  and someone joins to abuse it. Every guest's row in the in-session
+  host panel has a block button - one click arms it (it turns red and
+  asks), a second removes them and bars them from every session on
+  the server, matched by IP address and a persistent marker their
+  browser presents, so a changed address alone doesn't walk them back
+  in. The dashboard's "Blocked from sessions" list undoes any block
+  in one click, every block and unblock is logged server-side, and
+  the stored address never reaches any browser.
 - **Publish to FOSSCast:** one click on a finished recording (live
   streams included) pushes the video to your
   [FOSSCast](https://github.com/lightmorphic/fosscast) instance as a

@@ -460,7 +460,12 @@
           earlyEvents.push(msg);
         }
       };
-      ws.onclose = () => { if (joined) leaveToPreview("The connection dropped. Rejoin when you're ready."); };
+      ws.onclose = (e) => {
+        if (!joined) return;
+        leaveToPreview(e.code === 4403
+          ? "The host has removed you from this session."
+          : "The connection dropped. Rejoin when you're ready.");
+      };
     });
   }
 
@@ -558,7 +563,7 @@
     }
     const stream = new MediaStream();
     video.srcObject = stream;
-    tiles.set(peerId, { el, video, stream, name, gain: null });
+    tiles.set(peerId, { el, video, stream, name, gain: null, isHostPeer });
     applyLayout();
     if (isHost) renderHostGuests();
     scheduleBannerSnapshots();
@@ -1524,6 +1529,7 @@
           <button class="hp-btn hp-guest-ico mute" data-tip="Microphone" aria-label="Microphone" aria-pressed="${muted}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg></button>
           <button class="hp-btn hp-guest-ico spot" data-tip="Spotlight" aria-label="Spotlight"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.5 5.3 5.5.7-4 4 1 5.7-5-2.8-5 2.8 1-5.7-4-4 5.5-.7z"/></svg></button>
           ${hand ? '<button class="hp-btn hp-guest-ico lower" data-tip="Lower their hand" aria-label="Lower their hand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 11V6a2 2 0 1 1 4 0v4V4.5a2 2 0 1 1 4 0V10v-3a2 2 0 1 1 4 0v7a7 7 0 0 1-7 7h-1a7 7 0 0 1-6-3.5L3 13.5a2 2 0 0 1 3.4-2z"/><path d="M3 3l18 18"/></svg></button>' : ""}
+          ${!isSelf && !tile.isHostPeer ? '<button class="hp-btn hp-guest-ico blockp" data-tip="Block - removes them and bars them from every session; undo any time from the dashboard" aria-label="Block this guest"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg></button>' : ""}
         </div>
         <div class="hp-meter"><div class="hp-meter-fill"></div></div>
         <input type="range" min="0" max="150" value="${vol}" aria-label="Volume">
@@ -1546,6 +1552,23 @@
       row.querySelector(".nr").onclick = () => {
         request("hostControl", { action: "noise", peerId, enabled: !nrOn });
       };
+      const blockBtn = row.querySelector(".blockp");
+      if (blockBtn) {
+        // Two clicks, never one: the first arms the button (it turns
+        // red and asks), the second blocks. It disarms itself.
+        blockBtn.onclick = () => {
+          if (!blockBtn.classList.contains("armed")) {
+            blockBtn.classList.add("armed");
+            blockBtn.dataset.tip = "Sure? A second click blocks them";
+            setTimeout(() => {
+              blockBtn.classList.remove("armed");
+              blockBtn.dataset.tip = "Block - removes them and bars them from every session; undo any time from the dashboard";
+            }, 3500);
+            return;
+          }
+          request("hostControl", { action: "block", peerId }).catch(() => {});
+        };
+      }
       const muteBtn = row.querySelector(".mute");
       muteBtn.classList.toggle("active", muted);
       muteBtn.onclick = () => {
@@ -2218,6 +2241,20 @@
 
   const JOINING_KEY = "fossstudio-joining";
 
+  // A random id this browser keeps and presents on every join. Sent
+  // with the IP so a session block still holds when the address
+  // changes; a private window has neither and falls back to IP alone.
+  function deviceMarker() {
+    try {
+      let m = localStorage.getItem("fossstudio-device");
+      if (!m || !/^[a-zA-Z0-9-]{8,64}$/.test(m)) {
+        m = crypto.randomUUID();
+        localStorage.setItem("fossstudio-device", m);
+      }
+      return m;
+    } catch { return null; }
+  }
+
   async function join() {
     if (!els.nameInput.value.trim()) {
       showError("Add a banner title first - that's the big text under your video.");
@@ -2234,7 +2271,8 @@
         name: selfName,
         tagline: els.taglineInput.value.trim(),
         noiseOn: noisePref === "rnnoise",
-        role: wantHost ? "host" : "guest"
+        role: wantHost ? "host" : "guest",
+        marker: deviceMarker()
       });
       selfId = info.peerId;
       isHost = info.role === "host";
@@ -2378,7 +2416,9 @@
       showError(
         err.message === "session full"
           ? "This session is full (10 people max)."
-          : "Couldn't join the session. Give it a moment and try again."
+          : err.message?.startsWith("You have been blocked")
+            ? err.message
+            : "Couldn't join the session. Give it a moment and try again."
       );
       try { ws && ws.close(); } catch { /* ignore */ }
     }

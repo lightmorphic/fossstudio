@@ -617,6 +617,35 @@
     }
   }
 
+  // ---------- session block list ----------
+
+  async function loadSessionBlocked() {
+    const list = $("sessionBlockedList");
+    if (!list) return;
+    const blocked = await apiFetch("/api/session/blocked");
+    list.innerHTML = "";
+    if (blocked.length === 0) {
+      list.innerHTML = '<p class="hint">Nobody is blocked. Block someone from the host panel while in a session.</p>';
+      return;
+    }
+    for (const b of blocked) {
+      const row = document.createElement("div");
+      row.className = "session-row";
+      const name = document.createElement("span");
+      name.className = "session-title";
+      name.textContent = b.name;
+      const when = document.createElement("span");
+      when.className = "hint";
+      when.textContent = `blocked ${new Date(b.blockedAt).toLocaleString()}`;
+      row.append(name, when);
+      row.appendChild(confirmBtn("del", "Unblock - lets them join sessions again", async () => {
+        await apiFetch(`/api/session/blocked/${encodeURIComponent(b.id)}`, { method: "DELETE" });
+        loadSessionBlocked();
+      }));
+      list.appendChild(row);
+    }
+  }
+
   async function saveFosscast() {
     await apiFetch("/api/settings", {
       method: "PUT",
@@ -1142,6 +1171,7 @@
         loadRecordings();
       });
       loadBlocked();
+      loadSessionBlocked();
       loadSounds();
       loadIntros();
       setInterval(loadSessions, 10000);   // keep the live badges fresh

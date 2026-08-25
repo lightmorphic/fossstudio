@@ -31,6 +31,7 @@ import {
 import { publicKey, addSubscription } from "./push.js";
 import { isStreaming, streamingSince, liveOutputs, channelRoomForOwner } from "./streaming.js";
 import { listBlocked, unblock } from "./livechat.js";
+import { listSessionBlocked, unblockSession } from "./blocklist.js";
 import { probeMedia, transcodeIntro, needsConversion } from "./introcoder.js";
 
 export const api = express.Router();
@@ -740,6 +741,17 @@ api.get("/chat/blocked", requireAuth, async (req, res) => {
 });
 api.delete("/chat/blocked/:id", requireAuth, async (req, res) => {
   const ok = await unblock(path.basename(req.params.id), req.user.uid);
+  if (!ok) return res.status(404).json({ error: "not found" });
+  res.json({ ok: true });
+});
+
+// Session moderation: guests blocked from joining sessions, managed
+// the same way - any host, instant either direction.
+api.get("/session/blocked", requireAuth, async (req, res) => {
+  res.json(await listSessionBlocked());
+});
+api.delete("/session/blocked/:id", requireAuth, async (req, res) => {
+  const ok = await unblockSession(path.basename(req.params.id), req.user.uid);
   if (!ok) return res.status(404).json({ error: "not found" });
   res.json({ ok: true });
 });
