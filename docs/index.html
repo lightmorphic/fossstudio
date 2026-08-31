@@ -652,6 +652,16 @@
   }
   :root[data-theme="light"] .lightmorphic-badge img { filter: invert(0.85); }
   .foot .gpl { margin-left: auto; }
+  .subfoot {
+    max-width: 72rem;
+    margin: 0 auto;
+    padding: 1.3rem 1.4rem 2rem;
+    border-top: 1px solid var(--line-soft);
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+  .subfoot p { margin: 0; }
+  .subfoot a { color: inherit; }
   .foot a { color: var(--muted); }
 </style>
 </head>
@@ -733,6 +743,7 @@
         <ul>
           <li>Your channel page and YouTube are separate buttons - either or both, one encode, each with its own clock</li>
           <li>Grid or spotlight, applied to every screen</li>
+          <li>Backdrops switch mid-show: a flat colour, your wallpaper, or six layouts the browser generates from your logo on the spot - every screen and the stream follow</li>
           <li>Soundboard and intro videos, auto-levelled, baked into recording and stream</li>
           <li>While live, the chat docks into the studio - answer the room without leaving</li>
         </ul>
@@ -795,6 +806,7 @@
         address.</p>
         <ul>
           <li>Shadow-hide: the nuisance talks to an empty room</li>
+          <li>Session link shared too widely? One click in the host panel blocks an abuser from every session - by address and device, one click in the dashboard undoes it</li>
           <li>Viewer addresses never reach any client</li>
           <li>Hosts moderate from the watch page or the docked studio chat</li>
         </ul>
@@ -984,6 +996,11 @@
     membership links, and RSS feeds built to what Apple, Spotify and Podcast Index actually want.
     One click publishes a finished recording straight from this studio.</p>
     <span class="gpl">Free software &middot; <a href="https://www.gnu.org/licenses/gpl-3.0.html">GPL-3.0</a> &middot; <a href="https://github.com/lightmorphic/fossstudio">Source</a></span>
+  </div>
+  <div class="subfoot">
+    <p>&copy; Lightmorphic Ltd. Registered in England and Wales, company number 17423646.
+    Registered office: 82A James Carter Road, Mildenhall, IP28 7DE.
+    <span style="display:block">Page last updated <time datetime="2026-08-31">31 August 2026</time>.</span></p>
   </div>
 </footer>
 
