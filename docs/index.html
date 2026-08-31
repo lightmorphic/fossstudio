@@ -660,8 +660,10 @@
     font-size: 0.8rem;
     color: var(--muted);
   }
-  .subfoot p { margin: 0; }
+  .subfoot p { margin: 0 0 0.7rem; }
   .subfoot a { color: inherit; }
+  .subfoot nav { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem; }
+  .subfoot nav a { font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
   .foot a { color: var(--muted); }
 </style>
 </head>
@@ -1001,6 +1003,7 @@
     <p>&copy; Lightmorphic Ltd. Registered in England and Wales, company number 17423646.
     Registered office: 82A James Carter Road, Mildenhall, IP28 7DE.
     <span style="display:block">Page last updated <time datetime="2026-08-31">31 August 2026</time>.</span></p>
+    <nav aria-label="Legal"><a href="privacy.html">Privacy</a> <a href="cookies.html">Cookies</a> <a href="terms.html">Terms</a> <a href="accessibility.html">Accessibility</a> <a href="complaints.html">Complaints</a></nav>
   </div>
 </footer>
 
