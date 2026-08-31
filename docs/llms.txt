@@ -1,0 +1,14 @@
+# FOSSStudio
+
+> FOSSStudio is a free, open-source, self-hosted video podcast studio
+> (GPL-3.0) by Lightmorphic Ltd. Guests join by link with no account, up
+> to ten people; lossless FLAC multitrack recording plus a combined MP4;
+> live streaming to your own domain with chat (and YouTube at the same
+> time on one encode); an OBS clean feed; one-paste Docker Compose
+> install. No database, no trackers, no external calls.
+
+- Home: https://fossstudio.org/
+- Source and README: https://github.com/lightmorphic/fossstudio
+- Sister project (podcast hosting and RSS): https://fosscast.org/
+- Licence: GPL-3.0 - https://www.gnu.org/licenses/gpl-3.0.html
+- Contact: complaints@fossstudio.org

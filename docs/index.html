@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'self'">
 <meta name="theme-color" content="#0b0d11" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#f6f5f1" media="(prefers-color-scheme: light)">
 <title>FOSSStudio: self-hosted video podcast studio</title>
@@ -30,7 +31,82 @@
   "downloadUrl": "https://github.com/lightmorphic/fossstudio",
   "license": "https://www.gnu.org/licenses/gpl-3.0.html",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "GBP" },
-  "creator": { "@type": "Organization", "name": "Lightmorphic", "url": "https://lightmorphic.co.uk" }
+  "creator": { "@type": "Organization", "name": "Lightmorphic", "url": "https://lightmorphic.co.uk" },
+  "dateModified": "2026-08-31"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Lightmorphic Ltd",
+  "url": "https://lightmorphic.co.uk",
+  "email": "complaints@fossstudio.org",
+  "identifier": "17423646",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "82A James Carter Road",
+    "addressLocality": "Mildenhall",
+    "postalCode": "IP28 7DE",
+    "addressCountry": "GB"
+  },
+  "sameAs": ["https://github.com/lightmorphic"]
+}
+</script>
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "FAQPage",
+ "mainEntity": [
+  {
+   "@type": "Question",
+   "name": "Is FOSSStudio really free?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Yes. FOSSStudio is free software under the GPL-3.0 licence - no paid tier, no cloud service, no trial. You install it on your own server and it is yours. Lightmorphic built it and gives it away as is."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "Do guests need an account or an app?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "No. Guests click a session link in any modern browser, pick their camera and microphone on a preview screen, and join. Nothing to install, nothing to sign up for, and it works on phones."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "How many people can be in a session?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Up to ten people on screen, plus invisible view-only connections for OBS. The media engine forwards streams rather than decoding them, so a 2-core VPS handles a full grid."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "Can I stream to my own site and YouTube at the same time?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Yes. Your channel page and YouTube are separate buttons - run either or both at once on one shared encode. The audience watches at your own domain, about 2-3 seconds behind the studio, with chat beside the video."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "What do I need to run it?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "A Linux server with Docker, a domain pointed at it, and the listed ports open. The whole install is pasting one docker-compose file and filling in five values - certificates sort themselves out."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "Where do recordings end up?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "On your server, nowhere else: a lossless FLAC per person, a combined MP4 that matches exactly what everyone saw, and the saved copy of any live stream. One click can publish a finished recording to your FOSSCast instance."
+   }
+  }
+ ]
 }
 </script>
 <style>
@@ -562,7 +638,7 @@
     padding: 0.9rem 1.1rem;
     margin-top: 1.1rem;
   }
-  .aside h4 { font-size: 0.92rem; font-weight: 800; margin-bottom: 0.3rem; }
+  .aside h3 { font-size: 0.92rem; font-weight: 800; margin-bottom: 0.3rem; }
   .aside p { font-size: 0.86rem; color: var(--muted); }
   .aside a { color: var(--accent); }
   .aside code { font-family: var(--mono); font-size: 0.82em; }
@@ -652,6 +728,10 @@
   }
   :root[data-theme="light"] .lightmorphic-badge img { filter: invert(0.85); }
   .foot .gpl { margin-left: auto; }
+  .faq { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+  .faq-item { background: var(--panel); border: 1px solid var(--line-soft); border-radius: 14px; padding: 1.1rem 1.3rem; }
+  .faq-item h3 { font-size: 1rem; margin-bottom: 0.4rem; }
+  .faq-item p { color: var(--muted); font-size: 0.92rem; }
   .subfoot {
     max-width: 72rem;
     margin: 0 auto;
@@ -679,6 +759,7 @@
       <a href="#live">Going live</a>
       <a href="#rest">Everything</a>
       <a href="#install">Install</a>
+      <a href="#faq">Questions</a>
       <a href="https://github.com/lightmorphic/fossstudio">GitHub</a>
       <button id="themeBtn" type="button" aria-label="Switch between light and dark">
         <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
@@ -857,7 +938,7 @@
         </ol>
         <p style="color:var(--muted); font-size:0.9rem">No clone, no <code>.env</code>, no other files. What this installs is exactly what development runs.</p>
         <div class="aside">
-          <h4>Already running a proxy?</h4>
+          <h3>Already running a proxy?</h3>
           <p>Delete the <code>caddy</code> service from the pasted file and point
           nginx, Apache, a Cloudflare Tunnel or Tailscale at
           <code>127.0.0.1:3000</code> - the app binds only to loopback, and
@@ -868,7 +949,7 @@
           Tailscale-only setups.</p>
         </div>
         <div class="aside">
-          <h4>Proxy on a different machine?</h4>
+          <h3>Proxy on a different machine?</h3>
           <p>Also fine - the proxy only ever carries the web half.
           Guests' video and the TURN relay go straight to the studio
           machine, so its public IP and UDP ports stay open wherever
@@ -893,7 +974,7 @@
           nginx block, full recipe in the README</a>.</p>
         </div>
         <div class="aside">
-          <h4>Updating</h4>
+          <h3>Updating</h3>
           <p><code>docker compose build app &amp;&amp; docker compose up -d</code> -
           the build fetches the newest code from GitHub; your data lives in a
           named volume and is left alone.</p>
@@ -987,6 +1068,38 @@
 </section>
 </main>
 
+<section class="cue" id="faq">
+  <div class="wrap">
+    <div class="cue-mark"><span class="tc">CUE 05</span><h2>Straight answers</h2><span class="side">FAQ</span></div>
+    <div class="faq">
+      <div class="faq-item">
+        <h3>Is FOSSStudio really free?</h3>
+        <p>Yes. FOSSStudio is free software under the GPL-3.0 licence - no paid tier, no cloud service, no trial. You install it on your own server and it is yours. Lightmorphic built it and gives it away as is.</p>
+      </div>
+      <div class="faq-item">
+        <h3>Do guests need an account or an app?</h3>
+        <p>No. Guests click a session link in any modern browser, pick their camera and microphone on a preview screen, and join. Nothing to install, nothing to sign up for, and it works on phones.</p>
+      </div>
+      <div class="faq-item">
+        <h3>How many people can be in a session?</h3>
+        <p>Up to ten people on screen, plus invisible view-only connections for OBS. The media engine forwards streams rather than decoding them, so a 2-core VPS handles a full grid.</p>
+      </div>
+      <div class="faq-item">
+        <h3>Can I stream to my own site and YouTube at the same time?</h3>
+        <p>Yes. Your channel page and YouTube are separate buttons - run either or both at once on one shared encode. The audience watches at your own domain, about 2-3 seconds behind the studio, with chat beside the video.</p>
+      </div>
+      <div class="faq-item">
+        <h3>What do I need to run it?</h3>
+        <p>A Linux server with Docker, a domain pointed at it, and the listed ports open. The whole install is pasting one docker-compose file and filling in five values - certificates sort themselves out.</p>
+      </div>
+      <div class="faq-item">
+        <h3>Where do recordings end up?</h3>
+        <p>On your server, nowhere else: a lossless FLAC per person, a combined MP4 that matches exactly what everyone saw, and the saved copy of any live stream. One click can publish a finished recording to your FOSSCast instance.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <footer>
   <div class="wrap foot">
     <a class="lightmorphic-badge" href="https://lightmorphic.co.uk" target="_blank" rel="noopener noreferrer" translate="no">
@@ -1002,6 +1115,7 @@
   <div class="subfoot">
     <p>&copy; Lightmorphic Ltd. Registered in England and Wales, company number 17423646.
     Registered office: 82A James Carter Road, Mildenhall, IP28 7DE.
+    <span style="display:block"><a href="mailto:complaints@fossstudio.org">complaints@fossstudio.org</a></span>
     <span style="display:block">Page last updated <time datetime="2026-08-31">31 August 2026</time>.</span></p>
     <nav aria-label="Legal"><a href="privacy.html">Privacy</a> <a href="cookies.html">Cookies</a> <a href="terms.html">Terms</a> <a href="accessibility.html">Accessibility</a> <a href="complaints.html">Complaints</a></nav>
   </div>
@@ -1061,7 +1175,13 @@
     // deliberate press starts the game
     OffAir.start(gameEl);
     requestAnimationFrame(() => OffAir.stop());
-    gameEl.addEventListener("pointerdown", () => OffAir.start(gameEl), { once: true });
+    gameEl.setAttribute("tabindex", "0");
+    const startOnce = () => OffAir.start(gameEl);
+    gameEl.addEventListener("pointerdown", startOnce, { once: true });
+    // the same deliberate start for keyboard users
+    gameEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); startOnce(); }
+    }, { once: true });
   } else {
     new IntersectionObserver((entries) => {
       for (const e of entries) e.isIntersecting ? OffAir.start(gameEl) : OffAir.stop();
