@@ -68,16 +68,6 @@
           <span class="msg err" id="streamErr" hidden></span>
         </div>
         <div class="panel">
-          <h2>Blocked from chat</h2>
-          <p class="hint" style="margin-bottom:0.8rem">People blocked from the live chat, by name and address. Blocking is instant and so is unblocking - use it when a block was a mistake, or an apology has been accepted.</p>
-          <div id="blockedList"><p class="hint">Loading…</p></div>
-        </div>
-        <div class="panel">
-          <h2>Blocked from sessions</h2>
-          <p class="hint" style="margin-bottom:0.8rem">Guests blocked from joining sessions - the block button next to a guest in the in-session host panel puts them here, barred by address and by the device their browser presented. Unblocking lets them straight back in.</p>
-          <div id="sessionBlockedList"><p class="hint">Loading…</p></div>
-        </div>
-        <div class="panel">
           <h2>Publish to FOSSCast</h2>
           <p class="hint" style="margin-bottom:0.8rem">Lets the button on each recording push the video straight to your FOSSCast instance as a draft episode - you review it there before it goes public. The token is FOSSCast's <code>PUBLISHER_TOKEN</code>; it stays on this server and never reaches the browser.</p>
           <div class="field">
@@ -93,6 +83,19 @@
       </section>
 
       <!-- Settings: themes (accent + wallpaper) -->
+      <section id="pane-blocked" class="stack" hidden>
+        <div class="panel">
+          <h2>Blocked from chat</h2>
+          <p class="hint" style="margin-bottom:0.8rem">People blocked from the live chat, by name and address. Blocking is instant and so is unblocking - use it when a block was a mistake, or an apology has been accepted.</p>
+          <div id="blockedList"><p class="hint">Loading…</p></div>
+        </div>
+        <div class="panel">
+          <h2>Blocked from sessions</h2>
+          <p class="hint" style="margin-bottom:0.8rem">Guests blocked from joining sessions - the block button next to a guest in the in-session host panel puts them here, barred by address and by the device their browser presented. Unblocking lets them straight back in.</p>
+          <div id="sessionBlockedList"><p class="hint">Loading…</p></div>
+        </div>
+      </section>
+
       <section id="pane-themes" class="stack" hidden>
         <div class="panel">
           <h2>Podcast logo</h2>

@@ -4,6 +4,14 @@ All notable changes to FOSSStudio are documented here.
 
 ## Unreleased
 
+- Host panel guest cards are now two short lines each - name and
+  volume, then the buttons and level meter - one per row instead of
+  the tall two-column stack, with slightly smaller buttons. The
+  presenter no longer sees their own shared screen (a hall of mirrors
+  when the whole desktop is shared): a calm "you're sharing" note
+  holds the pane while the faces stay on the right. And the block
+  lists have their own "Blocked" entry in the Settings menu.
+
 - **Screen sharing, on the host's say-so.** Every guest row in the
   host panel has a screen toggle: allow it and that guest's share
   button comes alive (hosts can always share). The shared screen
