@@ -696,6 +696,9 @@ api.get("/live/:slug", (req, res) => {
       return {
         live: outs.channel,
         since: outs.channelSince,
+        // "programme" when the host's browser is the mixer and the
+        // server only passes the feed on; "composite" when it draws
+        mode: outs.mode,
         roomId: slug,
         title: session.title || "",
         logo: await channelLogo(session.ownerId)

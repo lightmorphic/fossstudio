@@ -2,11 +2,17 @@
 import { chromium } from "playwright";
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
-import { hostLogin, makeRoom, apiLogin } from "./helpers.mjs";
-const B = "http://127.0.0.1:3999";
-const S = "/tmp/claude-1000/-home-charlie-GitHub-fossstudio/30aef10b-264b-4404-9752-f5d84c9a6596/scratchpad";
+import os from "node:os";
+import path from "node:path";
+import { hostLogin, makeRoom, apiLogin, CAMS } from "./helpers.mjs";
+const B = process.argv[2] || "http://127.0.0.1:3999";
+// Own temp dir: this used to point at one machine's scratch directory
+const S = fs.mkdtempSync(path.join(os.tmpdir(), "fossstudio-overlay-test-"));
 const OUT = `${S}/overlay-out`;
 fs.mkdirSync(OUT, { recursive: true });
+// The test ad: a plain red banner, made here rather than kept on one machine
+execFileSync("ffmpeg", ["-loglevel", "quiet", "-f", "lavfi", "-i", "color=c=red:s=600x150",
+  "-frames:v", "1", "-y", `${S}/testad.png`]);
 let pass = true;
 const check = (l, ok) => { console.log(`${ok ? "OK  " : "FAIL"} ${l}`); pass &&= ok; };
 
@@ -16,7 +22,7 @@ await fetch(`${B}/api/settings`, { method: "PUT", headers: { "Content-Type": "ap
 await fetch(`${B}/api/adbanner`, { method: "POST", headers: { "Content-Type": "image/png", Cookie: hostCookie }, body: fs.readFileSync(`${S}/testad.png`) });
 const ROOM = await makeRoom(B, "testpass123");
 
-const browser = await chromium.launch({ args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream", `--use-file-for-fake-video-capture=${S}/vcam1.y4m`, "--autoplay-policy=no-user-gesture-required"] });
+const browser = await chromium.launch({ args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream", `--use-file-for-fake-video-capture=${CAMS}/vcam1.y4m`, "--autoplay-policy=no-user-gesture-required"] });
 async function join(name, asHost) {
   const ctx = await browser.newContext({ permissions: ["camera", "microphone"] });
   if (asHost) {
@@ -89,10 +95,12 @@ await new Promise((r) => setTimeout(r, 19000)); // relaunch + startup + 7s windo
 await host.click("#hpYtBtn"); // end stream
 await new Promise((r) => setTimeout(r, 3000));
 const probe = (t) => {
-  // average colour of the bottom-left strip region at time t
+  // average colour of the bottom-centre region at time t, where the
+  // reminder pill sits (the screen's own placement, since the host's
+  // browser now draws the programme)
   const raw = execFileSync("ffmpeg",
     ["-v", "quiet", "-ss", String(t), "-i", `${OUT}/live.flv`, "-frames:v", "1",
-     "-vf", "crop=640:150:0:ih-160,scale=1:1", "-f", "rawvideo", "-pix_fmt", "rgb24", "-"]);
+     "-vf", "crop=640:110:320:ih-130,scale=1:1", "-f", "rawvideo", "-pix_fmt", "rgb24", "-"]);
   return [raw[0], raw[1], raw[2]];
 };
 const lastPts = Number(execFileSync("ffprobe",

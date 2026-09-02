@@ -4,6 +4,24 @@ All notable changes to FOSSStudio are documented here.
 
 ## Unreleased
 
+- **The host's browser draws the show.** Going live or recording now
+  paints the programme - the grid or spotlight, a shared screen, the
+  lower thirds, the title block, intros and overlays - onto a 1280x720
+  canvas in the host's browser, mixes every voice, and sends one H.264
+  stream. The server copies that video straight into the watch page
+  and YouTube; the only work left to it is turning the browser's Opus
+  into AAC. On a test box the server's share of a live show went from
+  two whole cores to under four percent of one. A guest joining or
+  leaving, a banner changing or an intro playing no longer relaunches
+  the stream, because the browser already put it in the picture. The
+  combined recording is the same programme, copied rather than
+  rendered, so a long show no longer costs the server minutes of a
+  core afterwards. A browser that cannot encode H.264 is told so
+  plainly; Chrome, Edge, Safari and Firefox all can.
+
+- `GET /version` says what is running, and the image is published to
+  the GitHub registry on every push, with a pinnable tag per release.
+
 - The three port ranges are now settings, for hosts running more than
   one studio: `RTC_MIN_PORT`/`RTC_MAX_PORT` move the public media
   range (default 40000-40100), `LOCAL_PORT_BASE` moves the

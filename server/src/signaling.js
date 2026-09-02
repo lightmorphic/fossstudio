@@ -643,6 +643,27 @@ export function attachSignaling() {
             const transport = peer.transports.get(data.transportId);
             if (!transport) return fail("no such transport");
             const source = String(data.source || data.kind).slice(0, 20);
+            // The programme feed is the host's browser acting as the
+            // mixer: the finished picture and sound, ready to pass on.
+            // Only a host may send it, it is never shown as anybody's
+            // tile, and it is what the live stream carries when present.
+            if (source === "programme") {
+              if (peer.role !== "host") return fail("only the host sends the programme feed");
+              const producer = await transport.produce({
+                kind: data.kind,
+                rtpParameters: data.rtpParameters,
+                appData: { source }
+              });
+              room.programme = room.programme || {};
+              const previous = room.programme[producer.kind];
+              if (previous) { try { previous.close(); } catch { /* closed */ } }
+              room.programme[producer.kind] = producer;
+              producer.on("transportclose", () => {
+                if (room.programme?.[producer.kind] === producer) delete room.programme[producer.kind];
+              });
+              reply({ producerId: producer.id });
+              break;
+            }
             if (source === "screen") {
               // Screen sharing is the main host's call: guests need the
               // per-person grant, and one screen at a time keeps the
@@ -691,6 +712,18 @@ export function attachSignaling() {
 
           case "closeProducer": {
             if (!peer) return fail("not joined");
+            // The programme feed lives on the room, not among the
+            // peer's tile producers
+            let closedProgramme = false;
+            for (const kind of ["video", "audio"]) {
+              const pp = room.programme?.[kind];
+              if (pp && pp.id === data.producerId) {
+                pp.close();
+                delete room.programme[kind];
+                closedProgramme = true;
+              }
+            }
+            if (closedProgramme) { reply({}); break; }
             const producer = peer.producers.get(data.producerId);
             if (producer) {
               const wasScreen = producer.appData?.source === "screen";

@@ -18,10 +18,14 @@ export async function readJson(name, fallback = null) {
   }
 }
 
+let writeSeq = 0;
 export async function writeJson(name, value) {
   const file = path.join(config.dataDir, name);
   await ensureDir(path.dirname(file));
-  const tmp = `${file}.${process.pid}.tmp`;
+  // Two writes of the same file in flight at once (a recording's
+  // snapshot is saved on every chunk, from several uploaders) must not
+  // share a temp name, or the second rename finds nothing to move.
+  const tmp = `${file}.${process.pid}.${(writeSeq = (writeSeq + 1) % 1e9)}.tmp`;
   // Owner-only: these files hold password hashes, SMTP credentials and
   // session state - never world-readable.
   await fs.writeFile(tmp, JSON.stringify(value, null, 2), { encoding: "utf8", mode: 0o600 });
