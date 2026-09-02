@@ -4,6 +4,10 @@ All notable changes to FOSSStudio are documented here.
 
 ## Unreleased
 
+- **A way back in.** `node reset-password.js [username]` (inside the
+  container: `docker compose exec app node reset-password.js`) gives one
+  account a new random password, prints it once, and asks for a
+  restart. For the day the admin password is lost.
 - **The host's browser draws the show.** Going live or recording now
   paints the programme - the grid or spotlight, a shared screen, the
   lower thirds, the title block, intros and overlays - onto a 1280x720
