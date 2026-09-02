@@ -4,8 +4,8 @@
 import * as mediasoup from "mediasoup";
 import { config } from "./config.js";
 
-export const RTC_MIN_PORT = 40000;
-export const RTC_MAX_PORT = 40100;
+export const RTC_MIN_PORT = config.rtcMinPort;
+export const RTC_MAX_PORT = config.rtcMaxPort;
 
 export const mediaCodecs = [
   {

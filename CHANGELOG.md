@@ -4,6 +4,12 @@ All notable changes to FOSSStudio are documented here.
 
 ## Unreleased
 
+- The three port ranges are now settings, for hosts running more than
+  one studio: `RTC_MIN_PORT`/`RTC_MAX_PORT` move the public media
+  range (default 40000-40100), `LOCAL_PORT_BASE` moves the
+  loopback-only ranges the stream and recording engines use (default
+  45000). Defaults unchanged, so nobody has to do anything.
+
 - Host panel guest cards are now two short lines each - name and
   volume, then the buttons and level meter - one per row instead of
   the tall two-column stack, with slightly smaller buttons. The

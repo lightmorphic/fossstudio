@@ -5,11 +5,13 @@ import { spawn } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { recDir } from "./manager.js";
+import { config } from "../config.js";
 
-let nextPort = 45000;
+const CAPTURE_PORT_FROM = config.localPortBase;
+let nextPort = CAPTURE_PORT_FROM;
 function allocPort() {
   nextPort += 4;
-  if (nextPort > 45900) nextPort = 45000;
+  if (nextPort > CAPTURE_PORT_FROM + 900) nextPort = CAPTURE_PORT_FROM;
   return nextPort;
 }
 
