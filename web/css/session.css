@@ -863,7 +863,7 @@ body.dim-ui .host-panel:hover { opacity: 1; }
 }
 #hpGuests {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr; /* one wide, short card per person */
   gap: 0.35rem;
   margin-top: 0.5rem;
 }
@@ -874,24 +874,28 @@ body.dim-ui .host-panel:hover { opacity: 1; }
   background: var(--lm-muted);
 }
 .hp-guest.hand { background: rgba(251, 199, 17, 0.16); border-color: #fbc711; }
+/* Two short lines per person instead of a tall stack: name and volume
+   on the first, the buttons and the level meter on the second */
+.hp-guest .hp-top { display: flex; align-items: center; gap: 0.35rem; }
 .hp-guest .hp-name-line {
+  flex: 1;
+  min-width: 0;
   font-size: 0.78rem;
   font-weight: 700;
-  text-align: center;
-  margin-bottom: 0.25rem;
+  text-align: left;
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 0.3rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.hp-guest .hp-btns { display: flex; gap: 0.25rem; flex-wrap: wrap; justify-content: center; }
-.hp-guest .hp-btns .hp-btn { flex: 0 1 auto; font-size: 0.64rem; padding: 0.2rem 0.34rem; border-radius: 0.45rem; }
+.hp-guest .hp-name-line span:first-child { overflow: hidden; text-overflow: ellipsis; }
+.hp-guest .hp-btns { display: flex; gap: 0.2rem; flex-wrap: nowrap; align-items: center; margin-top: 0.24rem; }
+.hp-guest .hp-btns .hp-btn { flex: 0 0 auto; font-size: 0.64rem; padding: 0.16rem 0.26rem; border-radius: 0.45rem; }
 /* Guest-card controls are icons; hovering shows the shared bubble */
-.hp-guest .hp-guest-ico { display: grid; place-items: center; padding: 0.22rem 0.4rem; }
-.hp-guest .hp-guest-ico svg { width: 0.95rem; height: 0.95rem; }
+.hp-guest .hp-guest-ico { display: grid; place-items: center; padding: 0.16rem 0.26rem; }
+.hp-guest .hp-guest-ico svg { width: 0.82rem; height: 0.82rem; }
 /* The block button armed by its first click: red and asking */
 .hp-guest .blockp.armed {
   background: #f34236;
@@ -901,11 +905,13 @@ body.dim-ui .host-panel:hover { opacity: 1; }
 .you-ico { display: inline-grid; place-items: center; color: var(--lm-accent); flex: 0 0 auto; }
 .you-ico svg { width: 0.85rem; height: 0.85rem; }
 .hp-name-line > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-.hp-guest input[type="range"] { width: 100%; margin-top: 0.12rem; accent-color: var(--lm-accent); height: 0.9rem; }
+.hp-guest input[type="range"] { width: 64px; flex: 0 0 64px; margin: 0; accent-color: var(--lm-accent); height: 0.9rem; }
 .hp-guest .hp-vol { display: none; }
 .hp-meter {
+  flex: 1;
+  min-width: 20px;
   height: 3px;
-  margin-top: 0.22rem;
+  margin-left: 0.2rem;
   background: var(--lm-muted);
   border-radius: 2px;
   overflow: hidden;
@@ -1033,3 +1039,22 @@ body.output-mode #tipBubble { display: none; }
 #grid.sharing .tile .lower-third { display: none; } /* too small to read */
 .ctl.share-on { border-color: #f34236; color: #f34236; }
 .hp-guest .sharep.active { border-color: var(--accent, #fbc711); color: var(--accent, #fbc711); }
+.share-self-note {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  text-align: center;
+  padding: 2rem;
+  color: var(--muted);
+  background: var(--panel);
+}
+.share-self-note svg { width: 3rem; height: 3rem; color: #565d6b; }
+.share-self-note b { color: var(--text); font-size: 1.05rem; }
+.share-self-note span { font-size: 0.88rem; max-width: 26rem; }
+/* While you're the one sharing, the stop button stays visible on the
+   note rather than waiting for a hover */
+.share-stage:has(.share-self-note:not([hidden])) button { opacity: 1; }

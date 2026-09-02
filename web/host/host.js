@@ -41,6 +41,7 @@
       { id: "themes", label: "Themes", hostOnly: true },
       { id: "banner", label: "Ad Banner", hostOnly: true },
       { id: "streaming", label: "Streaming", hostOnly: true },
+      { id: "blocked", label: "Blocked", hostOnly: true },
       { id: "account", label: "Account" },
       { id: "twofactor", label: "Two-factor" }
     ] },
@@ -98,6 +99,7 @@
     document.querySelectorAll("section[id^=pane-]").forEach((s) => {
       s.hidden = s.id !== `pane-${subId}`;
     });
+    if (subId === "blocked") { loadBlocked(); loadSessionBlocked(); }
     // Remember the spot in the URL so a refresh comes back here
     history.replaceState(null, "", `#${currentMenu.id}/${subId}`);
   }

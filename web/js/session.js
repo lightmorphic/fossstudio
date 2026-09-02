@@ -46,7 +46,8 @@
     introOverlay: $("introOverlay"), introVideo: $("introVideo"),
     myColorBtn: $("myColorBtn"), myColorPop: $("myColorPop"),
     shareBtn: $("shareBtn"), shareStage: $("shareStage"),
-    shareVideo: $("shareVideo"), shareStopBtn: $("shareStopBtn")
+    shareVideo: $("shareVideo"), shareStopBtn: $("shareStopBtn"),
+    shareSelfNote: $("shareSelfNote")
   };
 
   // Inline SVG control icons (house rule: no icon fonts, no emoji)
@@ -1584,22 +1585,16 @@
       stopLocalCapture();
       return;
     }
-    els.shareVideo.srcObject = new MediaStream([screenTrack]);
-    // The browser's own "stop sharing" bar ends it too
+    // No self-preview: your own screen shown on your own screen is a
+    // hall of mirrors when the whole desktop is shared - the note in
+    // updateShareUI stands in instead
     screenTrack.addEventListener("ended", () => stopShare());
   }
 
   function stopLocalCapture() {
     if (screenTrack) { screenTrack.stop(); screenTrack = null; }
-    if (els.shareVideo.srcObject && !consumersHoldShare()) els.shareVideo.srcObject = null;
   }
 
-  function consumersHoldShare() {
-    for (const { consumer } of consumers.values()) {
-      if (els.shareVideo.srcObject?.getTracks().includes(consumer.track)) return true;
-    }
-    return false;
-  }
 
   async function stopShare() {
     const p = screenProducer;
@@ -1621,6 +1616,9 @@
       : !allowed ? "Share your screen - the host has to allow it first"
         : control.sharePeerId ? "Someone else is sharing right now"
           : "Share your screen";
+    // The presenter sees a calm note in the pane, not their own screen
+    els.shareVideo.hidden = iAmSharing;
+    els.shareSelfNote.hidden = !iAmSharing;
     // The stop button on the stage: the presenter's way back, and the
     // host's one click back to normal
     els.shareStopBtn.hidden = !control.sharePeerId || !(isHost || iAmSharing);
@@ -1651,7 +1649,11 @@
       row.dataset.peerId = peerId;
       row.classList.toggle("hand", hand);
       row.innerHTML = `
-        <div class="hp-name-line"></div>
+        <div class="hp-top">
+          <div class="hp-name-line"></div>
+          <input type="range" min="0" max="150" value="${vol}" aria-label="Volume">
+          <span class="hp-vol">${vol}%</span>
+        </div>
         <div class="hp-btns">
           <button class="hp-btn hp-guest-ico nr${nrOn ? " active" : ""}" data-tip="Noise reduction" aria-label="Noise reduction" aria-pressed="${nrOn}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12h2"/><path d="M7 9v6"/><path d="M11 5v14"/><path d="M15 8v8"/><path d="M19 12h2"/></svg></button>
           <button class="hp-btn hp-guest-ico mute" data-tip="Microphone" aria-label="Microphone" aria-pressed="${muted}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg></button>
@@ -1659,10 +1661,8 @@
           ${hand ? '<button class="hp-btn hp-guest-ico lower" data-tip="Lower their hand" aria-label="Lower their hand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 11V6a2 2 0 1 1 4 0v4V4.5a2 2 0 1 1 4 0V10v-3a2 2 0 1 1 4 0v7a7 7 0 0 1-7 7h-1a7 7 0 0 1-6-3.5L3 13.5a2 2 0 0 1 3.4-2z"/><path d="M3 3l18 18"/></svg></button>' : ""}
           ${!isSelf && !tile.isHostPeer ? '<button class="hp-btn hp-guest-ico sharep" data-tip="Allow screen sharing" aria-label="Allow screen sharing"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></button>' : ""}
           ${!isSelf && !tile.isHostPeer ? '<button class="hp-btn hp-guest-ico blockp" data-tip="Block - removes them and bars them from every session; undo any time from the dashboard" aria-label="Block this guest"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg></button>' : ""}
-        </div>
-        <div class="hp-meter"><div class="hp-meter-fill"></div></div>
-        <input type="range" min="0" max="150" value="${vol}" aria-label="Volume">
-        <span class="hp-vol">${vol}%</span>`;
+          <div class="hp-meter"><div class="hp-meter-fill"></div></div>
+        </div>`;
       const nameLine = row.querySelector(".hp-name-line");
       const nameSpan = document.createElement("span");
       nameSpan.textContent = tile.name;
