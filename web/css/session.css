@@ -998,3 +998,38 @@ body.output-mode #tipBubble { display: none; }
 .chat-menu button:hover { background: rgba(232,234,237,0.06); }
 .chat-menu button.danger { color: #ff6b60; }
 .chat-menu button.confirm { background: rgba(243,66,54,0.14); }
+
+/* ---------- Screen share ---------- */
+/* The shared picture holds the big left pane; everyone's tiles stack
+   small down the right column. Geometry mirrors shareLayout() in
+   server/src/composite.js so the stream and recording match. */
+.share-stage {
+  position: absolute;
+  z-index: 2;
+  background: #000;
+  border-radius: var(--tile-rad, 12px);
+  overflow: hidden;
+}
+.share-stage video { width: 100%; height: 100%; object-fit: contain; display: block; }
+.share-stage button {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(20, 21, 26, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 8px;
+  padding: 0.35rem 0.7rem;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+.share-stage:hover button, .share-stage button:focus-visible { opacity: 1; }
+.share-stage button:hover { background: #f34236; border-color: #f34236; }
+#grid.sharing .tile { position: absolute; }
+#grid.sharing .tile .lower-third { display: none; } /* too small to read */
+.ctl.share-on { border-color: #f34236; color: #f34236; }
+.hp-guest .sharep.active { border-color: var(--accent, #fbc711); color: var(--accent, #fbc711); }

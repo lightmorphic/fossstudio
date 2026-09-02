@@ -91,6 +91,10 @@
     </form>
   </aside>
   <main id="grid" class="grid">
+    <div id="shareStage" class="share-stage" hidden>
+      <video id="shareVideo" autoplay playsinline muted></video>
+      <button id="shareStopBtn" type="button" hidden>Stop sharing</button>
+    </div>
     <!-- Episode logo + title block: floats over the video; the host
          can drag it anywhere and the compositors follow -->
     <header id="banner" class="banner">
@@ -211,6 +215,7 @@
     <button id="handBtn" class="ctl" title="I want to talk" aria-label="I want to talk"></button>
     <button id="muteBtn" class="ctl" title="Mute microphone" aria-label="Mute microphone"></button>
     <button id="camBtn" class="ctl" title="Turn camera off" aria-label="Turn camera off"></button>
+    <button id="shareBtn" class="ctl" data-tip="Share your screen - the host has to allow it first" aria-label="Share your screen" disabled></button>
     <button id="soundboardBtn" class="ctl" title="Soundboard" aria-label="Soundboard" hidden></button>
     <button id="dimBtn" class="ctl" title="Dim the controls" aria-label="Dim the controls"></button>
     <button id="leaveBtn" class="ctl leave" title="Leave session" aria-label="Leave session"></button>
@@ -219,6 +224,6 @@
 
 <script src="/assets/mediasoup-client.js?v=20260807e"></script>
 <script src="/js/tip.js?v=20260823e"></script>
-<script src="/js/session.js?v=20260823g"></script>
+<script src="/js/session.js?v=20260831a"></script>
 </body>
 </html>

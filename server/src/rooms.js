@@ -23,6 +23,8 @@ export async function getOrCreateRoom(roomId) {
       control: {
         layout: "grid",          // "grid" | "spotlight"
         spotlightPeerId: null,
+        shareAllowed: {},        // peerId -> may share their screen
+        sharePeerId: null,       // who is sharing now (server-set)
         volumes: {},             // peerId -> 0..1.5
         muted: {},               // peerId -> true when mic is muted
         noise: {},               // peerId -> noise suppression on/off

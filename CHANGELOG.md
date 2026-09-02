@@ -4,6 +4,21 @@ All notable changes to FOSSStudio are documented here.
 
 ## Unreleased
 
+- **Screen sharing, on the host's say-so.** Every guest row in the
+  host panel has a screen toggle: allow it and that guest's share
+  button comes alive (hosts can always share). The shared screen
+  fills a big left pane while everyone's camera shrinks into a column
+  on the right - ten people get very small rather than anyone
+  vanishing - and the live stream and watch page draw the exact same
+  picture. The presenter stops from their button (or the browser's
+  own stop-sharing bar); the host clicks the stage's stop button and
+  the room snaps back to normal. One share at a time, permission
+  withdrawable mid-share, and it works from any modern browser on
+  Windows, macOS and Linux - X11 and Wayland alike, since the
+  browser's own picker does the capture. The saved copy of a live
+  stream includes the share; the separate combined studio recording
+  doesn't carry the screen picture yet.
+
 - **One-click session blocking.** When a session link has been shared
   openly and someone abuses it, the host panel now has a block button
   on every guest's row: the first click arms it (it turns red and

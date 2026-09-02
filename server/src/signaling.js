@@ -25,6 +25,27 @@ import {
   refreshStream, showOverlay, playIntroOnStream
 } from "./streaming.js";
 
+// End the current screen share: close the sharer's screen producer,
+// clear the flag, tell every screen, and relaunch the stream graph.
+function endShare(room) {
+  const sharer = room.peers.get(room.control.sharePeerId);
+  if (sharer) {
+    for (const [id, p] of sharer.producers) {
+      if (p.appData?.source === "screen") {
+        p.close();
+        sharer.producers.delete(id);
+        broadcast(room, null, { event: "producerClosed",
+          data: { peerId: sharer.id, producerId: id } });
+      }
+    }
+  }
+  if (room.control.sharePeerId) {
+    room.control.sharePeerId = null;
+    broadcast(room, null, { event: "control", data: room.control });
+    if (isStreaming(room.id)) refreshStream(room.id);
+  }
+}
+
 const ROOM_ID_RE = /^[a-zA-Z0-9_-]{4,32}$/;
 // Mirrors BANNER_COLOURS in web/js/session.js: guests' own picks are
 // validated against it, and multi-colour mode deals from it
@@ -332,6 +353,23 @@ export function attachSignaling() {
                 if (!data.muted) delete c.hands[target.id];
                 break;
               }
+              case "shareAllow": {
+                // The host's say-so: only then does a guest's share
+                // button come alive. Revoking mid-share ends the share.
+                const target = room.peers.get(data.peerId);
+                if (!target) return fail("no such guest");
+                if (data.allowed) c.shareAllowed[target.id] = true;
+                else {
+                  delete c.shareAllowed[target.id];
+                  if (c.sharePeerId === target.id) endShare(room);
+                }
+                break;
+              }
+              case "shareStop": {
+                // The host's one click back to normal, any time
+                endShare(room);
+                break;
+              }
               case "block": {
                 // One click: bar this guest from every session on the
                 // server (by IP and device marker), and drop them now.
@@ -604,13 +642,31 @@ export function attachSignaling() {
             if (peer.role === "viewer") return fail("view-only connection");
             const transport = peer.transports.get(data.transportId);
             if (!transport) return fail("no such transport");
+            const source = String(data.source || data.kind).slice(0, 20);
+            if (source === "screen") {
+              // Screen sharing is the main host's call: guests need the
+              // per-person grant, and one screen at a time keeps the
+              // picture (and the stream graph) sane
+              if (peer.role !== "host" && !room.control.shareAllowed[peer.id]) {
+                return fail("The host hasn't allowed screen sharing.");
+              }
+              if (room.control.sharePeerId) return fail("Someone is already sharing.");
+            }
             const producer = await transport.produce({
               kind: data.kind,
               rtpParameters: data.rtpParameters,
-              appData: { source: String(data.source || data.kind).slice(0, 20) }
+              appData: { source }
             });
             peer.producers.set(producer.id, producer);
-            producer.on("transportclose", () => peer.producers.delete(producer.id));
+            producer.on("transportclose", () => {
+              peer.producers.delete(producer.id);
+              if (source === "screen" && room.control.sharePeerId === peer.id) endShare(room);
+            });
+            if (source === "screen") {
+              room.control.sharePeerId = peer.id;
+              broadcast(room, null, { event: "control", data: room.control });
+              if (isStreaming(room.id)) refreshStream(room.id);
+            }
             reply({ producerId: producer.id });
             broadcast(room, peer.id, {
               event: "newProducer",
@@ -637,12 +693,14 @@ export function attachSignaling() {
             if (!peer) return fail("not joined");
             const producer = peer.producers.get(data.producerId);
             if (producer) {
+              const wasScreen = producer.appData?.source === "screen";
               producer.close();
               peer.producers.delete(producer.id);
               broadcast(room, peer.id, {
                 event: "producerClosed",
                 data: { peerId: peer.id, producerId: data.producerId }
               });
+              if (wasScreen && room.control.sharePeerId === peer.id) endShare(room);
             }
             reply({});
             break;
@@ -708,6 +766,10 @@ export function attachSignaling() {
       }
       const rec = activeRecording(room.id);
       if (rec) markPeerDone(rec.id, peer.id);
+      if (room.control.sharePeerId === peer.id) {
+        room.control.sharePeerId = null;
+        broadcast(room, null, { event: "control", data: room.control });
+      }
       removePeer(room, peer.id);
       broadcast(room, null, { event: "peerLeft", data: { peerId: peer.id } });
       if (isStreaming(room.id)) refreshStream(room.id);
