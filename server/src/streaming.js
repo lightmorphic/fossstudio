@@ -78,7 +78,10 @@ export function liveOutputs(roomId) {
     channel: !!state?.outputs.channel,
     rtmp: !!state?.outputs.rtmp,
     channelSince: state?.channelSince || null,
-    rtmpSince: state?.rtmpSince || null
+    rtmpSince: state?.rtmpSince || null,
+    // "programme": the host's browser is the mixer and the server only
+    // passes the feed on. "composite": the server draws and encodes.
+    mode: state ? (state.programme ? "programme" : "composite") : null
   };
 }
 
@@ -262,6 +265,14 @@ export async function finalizeLive(state) {
 async function launch(state) {
   const { room } = state;
   const gen = ++state.generation;
+  // The host's browser is the mixer: it has drawn the grid, mixed the
+  // sound and encoded one H.264 stream already. All that is left for
+  // this machine is to pass it on. Nothing is drawn or encoded here, so
+  // a live show costs the server a fraction of one core rather than two
+  // whole ones, and joins, banners, intros and overlays never relaunch
+  // anything - the browser already put them in the picture.
+  if (room.programme?.video && room.programme?.audio) return launchProgramme(state, gen);
+  state.programme = false;
   // Intro takeover: stream the uploaded file fullscreen instead of the
   // grid. The switch in and back out is masked by the intro transition.
   if (state.introFile) return launchIntro(state, gen);
@@ -512,6 +523,83 @@ async function launch(state) {
   console.log(`streaming ${room.id}: ${videos.length} video + ${audios.length} audio inputs, ${bannerArgs.length / 6} banners`);
 }
 
+// The programme feed: the host's browser sends one finished picture and
+// one mixed sound. Video is copied, never re-encoded; the only work is
+// turning the browser's Opus into the AAC that RTMP and HLS expect,
+// which is audio only and nearly free.
+async function launchProgramme(state, gen) {
+  const { room } = state;
+  state.programme = true;
+  const workDir = await fs.mkdtemp(path.join(os.tmpdir(), "fslive-"));
+  const cleanup = { transports: [], consumers: [], ffmpeg: null, workDir, keyframes: null };
+  state.current = cleanup;
+
+  const inputs = [];
+  for (const kind of ["video", "audio"]) {
+    const producer = room.programme[kind];
+    const port = allocPort();
+    const transport = await room.router.createPlainTransport({
+      listenInfo: { protocol: "udp", ip: "127.0.0.1" },
+      rtcpMux: true, comedia: false
+    });
+    await transport.connect({ ip: "127.0.0.1", port });
+    const consumer = await transport.consume({
+      producerId: producer.id,
+      rtpCapabilities: room.router.rtpCapabilities,
+      paused: true
+    });
+    if (kind === "video" && !/H264/i.test(consumer.rtpParameters.codecs[0].mimeType)) {
+      await teardown(cleanup);
+      throw new Error("the programme feed is not H.264, so it cannot be passed on without encoding");
+    }
+    const sdpPath = path.join(workDir, `${kind}.sdp`);
+    await fs.writeFile(sdpPath, sdpFor(port, consumer));
+    inputs.push(sdpPath);
+    cleanup.transports.push(transport);
+    cleanup.consumers.push(consumer);
+  }
+
+  const dest = await destArgs(state, gen);
+  const ffArgs = [
+    "-nostdin", "-loglevel", "warning", "-y",
+    ...inputs.flatMap((sdp, i) => [
+      "-protocol_whitelist", "file,udp,rtp",
+      "-analyzeduration", "10M", "-probesize", "10M",
+      // A browser's H.264 carries no frame-rate in its headers, and a
+      // muxer told nothing guesses wildly; the canvas is drawn at 30.
+      ...(i === 0 ? ["-r", "30"] : []),
+      "-i", sdp
+    ]),
+    "-map", "0:v", "-map", "1:a",
+    "-c:v", "copy",
+    "-c:a", "aac", "-b:a", "128k", "-ar", "44100", "-ac", "1",
+    ...dest
+  ];
+  if (process.env.STREAM_DEBUG) console.error(`stream[${room.id}] ffmpeg ${ffArgs.join(" ")}`);
+  cleanup.ffmpeg = spawn("ffmpeg", ffArgs);
+  cleanup.ffmpeg.stderr.on("data", (d) => {
+    const line = d.toString().trim();
+    if (line) console.error(`stream[${room.id}]: ${line.slice(0, 200)}`);
+  });
+  cleanup.ffmpeg.on("close", (code) => {
+    const s = streams.get(room.id);
+    if (s && s.generation === gen && !s.stopping && !s.relaunching) {
+      console.error(`stream ffmpeg exited (${code}); stopping stream`);
+      stopStream(room.id).catch(() => {});
+    }
+  });
+
+  for (const c of cleanup.consumers) await c.resume();
+  // A browser encoder decides its own keyframe spacing, and HLS can only
+  // cut a segment on a keyframe, so ask for one every two seconds: the
+  // segments stay short and the watch page stays close to live.
+  const video = cleanup.consumers.find((c) => c.kind === "video");
+  const ask = () => { if (video && !video.closed) video.requestKeyFrame().catch(() => {}); };
+  for (const delay of [0, 500, 1500]) setTimeout(ask, delay);
+  cleanup.keyframes = setInterval(ask, 2000);
+  console.log(`streaming ${room.id}: programme feed from the host's browser, video copied`);
+}
+
 // Fullscreen intro: one file, looped and paced in realtime, scaled to
 // 720p. No RTP inputs - the participants keep producing, we just don't
 // consume them until we relaunch back to the grid.
@@ -561,6 +649,7 @@ async function launchIntro(state, gen) {
 export async function playIntroOnStream(roomId, file, durationMs, hasAudio) {
   const state = streams.get(roomId);
   if (!state || state.stopping || state.relaunching) return;
+  if (state.programme) return; // the host's browser plays it into the feed
   state.relaunching = true;
   try {
     state.introFile = file;
@@ -590,13 +679,20 @@ export async function playIntroOnStream(roomId, file, durationMs, hasAudio) {
 
 async function teardown(cleanup) {
   if (!cleanup) return;
+  clearInterval(cleanup.keyframes);
   for (const c of cleanup.consumers) { try { c.close(); } catch { /* closed */ } }
   for (const t of cleanup.transports) { try { t.close(); } catch { /* closed */ } }
   if (cleanup.ffmpeg) {
     cleanup.ffmpeg.kill("SIGINT");
+    // The programme copy sits in a blocking RTP read and only sees the
+    // signal when a packet arrives or the jitter window runs out; with
+    // the consumers already closed that is several seconds of nothing.
+    // Its outputs need no trailer - HLS segments are whole files and
+    // RTMP is a live push - so it is cut short quickly.
+    const grace = cleanup.keyframes !== undefined ? 1000 : 4000;
     await new Promise((resolve) => {
       cleanup.ffmpeg.on("close", resolve);
-      setTimeout(() => { cleanup.ffmpeg.kill("SIGKILL"); resolve(); }, 4000);
+      setTimeout(() => { cleanup.ffmpeg.kill("SIGKILL"); resolve(); }, grace);
     });
   }
   if (cleanup.workDir) {
@@ -621,6 +717,8 @@ async function refreshNow(state) {
 export function refreshStream(roomId, delayMs = 2000) {
   const state = streams.get(roomId);
   if (!state || state.stopping) return;
+  // The browser's picture already has whatever changed
+  if (state.programme) return;
   // Don't disturb an intro takeover - its own timer relaunches the grid
   if (state.introFile) return;
   clearTimeout(state.refreshTimer);
@@ -644,6 +742,7 @@ export function refreshStream(roomId, delayMs = 2000) {
 export async function showOverlay(roomId, spec) {
   const state = streams.get(roomId);
   if (!state || state.stopping) throw new Error("not streaming");
+  if (state.programme) return; // the host's browser draws it into the feed
   if (state.relaunching) throw new Error("stream is busy, try again in a moment");
   state.relaunching = true;
   try {

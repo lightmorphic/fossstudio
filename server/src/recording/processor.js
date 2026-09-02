@@ -96,6 +96,30 @@ export async function processRecording(rec) {
     if (part.audioFile || part.videoFile) parts.push(part);
   }
 
+  // The host's browser may have recorded the programme itself - the
+  // very picture and sound it sent to the stream. Then the combined
+  // file is that, copied into an MP4 with the audio turned to AAC, and
+  // the grid render below never runs: no libx264, no compositing, a
+  // few seconds of audio work on a machine that would otherwise spend
+  // minutes of a whole core on a long show.
+  const programmeFile = [...rec.peers.values()]
+    .map((p) => p.files.programme && path.join(raw, p.files.programme))
+    .find(Boolean);
+  if (programmeFile && await exists(programmeFile)) {
+    await ffmpeg(["-i", programmeFile,
+      "-map", "0:v:0", "-map", "0:a:0?",
+      "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+      "-movflags", "+faststart",
+      "-y", path.join(out, "combined.mp4")], "combined (programme)");
+    files.push("combined.mp4");
+    // The same mix, lossless, the way the grid render provides it
+    await ffmpeg(["-i", programmeFile, "-map", "0:a:0", "-vn",
+      "-c:a", "flac", "-y", path.join(out, "combined.flac")], "combined.flac (programme)")
+      .then(() => files.push("combined.flac"))
+      .catch(() => { /* a silent programme has no audio track to keep */ });
+    return files;
+  }
+
   // Combined grid MKV: video tiles stacked, all audio mixed.
   // Host top-left, like every screen.
   const videos = parts.filter((p) => p.videoFile)

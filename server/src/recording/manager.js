@@ -227,7 +227,10 @@ export async function appendChunk(recId, peerId, kind, seq, buf) {
   if (!rec) throw new Error("no such recording");
   const p = rec.peers.get(peerId);
   if (!p) throw new Error("peer not in recording");
-  if (!["audio", "video"].includes(kind)) throw new Error("bad kind");
+  // "programme" is the host's browser sending the finished picture and
+  // mixed sound, already drawn and encoded there, so the server has no
+  // grid to render afterwards.
+  if (!["audio", "video", "programme"].includes(kind)) throw new Error("bad kind");
   const safe = `${peerId}-${kind}.webm`;
   p.files[kind] = safe;
   await fs.appendFile(path.join(recDir(recId), "raw", safe), buf);

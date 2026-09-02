@@ -493,6 +493,16 @@
   const tiles = new Map();     // peerId -> {el, video, stream, name, gain}
   const consumers = new Map(); // consumerId -> {consumer, peerId}
 
+  // ---------- The programme: this browser as the mixer ----------
+  // When the host goes live or records, this page draws the show onto a
+  // canvas, mixes every voice, and sends one finished stream. The
+  // server passes it on without drawing or encoding anything.
+  let mixer = null;
+  let programmeVideo = null, programmeAudio = null;
+  let micBus = null;                // the host's own mic into the programme, muted with the button
+  const bannerImgs = new Map();     // peerId -> Image, the same PNG the recording would use
+  let titleImg = null;
+
   // ---------- Theme ----------
 
   function applyTheme(theme) {
@@ -603,6 +613,7 @@
     const gain = audioCtx.createGain();
     gain.gain.value = control.volumes[peerId] ?? 1;
     src.connect(gain).connect(audioSink());
+    if (mixer?.audioDest) gain.connect(mixer.audioDest);
     tile.gain = gain;
     const an = audioCtx.createAnalyser();
     an.fftSize = 256;
@@ -1248,6 +1259,18 @@
     const logoEl = document.getElementById("bannerLogo");
     const hasBlock = titleText || (!logoEl.hidden && logoEl.complete && logoEl.naturalWidth > 0);
     const title = hasBlock ? drawTitlePng(titleText) : null;
+    // The mixer draws from these, so keep decoded copies here
+    for (const [peerId, dataUrl] of Object.entries(images)) {
+      const have = bannerImgs.get(peerId);
+      if (have?.src === dataUrl) continue;
+      const img = new Image();
+      img.src = dataUrl;
+      bannerImgs.set(peerId, img);
+    }
+    for (const peerId of [...bannerImgs.keys()]) if (!(peerId in images)) bannerImgs.delete(peerId);
+    if (title) {
+      if (titleImg?.src !== title) { titleImg = new Image(); titleImg.src = title; }
+    } else titleImg = null;
     // Only send when something actually changed - while live, the server
     // relaunches the stream to pick banners up, which costs a short blip
     const payload = JSON.stringify([images, title]);
@@ -1846,8 +1869,44 @@
         ).catch(() => {});
       };
       recorder.start(5000);
-      recorders.push({ recorder, getQueue: () => queue });
+      recorders.push({ recorder, getQueue: () => queue, kind });
     };
+
+    // The host's browser also records the finished programme - the same
+    // picture and sound the stream carries - so the combined file needs
+    // no render on the server at all
+    if (isHost) {
+      const m = ensureMixer();
+      const stream = m.start();
+      if (!programmeVideo) {
+        const ctx = ensureAudioCtx();
+        for (const tile of tiles.values()) if (tile.gain) tile.gain.connect(m.audioDest);
+        if (clipBus) clipBus.connect(m.audioDest);
+        if (micProducer?.track && !micBus) {
+          micBus = ctx.createGain();
+          micBus.gain.value = micProducer.paused ? 0 : 1;
+          ctx.createMediaStreamSource(new MediaStream([micProducer.track])).connect(micBus).connect(m.audioDest);
+        }
+      }
+      const mimes = ["video/webm;codecs=h264,opus", "video/mp4;codecs=avc1,mp4a.40.2", "video/webm;codecs=avc1,opus"];
+      const type = mimes.find((t) => MediaRecorder.isTypeSupported(t));
+      if (type) {
+        const recorder = new MediaRecorder(stream, { mimeType: type, videoBitsPerSecond: 3_000_000 });
+        let seq = 0;
+        let queue = Promise.resolve();
+        recorder.ondataavailable = (e) => {
+          if (!e.data.size) return;
+          const n = seq++;
+          queue = queue.then(() =>
+            fetch(`${base}&kind=programme&seq=${n}`, { method: "POST", body: e.data })
+          ).catch(() => {});
+        };
+        recorder.start(5000);
+        recorders.push({ recorder, getQueue: () => queue, kind: "programme" });
+      } else {
+        console.warn("this browser cannot record H.264; the server will render the combined file after the show");
+      }
+    }
 
     // Audio: PCM when the browser can (true lossless), else opus
     startOne(micProducer?.track, "audio",
@@ -1866,6 +1925,7 @@
     );
     recorders = [];
     await Promise.all(done);
+    if (mixer && !programmeVideo) mixer.stop();
     if (recUpload) {
       const { recId, peerId, token } = recUpload;
       await fetch(`/api/rec/done?rec=${encodeURIComponent(recId)}&peer=${encodeURIComponent(peerId)}&token=${encodeURIComponent(token)}`, { method: "POST" }).catch(() => {});
@@ -1930,6 +1990,7 @@
     keepalive.start();
     clipBus.connect(dest);        // -> guests + live stream
     clipBus.connect(audioSink()); // -> the host's own monitor
+    if (mixer?.audioDest) clipBus.connect(mixer.audioDest);
     clipsProducer = await sendTransport.produce({
       track: dest.stream.getAudioTracks()[0],
       appData: { source: "clips" }
@@ -2164,6 +2225,7 @@
   const live = () => outputs.channel || outputs.rtmp;
   function setLiveIndicator(next) {
     outputs = { channel: !!next.channel, rtmp: !!next.rtmp };
+    if (!outputs.channel && !outputs.rtmp && programmeVideo) stopProgramme().catch(() => {});
     channelSince = next.channelSince || null;
     rtmpSince = next.rtmpSince || null;
     els.banner.classList.toggle("live", live());
@@ -2336,12 +2398,89 @@
 
   const toggleOutput = (target) => async () => {
     try {
-      // Banners must reach the server before launch: the stream graph is
-      // fixed at start, and a late arrival would force a relaunch blip
-      if (!outputs[target]) await sendBannerSnapshots(true).catch(() => {});
+      if (!outputs[target]) {
+        await sendBannerSnapshots(true).catch(() => {});
+        // This browser draws and encodes the show; the server only
+        // passes it on. Without that the server would have to encode,
+        // which is exactly the cost this design exists to avoid.
+        await startProgramme();
+      }
       await request("hostControl", { action: "stream", target, start: !outputs[target] });
     } catch (e) { alert(e.message); }
   };
+
+  // ---------- The programme feed ----------
+  function ensureMixer() {
+    if (mixer) return mixer;
+    mixer = FSMixer.create({
+      grid: els.grid, tiles,
+      control: () => control,
+      shareVideo: els.shareVideo,
+      introOverlay: els.introOverlay, introVideo: els.introVideo,
+      audioContext: ensureAudioCtx,
+      bannerImage: (peerId) => bannerImgs.get(peerId) || null,
+      titleImage: () => titleImg,
+      tickWorkerUrl: "/assets/tick-worker.js"
+    });
+    return mixer;
+  }
+
+  // Start drawing and mixing, and hand the result to the server as the
+  // programme feed. Idempotent: recording and going live both call it.
+  async function startProgramme() {
+    if (!isHost) return;
+    const m = ensureMixer();
+    if (!m.running) {
+      const stream = m.start();
+      const ctx = ensureAudioCtx();
+      // Everyone already in the room, the host's own mic, and the clips
+      for (const tile of tiles.values()) if (tile.gain) tile.gain.connect(m.audioDest);
+      if (clipBus) clipBus.connect(m.audioDest);
+      if (micProducer?.track) {
+        micBus = ctx.createGain();
+        micBus.gain.value = micProducer.paused ? 0 : 1;
+        ctx.createMediaStreamSource(new MediaStream([micProducer.track])).connect(micBus).connect(m.audioDest);
+      }
+      window.__programmeStream = stream;
+    }
+    if (programmeVideo) return;
+    // H.264, so the server can pass the picture on untouched. A browser
+    // that cannot encode it would push the work back onto the server,
+    // and this feature exists to take it off.
+    const h264 = device.rtpCapabilities.codecs.find((c) => /video\/H264/i.test(c.mimeType));
+    if (!h264) throw new Error("This browser cannot encode H.264, which live streaming needs. Chrome, Edge or Safari can.");
+    const stream = m.start();
+    const [vt] = stream.getVideoTracks();
+    const [at] = stream.getAudioTracks();
+    // The picture is the product: when the encoder has to give
+    // something up it drops frames, never resolution, so a busy laptop
+    // sends a slightly less smooth 720p rather than a smooth 360p.
+    try { vt.contentHint = "detail"; } catch { /* optional */ }
+    programmeVideo = await sendTransport.produce({
+      track: vt,
+      codec: h264,
+      encodings: [{ maxBitrate: 3_000_000, scaleResolutionDownBy: 1 }],
+      codecOptions: { videoGoogleStartBitrate: 2000 },
+      appData: { source: "programme" }
+    });
+    try {
+      const params = programmeVideo.rtpSender.getParameters();
+      params.degradationPreference = "maintain-resolution";
+      await programmeVideo.rtpSender.setParameters(params);
+    } catch { /* older browsers: the encoder picks */ }
+    programmeAudio = await sendTransport.produce({ track: at, appData: { source: "programme" } });
+  }
+
+  async function stopProgramme() {
+    for (const p of [programmeVideo, programmeAudio]) {
+      if (!p) continue;
+      try { await request("closeProducer", { producerId: p.id }); } catch { /* gone */ }
+      try { p.close(); } catch { /* closed */ }
+    }
+    programmeVideo = programmeAudio = null;
+    if (mixer && !recorders.some((r) => r.kind === "programme")) mixer.stop();
+    micBus = null;
+  }
   els.shareBtn.onclick = () => { screenProducer ? stopShare() : startShare(); };
   els.shareStopBtn.onclick = () => {
     if (control.sharePeerId === selfId) stopShare();
