@@ -73,6 +73,20 @@ app.get("/healthz", (req, res) => {
   res.json({ ok: true, uptime: Math.round(process.uptime()) });
 });
 
+// What is running, for whoever is looking after the box: a self-hoster's
+// own uptime check, or an operator running several. Read once at start,
+// from the package file, so it cannot drift from what was installed.
+const VERSION = (() => {
+  try {
+    return JSON.parse(fs.readFileSync(new URL("../package.json", import.meta.url), "utf8")).version || "unknown";
+  } catch {
+    return "unknown";
+  }
+})();
+app.get("/version", (req, res) => {
+  res.json({ name: "fossstudio", version: VERSION });
+});
+
 // A deploy checks this before recreating the container: recreating it
 // mid-render kills the ffmpeg process (that cost a real show its
 // combined video once) - the deploy script waits a bit if this is
