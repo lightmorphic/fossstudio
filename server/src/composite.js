@@ -77,6 +77,36 @@ function spotlightLayout(n, W, H, PAD, GAP) {
   return tiles;
 }
 
+// Screen share: the shared picture fills a large left pane and every
+// person shrinks into a column on the right - ten of them get very
+// small rather than anyone disappearing. Mirrors the share branch of
+// applyLayout() in web/js/session.js, held together by the geometry
+// test like the other layouts.
+export const SHARE_FRACTION = 0.72; // of frame width for the screen pane
+
+export function shareLayout(nOthers, W = 1280, H = 720) {
+  const PAD = Math.round(W * LAYOUT.pad);
+  const GAP = Math.round(W * LAYOUT.gap);
+  const availH = H - 2 * PAD;
+  const screenW = even(W * SHARE_FRACTION);
+  const screen = { x: PAD, y: PAD, w: screenW, h: even(availH) };
+  const colX = PAD + screenW + GAP;
+  const colW = W - PAD - colX;
+  const tiles = [];
+  if (nOthers > 0) {
+    const idealH = even(colW * 9 / 16);
+    const tileH = even(Math.min(idealH, (availH - (nOthers - 1) * GAP) / nOthers));
+    const tileW = even(tileH * 16 / 9);
+    const blockH = nOthers * tileH + (nOthers - 1) * GAP;
+    const y0 = Math.round(PAD + Math.max(0, (availH - blockH) / 2));
+    const x0 = Math.round(colX + (colW - tileW) / 2);
+    for (let i = 0; i < nOthers; i++) {
+      tiles.push({ x: x0, y: y0 + i * (tileH + GAP), w: tileW, h: tileH });
+    }
+  }
+  return { screen, tiles };
+}
+
 // Where every tile sits in the frame. `spotIndex` is the position of the
 // featured person in `order`, or -1 for the even grid. Returns boxes in
 // the same order as the inputs, so a caller can zip them together.

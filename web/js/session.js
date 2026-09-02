@@ -44,7 +44,9 @@
     soundboardBtn: $("soundboardBtn"), soundBar: $("soundBar"),
     soundBarList: $("soundBarList"), soundBarClose: $("soundBarClose"),
     introOverlay: $("introOverlay"), introVideo: $("introVideo"),
-    myColorBtn: $("myColorBtn"), myColorPop: $("myColorPop")
+    myColorBtn: $("myColorBtn"), myColorPop: $("myColorPop"),
+    shareBtn: $("shareBtn"), shareStage: $("shareStage"),
+    shareVideo: $("shareVideo"), shareStopBtn: $("shareStopBtn")
   };
 
   // Inline SVG control icons (house rule: no icon fonts, no emoji)
@@ -58,9 +60,10 @@
     hand: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 11V6a1.5 1.5 0 0 1 3 0v4V4.5a1.5 1.5 0 0 1 3 0V10V6a1.5 1.5 0 0 1 3 0v5.5l1.6-2.2a1.5 1.5 0 0 1 2.5 1.6L17.5 17a6 6 0 0 1-5.6 4H11a6 6 0 0 1-6-6v-4z"/></svg>',
     leave: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3M15 16l4-4-4-4M19 12H9"/></svg>',
     recDot: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="7"/></svg>',
-    soundboard: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17V5l11-2v12"/><circle cx="6" cy="17" r="3"/><circle cx="17" cy="15" r="3"/></svg>'
+    soundboard: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17V5l11-2v12"/><circle cx="6" cy="17" r="3"/><circle cx="17" cy="15" r="3"/></svg>',
+    screen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/><path d="M9 11l3-3 3 3"/></svg>'
   };
-  for (const [id, icon] of [["muteBtn", "mic"], ["camBtn", "cam"], ["dimBtn", "dim"], ["leaveBtn", "leave"], ["myColorBtn", "palette"], ["handBtn", "hand"], ["recLight", "recDot"], ["soundboardBtn", "soundboard"]]) {
+  for (const [id, icon] of [["muteBtn", "mic"], ["camBtn", "cam"], ["dimBtn", "dim"], ["leaveBtn", "leave"], ["myColorBtn", "palette"], ["handBtn", "hand"], ["recLight", "recDot"], ["soundboardBtn", "soundboard"], ["shareBtn", "screen"]]) {
     document.getElementById(id).innerHTML = ICONS[icon];
   }
 
@@ -644,6 +647,50 @@
   }
 
   function applyLayout() {
+    const sharing = !!control.sharePeerId;
+    els.grid.classList.toggle("sharing", sharing);
+    els.shareStage.hidden = !sharing;
+    if (sharing) {
+      // Screen share layout: the shared picture in the big left pane,
+      // everyone small down the right - the same fractions as
+      // shareLayout() in server/src/composite.js, so the stream and
+      // the recording show this exact picture
+      applyGridSpacing();
+      els.grid.classList.remove("spotlight");
+      const cs = getComputedStyle(els.grid);
+      const gap = parseFloat(cs.gap) || 16;
+      const padL = parseFloat(cs.paddingLeft), padT = parseFloat(cs.paddingTop);
+      const padR = parseFloat(cs.paddingRight), padB = parseFloat(cs.paddingBottom);
+      const W = els.grid.clientWidth;
+      const availH = els.grid.clientHeight - padT - padB;
+      const screenW = W * 0.72; // SHARE_FRACTION in composite.js
+      Object.assign(els.shareStage.style, {
+        left: `${Math.round(padL)}px`, top: `${Math.round(padT)}px`,
+        width: `${Math.round(screenW)}px`, height: `${Math.round(availH)}px`
+      });
+      const colX = padL + screenW + gap;
+      const colW = (W - padR) - colX;
+      const tileEls = [...els.grid.querySelectorAll(".tile")];
+      const n = Math.max(1, tileEls.length);
+      const tileH = Math.min(colW * 9 / 16, (availH - (n - 1) * gap) / n);
+      const tileW = tileH * 16 / 9;
+      const blockH = n * tileH + (n - 1) * gap;
+      const y0 = padT + Math.max(0, (availH - blockH) / 2);
+      const x0 = colX + (colW - tileW) / 2;
+      tileEls.forEach((el, i) => {
+        el.classList.remove("featured");
+        Object.assign(el.style, {
+          left: `${Math.round(x0)}px`, top: `${Math.round(y0 + i * (tileH + gap))}px`,
+          width: `${Math.round(tileW)}px`, height: `${Math.round(tileH)}px`
+        });
+      });
+      positionTitleBlock();
+      return;
+    }
+    for (const t of els.grid.querySelectorAll(".tile")) {
+      t.style.width = "";
+      t.style.height = "";
+    }
     const spot = control.layout === "spotlight" && tiles.has(control.spotlightPeerId);
     // Spacing is a fraction of the video area, the same fraction the
     // compositors use of the frame, so the recording is the same picture
@@ -1158,6 +1205,7 @@
       if (control.backdrop.style) backdropStyle = control.backdrop.style;
       if (isHost) renderBackdropUI();
     }
+    updateShareUI();
     applyLayout();
     applyTitleBg();
     applyTitleShow();
@@ -1505,6 +1553,86 @@
     return c.toDataURL("image/png");
   }
 
+  // ---------- Screen share ----------
+  // The host's say-so arms a guest's share button; producing a video
+  // track with source "screen" flips every screen (and the stream
+  // compositor) into the share layout until it stops - from the
+  // presenter, the host, or the browser's own stop-sharing bar.
+  let screenProducer = null;
+  let screenTrack = null;
+
+  async function startShare() {
+    if (screenProducer || control.sharePeerId) return;
+    let stream;
+    try {
+      // getDisplayMedia is the cross-platform door: Windows, macOS and
+      // X11 natively; Wayland via the desktop portal and PipeWire
+      stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { frameRate: { ideal: 15, max: 30 } }, audio: false
+      });
+    } catch { return; } // picker dismissed or denied
+    screenTrack = stream.getVideoTracks()[0];
+    try { screenTrack.contentHint = "detail"; } catch { /* optional */ }
+    try {
+      screenProducer = await sendTransport.produce({
+        track: screenTrack,
+        encodings: [{ maxBitrate: 2_500_000 }],
+        appData: { source: "screen" }
+      });
+    } catch (err) {
+      console.error("share refused:", err.message);
+      stopLocalCapture();
+      return;
+    }
+    els.shareVideo.srcObject = new MediaStream([screenTrack]);
+    // The browser's own "stop sharing" bar ends it too
+    screenTrack.addEventListener("ended", () => stopShare());
+  }
+
+  function stopLocalCapture() {
+    if (screenTrack) { screenTrack.stop(); screenTrack = null; }
+    if (els.shareVideo.srcObject && !consumersHoldShare()) els.shareVideo.srcObject = null;
+  }
+
+  function consumersHoldShare() {
+    for (const { consumer } of consumers.values()) {
+      if (els.shareVideo.srcObject?.getTracks().includes(consumer.track)) return true;
+    }
+    return false;
+  }
+
+  async function stopShare() {
+    const p = screenProducer;
+    screenProducer = null;
+    if (p) {
+      const pid = p.id;
+      p.close();
+      request("closeProducer", { producerId: pid }).catch(() => {});
+    }
+    stopLocalCapture();
+  }
+
+  function updateShareUI() {
+    const iAmSharing = !!control.sharePeerId && control.sharePeerId === selfId;
+    const allowed = isHost || !!control.shareAllowed?.[selfId];
+    els.shareBtn.disabled = !allowed || (!!control.sharePeerId && !iAmSharing);
+    els.shareBtn.classList.toggle("share-on", iAmSharing);
+    els.shareBtn.dataset.tip = iAmSharing ? "Stop sharing your screen"
+      : !allowed ? "Share your screen - the host has to allow it first"
+        : control.sharePeerId ? "Someone else is sharing right now"
+          : "Share your screen";
+    // The stop button on the stage: the presenter's way back, and the
+    // host's one click back to normal
+    els.shareStopBtn.hidden = !control.sharePeerId || !(isHost || iAmSharing);
+    // The host ended it from their side: release the local capture
+    if (!iAmSharing && screenProducer) {
+      const p = screenProducer;
+      screenProducer = null;
+      p.close();
+      stopLocalCapture();
+    }
+  }
+
   // ---------- Host panel ----------
 
   function renderHostGuests() {
@@ -1529,6 +1657,7 @@
           <button class="hp-btn hp-guest-ico mute" data-tip="Microphone" aria-label="Microphone" aria-pressed="${muted}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg></button>
           <button class="hp-btn hp-guest-ico spot" data-tip="Spotlight" aria-label="Spotlight"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.5 5.3 5.5.7-4 4 1 5.7-5-2.8-5 2.8 1-5.7-4-4 5.5-.7z"/></svg></button>
           ${hand ? '<button class="hp-btn hp-guest-ico lower" data-tip="Lower their hand" aria-label="Lower their hand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 11V6a2 2 0 1 1 4 0v4V4.5a2 2 0 1 1 4 0V10v-3a2 2 0 1 1 4 0v7a7 7 0 0 1-7 7h-1a7 7 0 0 1-6-3.5L3 13.5a2 2 0 0 1 3.4-2z"/><path d="M3 3l18 18"/></svg></button>' : ""}
+          ${!isSelf && !tile.isHostPeer ? '<button class="hp-btn hp-guest-ico sharep" data-tip="Allow screen sharing" aria-label="Allow screen sharing"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></button>' : ""}
           ${!isSelf && !tile.isHostPeer ? '<button class="hp-btn hp-guest-ico blockp" data-tip="Block - removes them and bars them from every session; undo any time from the dashboard" aria-label="Block this guest"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg></button>' : ""}
         </div>
         <div class="hp-meter"><div class="hp-meter-fill"></div></div>
@@ -1567,6 +1696,19 @@
             return;
           }
           request("hostControl", { action: "block", peerId }).catch(() => {});
+        };
+      }
+      const shareAllowBtn = row.querySelector(".sharep");
+      if (shareAllowBtn) {
+        const allowed = !!control.shareAllowed?.[peerId];
+        const sharingNow = control.sharePeerId === peerId;
+        shareAllowBtn.classList.toggle("active", allowed);
+        shareAllowBtn.dataset.tip = sharingNow
+          ? "Sharing now - click to end their share"
+          : allowed ? "Screen sharing allowed - click to withdraw" : "Allow screen sharing";
+        shareAllowBtn.onclick = () => {
+          if (sharingNow) request("hostControl", { action: "shareStop" });
+          else request("hostControl", { action: "shareAllow", peerId, allowed: !allowed });
         };
       }
       const muteBtn = row.querySelector(".mute");
@@ -2200,6 +2342,11 @@
       await request("hostControl", { action: "stream", target, start: !outputs[target] });
     } catch (e) { alert(e.message); }
   };
+  els.shareBtn.onclick = () => { screenProducer ? stopShare() : startShare(); };
+  els.shareStopBtn.onclick = () => {
+    if (control.sharePeerId === selfId) stopShare();
+    else request("hostControl", { action: "shareStop" }).catch(() => {});
+  };
   els.hpLiveBtn.onclick = toggleOutput("channel");
   els.hpYtBtn.onclick = toggleOutput("rtmp");
 
@@ -2221,6 +2368,9 @@
       attachClipAudio(consumer.track);
     } else if (kind === "audio") {
       attachAudio(peerId, consumer.track);
+    } else if (source === "screen") {
+      // The shared screen plays on the big stage, not in anyone's tile
+      els.shareVideo.srcObject = new MediaStream([consumer.track]);
     } else {
       const tile = tiles.get(peerId);
       if (tile) tile.stream.addTrack(consumer.track);
@@ -2231,6 +2381,9 @@
   function dropConsumer(consumerId) {
     const c = consumers.get(consumerId);
     if (!c) return;
+    if (els.shareVideo.srcObject?.getTracks().includes(c.consumer.track)) {
+      els.shareVideo.srcObject = null;
+    }
     const tile = tiles.get(c.peerId);
     if (tile) tile.stream.removeTrack(c.consumer.track);
     c.consumer.close();

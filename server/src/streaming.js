@@ -11,7 +11,7 @@ import os from "node:os";
 import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { config } from "./config.js";
-import { titleWidth, LAYOUT, tileLayout } from "./composite.js";
+import { titleWidth, LAYOUT, tileLayout, shareLayout } from "./composite.js";
 import { activeBackdropPath } from "./rooms.js";
 import { notifyLive } from "./livechat.js";
 import { saveIndex } from "./recording/manager.js";
@@ -284,13 +284,21 @@ async function launch(state) {
       });
       const sdpPath = path.join(workDir, `${crypto.randomUUID()}.sdp`);
       await fs.writeFile(sdpPath, sdpFor(port, consumer));
-      inputs.push({ sdpPath, kind: consumer.kind, name: peer.name, peerId: peer.id, role: peer.role });
+      inputs.push({ sdpPath, kind: consumer.kind, name: peer.name, peerId: peer.id, role: peer.role,
+        source: producer.appData?.source || consumer.kind });
       cleanup.transports.push(transport);
       cleanup.consumers.push(consumer);
     }
   }
 
-  const videos = inputs.map((x, i) => ({ ...x, i })).filter((x) => x.kind === "video");
+  let videos = inputs.map((x, i) => ({ ...x, i })).filter((x) => x.kind === "video");
+  // Screen share: the shared picture becomes the first "tile", drawn
+  // letterboxed in the big left pane while the cameras stack small on
+  // the right - exactly the layout every participant is looking at
+  const screen = room.control?.sharePeerId
+    ? videos.find((v) => v.source === "screen" && v.peerId === room.control.sharePeerId)
+    : null;
+  videos = videos.filter((v) => v.source !== "screen");
   // Host top-left, like every screen
   videos.sort((a, b) => (b.role === "host") - (a.role === "host"));
   const audios = inputs.map((x, i) => ({ ...x, i })).filter((x) => x.kind === "audio");
@@ -312,7 +320,16 @@ async function launch(state) {
   const spotIndex = room.control?.layout === "spotlight" && room.control?.spotlightPeerId
     ? videos.findIndex((v) => v.peerId === room.control.spotlightPeerId)
     : -1;
-  const boxes = tileLayout(n, spotIndex, W, H);
+  let boxes;
+  if (screen) {
+    const sl = shareLayout(n, W, H);
+    // The screen joins the front of the draw list as a letterboxed
+    // pseudo-tile; pad, not crop, so nothing of the demo is cut off
+    videos.unshift({ ...screen, fit: "pad" });
+    boxes = [sl.screen, ...sl.tiles];
+  } else {
+    boxes = tileLayout(n, spotIndex, W, H);
+  }
 
   // Rounded-corner alpha masks, generated once for this launch. Spotlight
   // tiles are not all one size, so there is one mask per distinct size.
@@ -357,6 +374,7 @@ async function launch(state) {
   // (ffmpeg can't draw text) - overlaid on the tile, like the DOM
   const bannerArgs = [];
   for (const v of videos) {
+    if (v.fit === "pad") continue; // the screen pane carries no name banner
     const f = path.join(config.dataDir, "banners", room.id, `${v.peerId}.png`);
     if (await fs.access(f).then(() => true, () => false)) {
       v.bnIdx = nextIdx++;
@@ -378,8 +396,11 @@ async function launch(state) {
   }
   videos.forEach((v, k) => {
     const b = boxes[k];
-    let t = `[${v.i}:v]scale=${b.w}:${b.h}:force_original_aspect_ratio=increase,` +
-      `crop=${b.w}:${b.h}:(iw-${b.w})/2:(ih-${b.h})/2,setsar=1,fps=30`;
+    let t = v.fit === "pad"
+      ? `[${v.i}:v]scale=${b.w}:${b.h}:force_original_aspect_ratio=decrease,` +
+        `pad=${b.w}:${b.h}:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1,fps=30`
+      : `[${v.i}:v]scale=${b.w}:${b.h}:force_original_aspect_ratio=increase,` +
+        `crop=${b.w}:${b.h}:(iw-${b.w})/2:(ih-${b.h})/2,setsar=1,fps=30`;
     if (v.bnIdx != null) {
       t += `[tb${k}];[${v.bnIdx}:v]${bannerScale(b.w)}[bn${k}];` +
         `[tb${k}][bn${k}]overlay=x=0:y=main_h-overlay_h:eof_action=repeat[tt${k}];` +
@@ -391,7 +412,7 @@ async function launch(state) {
   });
   let prev = "[bg]";
   videos.forEach((_, k) => {
-    const out = k === n - 1 ? "[vout]" : `[og${k}]`;
+    const out = k === videos.length - 1 ? "[vout]" : `[og${k}]`;
     gp.push(`${prev}[rt${k}]overlay=${boxes[k].x}:${boxes[k].y}${out}`);
     prev = out;
   });
