@@ -43,6 +43,13 @@ export const config = {
   adminDomain: process.env.ADMIN_DOMAIN || "",
   hostDomain: process.env.HOST_DOMAIN || "",
   turnHost: process.env.TURN_HOST || domain,
+  // Port ranges, so several studios can share one host under host
+  // networking: the public media range (open it in the firewall) and
+  // the loopback-only base for the internal RTP legs (recording
+  // capture at base..base+900, stream inputs at base+1000..base+1900)
+  rtcMinPort: Number(process.env.RTC_MIN_PORT || 40000),
+  rtcMaxPort: Number(process.env.RTC_MAX_PORT || 40100),
+  localPortBase: Number(process.env.LOCAL_PORT_BASE || 45000),
   dataDir: process.env.DATA_DIR || path.join(root, "..", "data"),
   webDir: process.env.WEB_DIR || path.join(root, "..", "web"),
   sessionSecret: required("SESSION_SECRET"),

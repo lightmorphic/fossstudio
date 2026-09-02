@@ -32,10 +32,11 @@ function sdpFor(port, consumer) {
   ].join("\n");
 }
 
-let nextPort = 46000;
+const STREAM_PORT_FROM = config.localPortBase + 1000;
+let nextPort = STREAM_PORT_FROM;
 function allocPort() {
   nextPort += 2;
-  if (nextPort > 46900) nextPort = 46000;
+  if (nextPort > STREAM_PORT_FROM + 900) nextPort = STREAM_PORT_FROM;
   return nextPort;
 }
 

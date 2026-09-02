@@ -161,7 +161,10 @@ no external calls from any page.
 
 You need a Linux server with Docker, a public IP, a domain pointed at
 it, and ports 80/443 (TCP) plus 3478 and the media ranges 40000-40100
-and 49160-49200 (UDP) open.
+and 49160-49200 (UDP) open. (Running more than one studio on a host?
+`RTC_MIN_PORT`/`RTC_MAX_PORT` move the public media range and
+`LOCAL_PORT_BASE` moves the loopback-only ranges the stream and
+recording engines use, so instances never collide.)
 
 **The one-paste install.** Save
 [`quickstart-compose.yml`](quickstart-compose.yml) as
