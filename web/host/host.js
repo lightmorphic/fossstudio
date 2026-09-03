@@ -8,6 +8,10 @@
   // names its panel so the server answers with the right identity even
   // when both sessions are open in one browser.
   const PANEL = location.pathname.startsWith("/admin") ? "admin" : "host";
+  // Framed inside another application's shell (a hosting panel, a
+  // portal): that shell has the wordmark and the way out, so ours are
+  // hidden. Set by the sign-in link that brought us here.
+  if (/(?:^|;\s*)fs_embed=1(?:;|$)/.test(document.cookie)) document.body.classList.add("embedded");
 
   async function apiFetch(url, opts = {}) {
     const res = await fetch(url, {

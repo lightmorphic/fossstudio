@@ -88,6 +88,12 @@ app.get("/link/:token([A-Za-z0-9_-]{16,200})", async (req, res) => {
   const user = uid ? await findById(uid).catch(() => null) : null;
   if (!user) return res.redirect("/host/login.html");
   setAuthCookie(res, user);
+  // ?embed=1: the page that framed this studio has a shell of its own,
+  // so the studio's top bar (wordmark, who, log out) is dropped for the
+  // session. A plain cookie the page script can read; it grants nothing.
+  if (req.query.embed === "1") {
+    res.append("Set-Cookie", "fs_embed=1; Path=/; Secure; SameSite=Lax; Max-Age=43200");
+  }
   res.redirect(user.role === "admin" ? "/admin/" : "/host/");
 });
 
