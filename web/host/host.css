@@ -475,3 +475,6 @@ a.iconbtn { text-decoration: none; }
   background: var(--bg, #fff);
   color: inherit;
 }
+
+/* Framed inside another application's shell: no second top bar. */
+body.embedded .topbar { display: none; }
