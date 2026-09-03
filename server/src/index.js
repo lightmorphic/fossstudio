@@ -14,14 +14,24 @@ import { diagnostics } from "./diagnostics.js";
 import { attachChat } from "./livechat.js";
 import { migrateIntros } from "./introcoder.js";
 import { findSession } from "./settings.js";
-import { findByChannelDomain } from "./users.js";
+import { findByChannelDomain, findById } from "./users.js";
+import { redeemLink } from "./loginlinks.js";
+import { setAuthCookie } from "./auth.js";
 
 const app = express();
 app.disable("x-powered-by");
 
+const FRAME_ANCESTORS = String(process.env.FRAME_ANCESTORS || "").trim()
+  .split(/\s+/).filter((o) => /^https:\/\/[a-z0-9.*-]+(:\d+)?$/i.test(o)).join(" ");
+
 app.use((req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
-  res.setHeader("X-Frame-Options", "DENY");
+  // Framing is refused unless FRAME_ANCESTORS names who may: a panel
+  // that manages this studio and shows it inside its own pages, say.
+  // With it set, the browser's older X-Frame-Options header is left off
+  // - it cannot express "these origins only" and would contradict the
+  // CSP that can.
+  if (!FRAME_ANCESTORS) res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("Referrer-Policy", "same-origin");
   res.setHeader("Permissions-Policy", "camera=(self), microphone=(self), geolocation=()");
   // Content Security Policy: everything loads from our own origin. No
@@ -43,7 +53,7 @@ app.use((req, res, next) => {
     "font-src 'self'",
     "base-uri 'self'",
     "form-action 'self'",
-    "frame-ancestors 'none'",
+    `frame-ancestors ${FRAME_ANCESTORS || "'none'"}`,
     "object-src 'none'"
   ].join("; "));
   // Pages and the service worker must always come from the server -
@@ -67,6 +77,18 @@ app.get(["/host", "/host/"], (req, res) => {
 app.get(["/admin", "/admin/"], (req, res) => {
   if (!isAuthedRequest(req, "admin")) return res.redirect("/host/login.html");
   res.sendFile(path.join(config.webDir, "host", "index.html"));
+});
+
+// A one-time sign-in link from admin-login-link.js: redeemed here, it
+// becomes an ordinary session for that account and sends them to the
+// panel their role lives in. Used up on the first visit; a second
+// visit, or a stale one, lands on the login page like anyone else.
+app.get("/link/:token([A-Za-z0-9_-]{16,200})", async (req, res) => {
+  const uid = await redeemLink(req.params.token).catch(() => null);
+  const user = uid ? await findById(uid).catch(() => null) : null;
+  if (!user) return res.redirect("/host/login.html");
+  setAuthCookie(res, user);
+  res.redirect(user.role === "admin" ? "/admin/" : "/host/");
 });
 
 app.get("/healthz", (req, res) => {

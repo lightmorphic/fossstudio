@@ -27,7 +27,7 @@ RUN apt-get update \
 
 WORKDIR /app
 COPY --from=build /app/node_modules ./node_modules
-COPY server/package.json server/reset-password.js ./
+COPY server/package.json server/reset-password.js server/admin-login-link.js ./
 COPY server/src ./src
 COPY server/assets ./assets
 # The web pages ship inside the image, so a compose file alone - no

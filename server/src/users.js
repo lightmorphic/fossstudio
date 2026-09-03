@@ -35,6 +35,21 @@ async function load() {
       totpSecret: legacyAuth?.totpSecret || null,
       settings: { ...USER_SETTINGS_DEFAULTS, ...legacySettings }
     }];
+    // A first host beside the admin, when asked for: the admin panel
+    // manages the server, the host panel runs shows, and a studio set
+    // up for one person wants both from the same first password.
+    const firstHost = String(process.env.FIRST_HOST_USERNAME || "").trim().toLowerCase();
+    if (firstHost && firstHost !== "admin" && /^[a-z0-9_.-]{2,32}$/.test(firstHost)) {
+      users.push({
+        id: crypto.randomUUID(),
+        username: firstHost,
+        role: "host",
+        passwordHash: hashPassword(config.hostPassword),
+        totpEnabled: false,
+        totpSecret: null,
+        settings: { ...USER_SETTINGS_DEFAULTS }
+      });
+    }
     await writeJson("users.json", users);
     // Old sessions predate ownership - they belong to the admin now
     const sessions = await readJson("sessions.json", []);

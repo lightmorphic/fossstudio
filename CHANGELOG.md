@@ -4,6 +4,15 @@ All notable changes to FOSSStudio are documented here.
 
 ## Unreleased
 
+- **Sign-in links, and a first host.** `node admin-login-link.js
+  [username]` prints a link that signs one account in, once, within
+  ten minutes - for a lost password, or for a panel that manages many
+  studios and signs people in on their behalf. Starting a fresh studio
+  with `FIRST_HOST_USERNAME=host` makes a host account beside the admin
+  from the same first password, so one person gets both panels. And
+  `FRAME_ANCESTORS` (a space-separated list of https origins) lets a
+  named site show the studio inside its own pages; unset, framing stays
+  refused as before.
 - **A way back in.** `node reset-password.js [username]` (inside the
   container: `docker compose exec app node reset-password.js`) gives one
   account a new random password, prints it once, and asks for a
