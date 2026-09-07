@@ -1,11 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-GB">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'self'">
-<meta name="theme-color" content="#0b0d11" media="(prefers-color-scheme: dark)">
-<meta name="theme-color" content="#f6f5f1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b0d11">
 <title>FOSSStudio: self-hosted video podcast studio</title>
 <meta name="description" content="FOSSStudio is a free, open-source, self-hosted video podcast studio. Guests join by link with no account. Lossless recordings, live streaming to your own domain with chat, one-paste Docker install.">
 <link rel="canonical" href="https://fossstudio.org/">
@@ -31,8 +30,29 @@
   "downloadUrl": "https://github.com/lightmorphic/fossstudio",
   "license": "https://www.gnu.org/licenses/gpl-3.0.html",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "GBP" },
-  "creator": { "@type": "Organization", "name": "Lightmorphic", "url": "https://lightmorphic.co.uk" },
+  "creator": { "@type": "Organization", "name": "Lightmorphic", "url": "https://lightmorphic.com" },
   "dateModified": "2026-08-31"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "FOSSStudio",
+  "url": "https://fossstudio.org",
+  "inLanguage": "en-GB",
+  "publisher": { "@type": "Organization", "name": "Lightmorphic Ltd" }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "url": "https://fossstudio.org/",
+  "name": "FOSSStudio: self-hosted video podcast studio",
+  "inLanguage": "en-GB",
+  "dateModified": "2026-09-07",
+  "isPartOf": { "@type": "WebSite", "url": "https://fossstudio.org" }
 }
 </script>
 <script type="application/ld+json">
@@ -40,8 +60,7 @@
   "@context": "https://schema.org",
   "@type": "Organization",
   "name": "Lightmorphic Ltd",
-  "url": "https://lightmorphic.co.uk",
-  "email": "complaints@fossstudio.org",
+  "url": "https://lightmorphic.com",
   "identifier": "17423646",
   "address": {
     "@type": "PostalAddress",
@@ -50,7 +69,8 @@
     "postalCode": "IP28 7DE",
     "addressCountry": "GB"
   },
-  "sameAs": ["https://github.com/lightmorphic"]
+  "sameAs": ["https://github.com/lightmorphic",
+    "https://find-and-update.company-information.service.gov.uk/company/17423646"]
 }
 </script>
 <script type="application/ld+json">
@@ -117,9 +137,12 @@
     font-display: swap;
   }
 
-  /* ---------- Two looks, one switch ----------
-     Dark is the studio at night; light is the morning edit. The toggle
-     stamps data-theme; with no stamp the system preference decides. */
+  /* ---------- One look ----------
+     Dark, whatever the visitor's machine is set to. There was a light
+     theme and a switch; both went on 7 September 2026, because the brand
+     yellow reads at 2.08:1 on a pale ground and every link on the page
+     was drawn in it. The studio itself is dark, so the site matches what
+     it sells. */
   :root {
     color-scheme: dark;
     --bg: #0b0d11;
@@ -138,40 +161,24 @@
     --teal: #019587;
     --pink: #e8207e;
     --code-bg: #0d1017;
+    /* The program-monitor illustration and the code block: one-off colours
+       that mean nothing outside those two blocks, named here so no rule
+       carries a bare hex. */
+    --pgm-bezel: #0a1220;
+    --pgm-screen: #16202f;
+    --pgm-glass: #e9f2fb;
+    --pgm-edge: #24354b;
+    --code-fg: #c8cdd6;
+    --code-dim: #6a7382;
+    --code-key: #6cb6ff;
+    --code-val: #a5d6a7;
+    --code-hl: #ffd54f;
+    --code-btn: #8b93a0;
+    --code-line: #3a4250;
+    --mono-muted: #9aa0a8;
+    --arcade-bg: #14161a;
     --shadow: rgba(0, 0, 0, 0.55);
     --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
-  }
-  :root[data-theme="light"] {
-    color-scheme: light;
-    --bg: #f6f5f1;
-    --bg2: #efede7;
-    --panel: #ffffff;
-    --panel-2: #faf9f6;
-    --text: #191d24;
-    --muted: #5c6470;
-    --line: #ddd9d0;
-    --line-soft: #e7e4dc;
-    --accent: #d9a400;
-    --accent-ink: #241d00;
-    --code-bg: #14171d;
-    --shadow: rgba(60, 50, 20, 0.16);
-  }
-  @media (prefers-color-scheme: light) {
-    :root:not([data-theme="dark"]) {
-      color-scheme: light;
-      --bg: #f6f5f1;
-      --bg2: #efede7;
-      --panel: #ffffff;
-      --panel-2: #faf9f6;
-      --text: #191d24;
-      --muted: #5c6470;
-      --line: #ddd9d0;
-      --line-soft: #e7e4dc;
-      --accent: #d9a400;
-      --accent-ink: #241d00;
-      --code-bg: #14171d;
-      --shadow: rgba(60, 50, 20, 0.16);
-    }
   }
 
   * { margin: 0; box-sizing: border-box; }
@@ -213,8 +220,10 @@
     position: sticky;
     top: 0;
     z-index: 50;
-    background: color-mix(in srgb, var(--bg) 84%, transparent);
-    backdrop-filter: blur(10px);
+    /* Solid, not frosted. The house rule is that a surface is a surface:
+       no translucency and no backdrop blur, which also costs a repaint on
+       every scroll frame. */
+    background: var(--bg);
     border-bottom: 1px solid var(--line-soft);
   }
   .desk-in {
@@ -259,27 +268,20 @@
     text-decoration: none;
   }
   .desk nav a:hover { color: var(--text); }
-  #themeBtn {
-    display: grid;
-    place-items: center;
-    width: 2rem; height: 2rem;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: none;
-    color: var(--muted);
-    cursor: pointer;
+  /* Below about 700px the five links stop fitting beside the wordmark and
+     push the whole page sideways - found by walking the width down rather
+     than by checking three sizes. They wrap onto their own line instead:
+     five links do not earn a hamburger, and wrapping keeps every one of
+     them reachable by keyboard with no script at all. The SELF-HOSTED
+     lamp stands down first, being decoration. */
+  @media (max-width: 700px) {
+    .desk-in { flex-wrap: wrap; gap: 0.6rem 0.9rem; padding: 0.6rem 1rem; }
+    .desk nav { margin-left: 0; width: 100%; gap: 0.9rem; flex-wrap: wrap; }
+    .onair { display: none; }
   }
-  #themeBtn:hover { color: var(--text); border-color: var(--muted); }
-  #themeBtn svg { width: 1.05rem; height: 1.05rem; }
-  :root:not([data-theme="light"]) .sun { display: none; }
-  :root[data-theme="light"] .moon { display: none; }
-  @media (prefers-color-scheme: light) {
-    :root:not([data-theme]) .sun { display: none; }
-    :root:not([data-theme]) .moon { display: block; }
-  }
-  @media (prefers-color-scheme: dark), (prefers-color-scheme: no-preference) {
-    :root:not([data-theme]) .moon { display: none; }
-    :root:not([data-theme]) .sun { display: block; }
+  @media (max-width: 380px) {
+    .desk nav { gap: 0.7rem; }
+    .desk nav a { font-size: 0.8rem; }
   }
 
   /* ---------- hero ---------- */
@@ -294,15 +296,6 @@
     pointer-events: none;
   }
   .hero .wrap { position: relative; }
-  .kicker {
-    font-family: var(--mono);
-    font-size: 0.72rem;
-    letter-spacing: 0.22em;
-    color: var(--muted);
-    text-transform: uppercase;
-    margin-bottom: 1.2rem;
-  }
-  .kicker b { color: var(--accent); font-weight: 600; }
   .hero h1 {
     font-size: clamp(2.4rem, 6vw, 4.4rem);
     font-weight: 800;
@@ -436,7 +429,7 @@
     .duo.flip > div:first-child { order: 0; }
   }
 
-  .arcade { background: #14161a; padding: 1.2rem 1.2rem 0.9rem; }
+  .arcade { background: var(--arcade-bg); padding: 1.2rem 1.2rem 0.9rem; }
   /* Vendor Lock cabinet - same rules as the watch page's live.css */
   .arcade #game {
     --vl-void: #04060b;
@@ -463,9 +456,9 @@
     transform-origin: 50% 0;
     display: flex;
     flex-direction: column;
-    border: 1px solid #16202f;
+    border: 1px solid var(--pgm-screen);
     border-radius: 12px;
-    background: radial-gradient(120% 140% at 50% 0%, #0a1220 0%, var(--vl-void) 62%);
+    background: radial-gradient(120% 140% at 50% 0%, var(--pgm-bezel) 0%, var(--vl-void) 62%);
     font-family: var(--vl-mono);
     color: var(--vl-ink);
   }
@@ -475,7 +468,7 @@
     align-items: center;
     gap: 1.1rem;
     padding: 0.3rem 0.7rem;
-    border-bottom: 1px solid #16202f;
+    border-bottom: 1px solid var(--pgm-screen);
     font-size: 0.7rem;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -484,11 +477,11 @@
   }
   .vl-hud > span { display: flex; align-items: center; gap: 0.4rem; }
   .vl-hud b { color: var(--vl-phosphor); font-weight: 600; letter-spacing: 0.1em; }
-  .vl-val { font-size: 1.05rem; font-weight: 700; color: #e9f2fb; letter-spacing: 0.02em; }
+  .vl-val { font-size: 1.05rem; font-weight: 700; color: var(--pgm-glass); letter-spacing: 0.02em; }
   .vl-spacer { flex: 1; }
   .vl-btn {
     background: transparent;
-    border: 1px solid #24354b;
+    border: 1px solid var(--pgm-edge);
     color: var(--vl-ink);
     font: inherit;
     font-size: 0.62rem;
@@ -525,7 +518,7 @@
     flex-wrap: nowrap;
     gap: 0.9rem;
     padding: 0.28rem 0.5rem;
-    border-top: 1px solid #16202f;
+    border-top: 1px solid var(--pgm-screen);
     font-size: 0.68rem;
     color: var(--vl-ink);
     letter-spacing: 0.04em;
@@ -570,7 +563,7 @@
     max-width: 50rem;
     margin: 0.7rem auto 0.3rem;
     font-size: 0.82rem;
-    color: #9aa0a8;
+    color: var(--mono-muted);
     text-align: center;
   }
 
@@ -660,20 +653,20 @@
     font-family: var(--mono);
     font-size: 0.7rem;
     letter-spacing: 0.1em;
-    color: #8b93a0;
+    color: var(--code-btn);
   }
   .compose .bar button {
     margin-left: auto;
     font: inherit;
     letter-spacing: 0.08em;
     background: none;
-    border: 1px solid #3a4250;
-    color: #c8cdd6;
+    border: 1px solid var(--code-line);
+    color: var(--code-fg);
     border-radius: 6px;
     padding: 0.25rem 0.7rem;
     cursor: pointer;
   }
-  .compose .bar button:hover { border-color: #8b93a0; }
+  .compose .bar button:hover { border-color: var(--code-btn); }
   .compose pre {
     margin: 0;
     padding: 1rem 1.2rem 1.2rem;
@@ -681,12 +674,12 @@
     font-family: var(--mono);
     font-size: 0.74rem;
     line-height: 1.55;
-    color: #c8cdd6;
+    color: var(--code-fg);
   }
-  .compose .c  { color: #6a7382; }
-  .compose .k  { color: #6cb6ff; }
-  .compose .v  { color: #a5d6a7; }
-  .compose .hl { color: #ffd54f; }
+  .compose .c  { color: var(--code-dim); }
+  .compose .k  { color: var(--code-key); }
+  .compose .v  { color: var(--code-val); }
+  .compose .hl { color: var(--code-hl); }
 
   /* ---------- footer ---------- */
   footer {
@@ -721,14 +714,10 @@
     padding: 0.45rem 0.8rem;
   }
   .lightmorphic-badge img { height: 22px; width: auto; }
-  :root[data-theme="light"] .lightmorphic-badge img,
-  .lightmorphic-badge img { filter: none; }
-  @media (prefers-color-scheme: light) {
-    :root:not([data-theme="dark"]) .lightmorphic-badge img { filter: invert(0.85); }
-  }
-  :root[data-theme="light"] .lightmorphic-badge img { filter: invert(0.85); }
   .foot .gpl { margin-left: auto; }
-  .faq { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+  /* min() so the track can go under its own minimum on a narrow phone;
+     a bare minmax(320px, 1fr) pushes the page sideways below 340px. */
+  .faq { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); }
   .faq-item { background: var(--panel); border: 1px solid var(--line-soft); border-radius: 14px; padding: 1.1rem 1.3rem; }
   .faq-item h3 { font-size: 1rem; margin-bottom: 0.4rem; }
   .faq-item p { color: var(--muted); font-size: 0.92rem; }
@@ -761,17 +750,12 @@
       <a href="#install">Install</a>
       <a href="#faq">Questions</a>
       <a href="https://github.com/lightmorphic/fossstudio">GitHub</a>
-      <button id="themeBtn" type="button" aria-label="Switch between light and dark">
-        <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
-        <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-      </button>
     </nav>
   </div>
 </div>
 
 <header class="hero">
   <div class="wrap">
-    <p class="kicker">REC <b>&#9679;</b> &nbsp;VIDEO PODCAST STUDIO &middot; YOUR SERVER &middot; GPL-3.0</p>
     <h1>The whole studio, on <em>your own</em> metal.</h1>
     <p class="tag">Guests click a link and they're in - no accounts, no apps. Lossless
     multitrack recording, a live watch page with chat on your own domain, and a
@@ -784,9 +768,9 @@
       <div class="strip"><i></i><span id="pgmLabel">PGM &middot; GRID &middot; 3 LIVE</span><span class="tc">00:41:07</span></div>
       <img id="pgmImg" src="shots/session.jpg" alt="A live FOSSStudio session: three guests in a tidy grid with name banners and the episode title block" width="2000" height="1250" fetchpriority="high">
       <div class="pgm-tabs" role="tablist" aria-label="Switch the program monitor">
-        <button class="active" data-shot="shots/session.jpg" data-label="PGM &middot; GRID &middot; 3 LIVE" role="tab" aria-selected="true">Grid</button>
-        <button data-shot="shots/spotlight.jpg" data-label="PGM &middot; SPOTLIGHT &middot; MARCO" role="tab" aria-selected="false">Spotlight</button>
-        <button data-shot="shots/watch-offair.jpg" data-label="WATCH PAGE &middot; OFF AIR" role="tab" aria-selected="false">Watch page</button>
+        <button class="active" data-shot="shots/session.jpg" data-alt="A live FOSSStudio session: three guests in a tidy grid with name banners and the episode title block" data-label="PGM &middot; GRID &middot; 3 LIVE" role="tab" aria-selected="true">Grid</button>
+        <button data-shot="shots/spotlight.jpg" data-alt="The same session with one speaker spotlit: he fills the screen and the other two sit small beneath him" data-label="PGM &middot; SPOTLIGHT &middot; DEV" role="tab" aria-selected="false">Spotlight</button>
+        <button data-shot="shots/watch-offair.jpg" data-alt="The audience watch page before the show starts, showing the Vendor Lock game and a line saying the show is between episodes" data-label="WATCH PAGE &middot; OFF AIR" role="tab" aria-selected="false">Watch page</button>
         <span class="hint-key">click to switch - every view is the recording</span>
       </div>
     </figure>
@@ -1103,7 +1087,7 @@
 
 <footer>
   <div class="wrap foot">
-    <a class="lightmorphic-badge" href="https://lightmorphic.co.uk" target="_blank" rel="noopener noreferrer" translate="no">
+    <a class="lightmorphic-badge" href="https://lightmorphic.com" target="_blank" rel="noopener noreferrer" translate="no">
       <span>Created by</span>
       <img src="lightmorphic-dark-tb-250x50-sq.webp" alt="Lightmorphic" width="125" height="25" loading="lazy">
     </a>
@@ -1116,31 +1100,14 @@
   <div class="subfoot">
     <p>&copy; Lightmorphic Ltd. Registered in England and Wales, company number 17423646.
     Registered office: 82A James Carter Road, Mildenhall, IP28 7DE.
-    <span style="display:block"><a href="mailto:complaints@fossstudio.org">complaints@fossstudio.org</a></span>
-    <span style="display:block">Page last updated <time datetime="2026-08-31">31 August 2026</time>.</span></p>
+    <!-- The date this page last changed. GitHub Pages has no build step,
+       so it is typed: change it whenever you change the page above. -->
+    <span style="display:block">Page last updated <time datetime="2026-09-07">7 September 2026</time>.</span></p>
     <nav aria-label="Legal"><a href="privacy.html">Privacy</a> <a href="cookies.html">Cookies</a> <a href="terms.html">Terms</a> <a href="accessibility.html">Accessibility</a> <a href="complaints.html">Complaints</a></nav>
   </div>
 </footer>
 
 <script>
-  // Theme: explicit choice sticks in localStorage; no choice follows the system
-  const root = document.documentElement;
-  try {
-    const saved = localStorage.getItem("fossstudio-theme");
-    if (saved === "light" || saved === "dark") root.dataset.theme = saved;
-  } catch { /* private browsing */ }
-  document.getElementById("themeBtn").onclick = () => {
-    const dark = root.dataset.theme
-      ? root.dataset.theme === "dark"
-      : matchMedia("(prefers-color-scheme: dark)").matches || !matchMedia("(prefers-color-scheme: light)").matches;
-    root.dataset.theme = dark ? "light" : "dark";
-    for (const m of document.querySelectorAll('meta[name="theme-color"]')) {
-      m.content = root.dataset.theme === "light" ? "#f6f5f1" : "#0b0d11";
-      m.removeAttribute("media");
-    }
-    try { localStorage.setItem("fossstudio-theme", root.dataset.theme); } catch { /* private browsing */ }
-  };
-
   // The program monitor: click a tab, see that view
   const pgmImg = document.getElementById("pgmImg");
   const pgmLabel = document.getElementById("pgmLabel");
@@ -1151,6 +1118,9 @@
         o.setAttribute("aria-selected", String(o === b));
       }
       pgmImg.src = b.dataset.shot;
+      // The description has to follow the picture, or a screen reader is
+      // told about the grid while the spotlight is on screen.
+      if (b.dataset.alt) pgmImg.alt = b.dataset.alt;
       pgmLabel.innerHTML = b.dataset.label;
     };
   }

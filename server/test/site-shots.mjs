@@ -85,6 +85,7 @@ await p.browser.close();
 
 // --- Dashboard shots (no faces) ---
 const plain = await chromium.launch();
+const plainWatch = await chromium.launch();
 const dctx = await plain.newContext({ viewport: { width: 1560, height: 900 }, deviceScaleFactor: 2, colorScheme: "dark" });
 const dash = await dctx.newPage();
 await dash.goto(`${B}/host/login.html`);
@@ -108,4 +109,45 @@ await admin.waitForTimeout(500);
 await admin.screenshot({ path: `${OUT}/hosts.png` });
 
 await plain.close();
+
+// --- Spotlight, from a guest's screen, and the watch page off air ---
+// These used to be taken by a separate ad-hoc script which was then lost,
+// so both pictures went a fortnight stale without anybody noticing.
+const spotSession = await mk("Episode 42: Live From FOSDEM");
+const sHost = await studio("vcam1.y4m", "Anna", "awesomepodcast.org", spotSession.id, true);
+const sG1 = await studio("vcam2.y4m", "Dev", "Kernel maintainer", spotSession.id, false);
+const sG2 = await studio("vcam3.y4m", "Margot", "Tech author", spotSession.id, false);
+await joinAll([sHost, sG1, sG2]);
+await sHost.page.waitForTimeout(3500);
+await sHost.page.click("#hpToggle").catch(() => {});
+await sHost.page.waitForTimeout(600);
+const spots = await sHost.page.$$(".spot");
+if (spots.length > 1) await spots[1].click();
+await sHost.page.waitForTimeout(2500);
+// The guest's screen, because the spotlight layout is the subject and the
+// host panel already has a picture of its own. Pointer off first, or a
+// tooltip sits in the middle of it.
+await sG1.page.mouse.move(10, 10);
+await sG1.page.waitForTimeout(1500);
+await sG1.page.screenshot({ path: `${OUT}/spotlight.png` });
+for (const b of [sHost, sG1, sG2]) await b.browser.close();
+
+const wctx = await plainWatch.newContext({ viewport: { width: 1560, height: 975 }, deviceScaleFactor: 2, colorScheme: "dark" });
+const watch = await wctx.newPage();
+await watch.goto(`${B}/live/${spotSession.id}`);
+await watch.waitForTimeout(2500);
+await watch.screenshot({ path: `${OUT}/watch-offair.png` });
+await plainWatch.close();
+
+// --- The site uses JPGs; the script made PNGs ---
+// That gap is why five pictures aged a fortnight: the conversion was a
+// manual step somebody had to remember. It is part of the script now.
+import { execFileSync } from "node:child_process";
+for (const name of ["session", "spotlight", "host-panel", "preview", "watch-offair"]) {
+  const png = `${OUT}/${name}.png`;
+  if (!fs.existsSync(png)) continue;
+  execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-i", png, "-vf", "scale=2000:-2", "-q:v", "4", `${OUT}/${name}.jpg`]);
+  fs.unlinkSync(png);
+}
+
 console.log("shots saved:", fs.readdirSync(OUT).join(", "));
