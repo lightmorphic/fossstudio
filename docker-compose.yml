@@ -16,29 +16,39 @@ services:
       - ${DATA_PATH:-./data}:/data
       - ./web:/app/web:ro
 
-  # Caddy fetches and renews the HTTPS certificate and puts the studio on
-  # ports 80 and 443. Already running nginx, Apache or another proxy on
-  # this machine? Do not start this service - those ports are taken. Use
-  # docker-compose.byo-proxy.yml instead, which is this same stack with
-  # the caddy service left out, and point your own proxy at the app on
-  # 127.0.0.1:${HTTP_PORT}.
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    network_mode: host
-    env_file: .env
-    # Caddy's needs are small and predictable; a cap means a leak here
-    # can never starve the app mid-show
-    mem_limit: 256m
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - ${CADDY_SITES_PATH:-./caddy-sites}:/etc/caddy/sites:ro
-      # Static web roots for those extra sites (see CADDY_WWW_PATH in
-      # .env.example): a site file serves files with root * /srv/www/<name>.
-      # The default empty folder is a no-op, like the sites folder above.
-      - ${CADDY_WWW_PATH:-./caddy-www}:/srv/www:ro
-      - caddy_data:/data
-      - caddy_config:/config
+  # ---------------------------------------------------------------------
+  # HTTPS. Most people want this. To switch it on, delete the "# " from
+  # the caddy: block below and from the volumes: block at the foot of the
+  # file. Leave the hashes on these sentences; they are only notes.
+  #
+  # Caddy fetches and renews your certificate and serves the studio on
+  # ports 80 and 443. Without HTTPS there is no studio at all - browsers
+  # refuse camera and microphone access on a plain-http page, and the
+  # session cookie is Secure-only, so nobody can even log in.
+  #
+  # The one reason to leave it commented out: this machine already runs
+  # nginx, Apache or another proxy, which already holds ports 80 and 443.
+  # Then leave the hashes where they are, keep your own proxy terminating
+  # TLS, and point it at 127.0.0.1:${HTTP_PORT} - the README's "Bring your
+  # own reverse proxy" section has a working nginx block.
+  # ---------------------------------------------------------------------
+  # caddy:
+  #   image: caddy:2-alpine
+  #   restart: unless-stopped
+  #   network_mode: host
+  #   env_file: .env
+  #   # Caddy's needs are small and predictable; a cap means a leak here
+  #   # can never starve the app mid-show
+  #   mem_limit: 256m
+  #   volumes:
+  #     - ./Caddyfile:/etc/caddy/Caddyfile:ro
+  #     - ${CADDY_SITES_PATH:-./caddy-sites}:/etc/caddy/sites:ro
+  #     # Static web roots for those extra sites (see CADDY_WWW_PATH in
+  #     # .env.example): a site file serves files with root * /srv/www/<name>.
+  #     # The default empty folder is a no-op, like the sites folder above.
+  #     - ${CADDY_WWW_PATH:-./caddy-www}:/srv/www:ro
+  #     - caddy_data:/data
+  #     - caddy_config:/config
 
   coturn:
     image: coturn/coturn:4-alpine
@@ -55,6 +65,6 @@ services:
       --no-cli
       --no-multicast-peers
 
-volumes:
-  caddy_data:
-  caddy_config:
+# volumes:
+#   caddy_data:
+#   caddy_config:

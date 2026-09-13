@@ -60,30 +60,30 @@ and you never will.
   lower a raised hand, start and stop recording, and two overlays -
   a subscribe reminder and your own advertising banner - that everyone
   sees and the recording keeps.
-- **Recording:** browser-side per person (PCM, best for big sessions)
-  or server-side (a host-panel switch, picked per session, locked once
-  a take is running). Output: one combined MP4 (H.264/AAC, plays in any
-  browser), a lossless `combined.flac` mixdown of everyone, and a
-  lossless FLAC per participant, named after the episode. Recordings
-  can be previewed and downloaded from the dashboard - per file, or as
-  a zip of all the audio or of everything. The combined video matches
-  the screen: everyone's tile, their lower-third name banners, the
-  podcast logo and episode title block (the host drags it anywhere,
-  resizes it, and right-clicks it for the rest: logo left of the title,
-  right, above or below, the block's background colour, or drop the
-  logo or the title for a session), the spotlight when the host has
-  spotlit someone, and any overlay triggered, at the moment it was
-  triggered. Tile sizes, spacing and corners come from one set of
-  frame-relative fractions shared by the browser and the compositor, so
-  the video is the picture people were on - the exception is a phone,
-  which deliberately uses a two-column layout so faces stay big enough
-  to see.
-- **The host's browser draws the show.** While recording, the host's
-  page paints the programme onto a 1280x720 canvas, mixes every voice
-  and encodes it, and uploads the result. The combined video is then
-  copied rather than rendered, so a long show does not cost the server
-  minutes of a core afterwards. A browser that cannot encode H.264
-  falls back to the server rendering the grid.
+- **Recording:** each person is recorded in their own browser, on their
+  own track, and uploaded as it is made. Nothing here converts anything,
+  so what you download is the file that browser wrote: uncompressed
+  audio where the browser can record it (a Chromium-based browser such as Chrome, Brave or Edge can), Opus where it
+  cannot. Print worth reading before a long show: uncompressed
+  comes to about 1.4 GB per person per hour, and a camera track is
+  whatever the browser's own encoder makes of the picture.
+- **One video of the whole thing:** while a take is running, the host's
+  browser also draws the show as everyone sees it onto a 1280x720
+  canvas, mixes every voice into one track and encodes it. That arrives
+  as a single finished file, so the server has nothing to do when a
+  show ends however long it was. It carries
+  everyone's tile, their lower-third name banners, the podcast logo and
+  episode title block (the host drags it anywhere, resizes it, and
+  right-clicks it for the rest: logo left of the title, right, above or
+  below, the block's background colour, or drop either for a session),
+  the spotlight when the host has spotlit someone, and any overlay
+  triggered, at the moment it was triggered.
+- **Downloads:** everything is in the dashboard when you stop - per
+  file, or as a zip of everyone's audio or of the lot. Tile sizes,
+  spacing and corners come from one set of frame-relative fractions the
+  page and the mixer share, so the video is the picture people were on -
+  the exception is a phone, which deliberately uses a two-column layout
+  so faces stay big enough to see.
 - **View-only output:** every session has a view-only link
   (`?output=1`) with no join screen and no controls. It works as a
   browser source in [OBS](https://obsproject.com) or anything like it,
@@ -148,9 +148,11 @@ broadcast one.
   [FOSSCast](https://github.com/lightmorphic/fosscast), a separate app.
   One click sends a finished recording from here to there; neither
   needs the other to run.
-- **No editing.** You get the recording, the per-person lossless files
-  and the combined video. Trimming, cutting and mixing happen in
-  whatever editor you already use.
+- **No editing, and no processing of any kind.** Nothing on the server
+  opens a recording, converts it, mixes it or re-encodes it - there is
+  no media tool installed and no long-running child process anywhere in
+  the product. You get the tracks as they were recorded; trimming,
+  cutting and mixing happen in whatever editor you already use.
 - **No transcription and no captions.**
 - **No audience accounts, memberships or payments.**
 - **No telephone dial-in and no SIP.** Guests join in a browser.
@@ -188,10 +190,10 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 ## Stack
 
 Node.js + [mediasoup](https://mediasoup.org) SFU, Caddy (HTTPS and
-certificates - or bring your own reverse proxy and use
-`docker-compose.byo-proxy.yml`, which is the same stack without it),
-coturn (TURN relay), ffmpeg (turning a recording into its finished
-files), flat JSON files, no database. One Docker Compose stack,
+certificates - commented out in the compose file, so bringing your own
+reverse proxy means leaving it that way),
+coturn (TURN relay), flat JSON files, no database. One Docker Compose
+stack,
 everything self-hosted. No page loads anything from another domain: the
 typeface, the scripts and the WASM all come from your own server.
 
@@ -254,17 +256,17 @@ instant rollback via `scripts/rollback.sh`).
 ### Bring your own reverse proxy (Nginx, Apache, etc.)
 
 Already running Nginx or another proxy on your server and don't want
-a second one? Use `docker-compose.byo-proxy.yml` instead of
-`docker-compose.yml` - it's the same stack minus Caddy:
+a second one? Then leave the `caddy` service in `docker-compose.yml`
+commented out, which is how it ships, and start the stack as usual:
 
 ```bash
-docker compose -f docker-compose.byo-proxy.yml up -d --build
+docker compose up -d --build
 ```
 
-This still binds the app to `127.0.0.1:${HTTP_PORT}` (3000 by
-default), exactly like the Caddy stack does - your proxy just needs to
-run on the same host (or in another host-networked container) and
-point at that address.
+The app binds to `127.0.0.1:${HTTP_PORT}` (3000 by default), so your
+proxy just needs to run on the same host (or in another host-networked
+container) and point at that address. Terminating TLS is then yours to
+do: browsers refuse camera and microphone access without HTTPS.
 
 **Proxy on a different machine?** Also fine - the proxy only ever
 carries the web half; guests' WebRTC media and the TURN relay go
@@ -351,7 +353,7 @@ at `http://127.0.0.1:3000`), with two things to know:
 ### Tailscale (private, no open ports at all)
 
 For a studio reachable only inside your tailnet - nothing exposed to
-the internet - run the `byo-proxy` stack and:
+the internet - leave the `caddy` service commented out and:
 
 1. Set `BIND_HOST` in `.env` to your machine's Tailscale IP (the
    `100.x.y.z` address).
@@ -387,7 +389,6 @@ node test/call-test.mjs <url> <guests>   # multi-guest video flows
 node test/host-controls-test.mjs <url> <password>
 node test/recording-test.mjs <url> <password> browser|server
 node test/audio-energy-test.mjs          # noise suppression audio flows
-node test/resume-orphaned-recording-test.mjs  # crash mid-render, self-heals on restart
 node test/title-block-test.mjs <url> <password>  # logo/title block matches the video, host tools
 node test/geometry-test.mjs <url> <password>     # on-screen tile layout matches the compositor, grid and spotlight
 node test/spotlight-record-test.mjs <url> <password>  # a spotlit session records as a spotlight

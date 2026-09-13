@@ -4,13 +4,13 @@
 #      DNS (your domain) points at it, with ports 80/443 (TCP) and
 #      3478 + 40000-40100 + 49160-49200 (UDP) open.
 #   2. Fill in the five values just below.
-#   3. docker compose up -d
+#   3. Turn HTTPS on: see the note above the caddy service.
+#   4. docker compose up -d
 #
 # That's the whole install: the app image builds straight from GitHub,
-# the web pages are inside it, Caddy fetches your HTTPS certificate by
-# itself, and your studio is at https://<your domain>. Sign in with
-# username "admin" and the password below, then change it in the
-# dashboard.
+# the web pages are inside it, and your studio is at https://<your
+# domain>. Sign in with username "admin" and the password below, then
+# change it in the dashboard.
 
 x-config: &config
   DOMAIN: studio.example.com                    # your public address
@@ -34,23 +34,35 @@ services:
     volumes:
       - fossstudio_data:/data
 
-  # Caddy fetches and renews the HTTPS certificate and puts the studio on
-  # ports 80 and 443. Already running nginx, Apache or another proxy on
-  # this machine? Do not start this service - those ports are taken.
-  # Delete it from this file and point your own proxy at the app on
-  # 127.0.0.1:3000 instead; the README has a ready nginx config.
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    network_mode: host
-    environment:
-      <<: *config
-    configs:
-      - source: caddyfile
-        target: /etc/caddy/Caddyfile
-    volumes:
-      - caddy_data:/data
-      - caddy_config:/config
+  # ---------------------------------------------------------------------
+  # HTTPS. Most people want this. To switch it on, delete the "# " from
+  # the caddy: block below, and at the foot of the file from the two
+  # caddy volumes and the whole configs: block. Leave the hashes on these
+  # sentences; they are only notes.
+  #
+  # Caddy fetches and renews your certificate and serves the studio on
+  # ports 80 and 443. Without HTTPS there is no studio at all - browsers
+  # refuse camera and microphone access on a plain-http page, and the
+  # session cookie is Secure-only, so nobody can even log in.
+  #
+  # The one reason to leave it commented out: this machine already runs
+  # nginx, Apache or another proxy, which already holds ports 80 and 443.
+  # Then leave the hashes where they are, keep your own proxy terminating
+  # TLS, and point it at 127.0.0.1:3000 - the README's "Bring your own
+  # reverse proxy" section has a working nginx block.
+  # ---------------------------------------------------------------------
+  # caddy:
+  #   image: caddy:2-alpine
+  #   restart: unless-stopped
+  #   network_mode: host
+  #   environment:
+  #     <<: *config
+  #   configs:
+  #     - source: caddyfile
+  #       target: /etc/caddy/Caddyfile
+  #   volumes:
+  #     - caddy_data:/data
+  #     - caddy_config:/config
 
   coturn:
     image: coturn/coturn:4-alpine
@@ -72,30 +84,31 @@ services:
         --no-cli
         --no-multicast-peers
 
-configs:
-  caddyfile:
-    # $$ keeps the {$VAR} placeholders for Caddy instead of compose
-    content: |
-      {
-        on_demand_tls {
-          ask http://127.0.0.1:{$$HTTP_PORT}/tls-allowed
-        }
-      }
-      {$$DOMAIN} {
-        encode zstd gzip
-        header Strict-Transport-Security "max-age=31536000"
-        reverse_proxy 127.0.0.1:{$$HTTP_PORT}
-      }
-      https:// {
-        tls {
-          on_demand
-        }
-        encode zstd gzip
-        header Strict-Transport-Security "max-age=31536000"
-        reverse_proxy 127.0.0.1:{$$HTTP_PORT}
-      }
-
 volumes:
   fossstudio_data:
-  caddy_data:
-  caddy_config:
+  # HTTPS: these two go with the caddy: block above
+  # caddy_data:
+  # caddy_config:
+
+# configs:
+#   caddyfile:
+#     # $$ keeps the {$VAR} placeholders for Caddy instead of compose
+#     content: |
+#       {
+#         on_demand_tls {
+#           ask http://127.0.0.1:{$$HTTP_PORT}/tls-allowed
+#         }
+#       }
+#       {$$DOMAIN} {
+#         encode zstd gzip
+#         header Strict-Transport-Security "max-age=31536000"
+#         reverse_proxy 127.0.0.1:{$$HTTP_PORT}
+#       }
+#       https:// {
+#         tls {
+#           on_demand
+#         }
+#         encode zstd gzip
+#         header Strict-Transport-Security "max-age=31536000"
+#         reverse_proxy 127.0.0.1:{$$HTTP_PORT}
+#       }

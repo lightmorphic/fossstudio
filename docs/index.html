@@ -6,17 +6,17 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'self'">
 <meta name="theme-color" content="#0b0d11">
 <title>FOSSStudio: self-hosted video podcast studio</title>
-<meta name="description" content="FOSSStudio is a free, open-source, self-hosted video podcast studio. Guests join by link with no account. Lossless multitrack recordings, a combined video that matches the screen, one-paste Docker install.">
+<meta name="description" content="FOSSStudio is a free, open-source, self-hosted video podcast studio. Guests join by link with no account. A track per person, recorded in their own browser and handed over exactly as recorded, plus one video of everyone that matches the screen. One-paste Docker install.">
 <link rel="canonical" href="https://fossstudio.org/">
 <link rel="icon" href="icon.png">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://fossstudio.org/">
 <meta property="og:title" content="FOSSStudio: self-hosted video podcast studio">
-<meta property="og:description" content="Guests click a link and they're in. Lossless multitrack recordings, a combined video that matches the screen, one-paste Docker install.">
+<meta property="og:description" content="Guests click a link and they're in. A track per person, recorded in their own browser and handed over exactly as recorded, plus one video of everyone that matches the screen. One-paste Docker install.">
 <meta property="og:image" content="https://fossstudio.org/shots/session.jpg">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="FOSSStudio: self-hosted video podcast studio">
-<meta name="twitter:description" content="Guests click a link and they're in. Lossless multitrack recordings, a combined video that matches the screen, one-paste Docker install.">
+<meta name="twitter:description" content="Guests click a link and they're in. A track per person, recorded in their own browser and handed over exactly as recorded, plus one video of everyone that matches the screen. One-paste Docker install.">
 <meta name="twitter:image" content="https://fossstudio.org/shots/session.jpg">
 <script type="application/ld+json">
 {
@@ -25,7 +25,7 @@
   "name": "FOSSStudio",
   "operatingSystem": "Linux",
   "applicationCategory": "MultimediaApplication",
-  "description": "Self-hosted video podcast studio: no-account guest links, up to ten people in a room, a lossless FLAC per person, a combined MP4 that matches the screen, RNNoise noise suppression, a view-only output link that works as an OBS browser source, multi-host support, one-paste Docker Compose install.",
+  "description": "Self-hosted video podcast studio: no-account guest links, up to ten people in a room, a track per person recorded in their own browser and served exactly as recorded, one video of everyone that matches the screen, RNNoise noise suppression, a view-only output link that works as an OBS browser source, multi-host support, one-paste Docker Compose install.",
   "url": "https://fossstudio.org",
   "downloadUrl": "https://github.com/lightmorphic/fossstudio",
   "license": "https://www.gnu.org/licenses/agpl-3.0.html",
@@ -123,7 +123,7 @@
    "name": "Where do recordings end up?",
    "acceptedAnswer": {
     "@type": "Answer",
-    "text": "On your server, nowhere else: a lossless FLAC per person, a lossless mixdown of everyone, and a combined MP4 that matches what everyone saw. One click can send a finished recording to your own FOSSCast instance."
+    "text": "On your server, nowhere else. Each person is recorded on their own track in their own browser - uncompressed where the browser can do it, which a Chromium-based browser such as Chrome, Brave or Edge can - and you are handed that file exactly as it was recorded. Alongside it is one video of everyone that matches what was on screen. Nothing on the server opens or converts any of it."
    }
   }
  ]
@@ -658,9 +658,9 @@
 <header class="hero">
   <div class="wrap">
     <h1>The whole studio, on <em>your own</em> metal.</h1>
-    <p class="tag">Guests click a link and they're in - no accounts, no apps. A lossless
-    track per person, a combined video that is the picture everyone was on, and a
-    one-paste Docker install on a server you own.</p>
+    <p class="tag">Guests click a link and they're in - no accounts, no apps. A track
+    per person, recorded in their own browser and handed to you exactly as recorded,
+    plus one video of the whole show. One paste, on a server you own.</p>
     <div class="cta-row">
       <a class="cta primary" href="#install">Paste one file, own a studio</a>
       <a class="cta ghost" href="https://github.com/lightmorphic/fossstudio">Read the source</a>
@@ -720,14 +720,16 @@
     <div class="duo">
       <div>
         <h3>What you see is what records</h3>
-        <p>The combined video is the picture people were on: every tile in the
-        same order, the name banners, the logo and episode title exactly where
-        you dragged them, the spotlight when you spotlit someone. The screen
-        and the recording share one geometry, and a test holds them to it.</p>
+        <p>The video of everyone is the picture people were on: every tile in
+        the same order, the name banners, the logo and episode title exactly
+        where you dragged them, the spotlight when you spotlit someone. The
+        host's browser draws it as the show happens, so the server is handed a
+        finished file and never opens it. The screen and the recording share
+        one geometry, and a test holds them to it.</p>
         <ul>
-          <li>One combined MP4 that plays anywhere</li>
-          <li>A lossless FLAC per person, plus a lossless mixdown</li>
-          <li>Browser-side or server-side capture, per session</li>
+          <li>One video of everyone, drawn and encoded in the host's browser</li>
+          <li>A track per person, served exactly as their browser recorded it</li>
+          <li>Uncompressed audio where the browser can record it (a Chromium-based browser such as Chrome, Brave or Edge); Opus where it cannot</li>
           <li>Rename, preview, download - per file or zipped bundles</li>
         </ul>
       </div>
@@ -781,10 +783,10 @@
     <div class="cue-mark"><span class="tc">CUE 03</span><h2>Everything in the box</h2><span class="side">NO DATABASE / NO TRACKERS</span></div>
     <div class="grid">
       <div class="card"><h3>Camera zoom</h3><p>Guests zoom right on the preview screen: real lens zoom where supported, crop-zoom everywhere else. Rare even in the paid tools.</p></div>
-      <div class="card"><h3>Lossless recording</h3><p>Per-person raw capture converted to FLAC, plus a combined video that matches the screen - banners, overlays and all.</p></div>
+      <div class="card"><h3>A track each</h3><p>Everyone is recorded in their own browser and you get that file as it was made. Uncompressed in a Chromium-based browser such as Chrome, Brave or Edge, which is about 1.4 GB per person per hour, so plan the disk.</p></div>
       <div class="card"><h3>View-only output</h3><p>Every session has a second link with no controls: a browser source for <a href="https://obsproject.com">OBS</a>, or a clean second screen. Invisible to guests, never recorded.</p></div>
       <div class="card"><h3>Ten in a room</h3><p>Ten people on screen, plus up to four view-only connections. The media engine (mediasoup) forwards video rather than decoding it.</p></div>
-      <div class="card"><h3>No database</h3><p>Flat JSON files in one folder. Back it up, export it as a zip, restore it with a click. Daily backups built in.</p></div>
+      <div class="card"><h3>No database, no media tools</h3><p>Flat JSON files in one folder, and nothing on the server that opens a recording. Back it up, export it as a zip, restore it with a click. Daily backups built in.</p></div>
       <div class="card"><h3>Privacy by default</h3><p>No CDNs, no trackers, no cookies for guests, nothing fetched from another domain. Even the font is self-hosted. This page included.</p></div>
       <div class="card"><h3>Multi-host</h3><p>Create a host and send them the invite link; each gets their own sessions, recordings and branding. Admin and host panels are separate logins, each lockable with a second factor.</p></div>
       <div class="card"><h3>Publish to FOSSCast</h3><p>One click pushes a finished recording to your <a href="https://fosscast.org">FOSSCast</a> instance as a draft episode for the archive and RSS half.</p></div>
@@ -803,16 +805,17 @@
         <ol class="steps">
           <li><span><b>Point your domain</b> at a Linux server with Docker, ports 80/443 (TCP) and 3478, 40000-40100, 49160-49200 (UDP) open.</span></li>
           <li><span><b>Save this file</b> as <code>docker-compose.yml</code> and fill in the five values at the top.</span></li>
-          <li><span><b><code>docker compose up -d</code></b> - the app builds straight from GitHub, the pages ship inside the image, Caddy fetches your certificate by itself. Sign in as <code>admin</code> and change the password.</span></li>
+          <li><span><b>Turn HTTPS on</b> unless another proxy already holds ports 80 and 443 on that machine: delete the <code>#</code> from the <code>caddy</code> block and from the two volumes and the <code>configs</code> block at the foot. Without HTTPS the browser will not give the studio a camera.</span></li>
+          <li><span><b><code>docker compose up -d</code></b> - the app builds straight from GitHub, the pages ship inside the image, and the certificate arrives on its own. Sign in as <code>admin</code> and change the password.</span></li>
         </ol>
         <p style="color:var(--muted); font-size:0.9rem">No clone, no <code>.env</code>, no other files. What this installs is exactly what development runs.</p>
         <div class="aside">
           <h3>Already running a proxy?</h3>
-          <p>Delete the <code>caddy</code> service from the pasted file and point
-          nginx, Apache, a Cloudflare Tunnel or Tailscale at
+          <p>Then leave the <code>caddy</code> block commented out, which is how
+          it ships, and point nginx, Apache, a Cloudflare Tunnel or Tailscale at
           <code>127.0.0.1:3000</code> - the app binds only to loopback, and
-          never assumes it owns ports 80 and 443. Your proxy must pass
-          WebSocket upgrades and add HSTS; the
+          never assumes it owns ports 80 and 443. Your proxy must terminate TLS,
+          pass WebSocket upgrades and add HSTS; the
           <a href="https://github.com/lightmorphic/fossstudio#bring-your-own-reverse-proxy-nginx-apache-etc">README
           has a ready nginx config</a>, plus Cloudflare Tunnel and
           Tailscale-only setups.</p>
@@ -822,8 +825,8 @@
           <p>Also fine - the proxy only ever carries the web half.
           Guests' video and the TURN relay go straight to the studio
           machine, so its public IP and UDP ports stay open wherever
-          the proxy lives. On top of deleting <code>caddy</code>, add
-          three lines to the config block:</p>
+          the proxy lives. On top of leaving <code>caddy</code> commented out,
+          add three lines to the config block:</p>
           <ol>
             <li><code>BIND_HOST: "0.0.0.0"</code> (or the studio
             machine's private/VPN address), then firewall port 3000 so
@@ -861,15 +864,26 @@
       </div>
       <div class="compose">
         <div class="bar">docker-compose.yml<button id="copyBtn" type="button">COPY</button></div>
-        <pre id="composeSrc"><span class="c"># FOSSStudio in one paste: fill in the five values, then
-#   docker compose up -d</span>
+        <pre id="composeSrc"><span class="c"># FOSSStudio in one paste.</span>
+<span class="c">#</span>
+<span class="c">#   1. Save this file as docker-compose.yml on a Linux server whose</span>
+<span class="c">#      DNS (your domain) points at it, with ports 80/443 (TCP) and</span>
+<span class="c">#      3478 + 40000-40100 + 49160-49200 (UDP) open.</span>
+<span class="c">#   2. Fill in the five values just below.</span>
+<span class="c">#   3. Turn HTTPS on: see the note above the caddy service.</span>
+<span class="c">#   4. docker compose up -d</span>
+<span class="c">#</span>
+<span class="c"># That's the whole install: the app image builds straight from GitHub,</span>
+<span class="c"># the web pages are inside it, and your studio is at https://&lt;your</span>
+<span class="c"># domain&gt;. Sign in with username "admin" and the password below, then</span>
+<span class="c"># change it in the dashboard.</span>
 
-<span class="k">x-config: &amp;config</span>
-  <span class="k">DOMAIN:</span> <span class="hl">studio.example.com</span>                    <span class="c"># your public address</span>
-  <span class="k">PUBLIC_IP:</span> <span class="hl">"203.0.113.7"</span>                      <span class="c"># this server's public IPv4</span>
-  <span class="k">HOST_PASSWORD:</span> <span class="hl">change-me-to-something-long</span>    <span class="c"># the first "admin" login</span>
-  <span class="k">SESSION_SECRET:</span> <span class="hl">also-change-me-to-random</span>      <span class="c"># openssl rand -hex 32</span>
-  <span class="k">TURN_SECRET:</span> <span class="hl">and-change-me-to-random-too</span>      <span class="c"># openssl rand -hex 32</span>
+<span class="k">x-config:</span> <span class="v">&amp;config</span>
+  <span class="k">DOMAIN:</span> <span class="hl">studio.example.com</span><span class="c">                    # your public address</span>
+  <span class="k">PUBLIC_IP:</span> <span class="hl">"203.0.113.7"</span><span class="c">                      # this server's public IPv4</span>
+  <span class="k">HOST_PASSWORD:</span> <span class="hl">change-me-to-something-long</span><span class="c">    # the first "admin" login</span>
+  <span class="k">SESSION_SECRET:</span> <span class="hl">also-change-me-to-random</span><span class="c">      # openssl rand -hex 32</span>
+  <span class="k">TURN_SECRET:</span> <span class="hl">and-change-me-to-random-too</span><span class="c">      # openssl rand -hex 32</span>
   <span class="k">HTTP_PORT:</span> <span class="v">"3000"</span>
 
 <span class="k">services:</span>
@@ -878,29 +892,43 @@
       <span class="k">context:</span> <span class="v">https://github.com/lightmorphic/fossstudio.git</span>
       <span class="k">dockerfile:</span> <span class="v">server/Dockerfile</span>
     <span class="k">restart:</span> <span class="v">unless-stopped</span>
+    <span class="c"># Host networking: the media engine hands out many UDP ports and</span>
+    <span class="c"># needs real client addresses. The app itself binds to 127.0.0.1.</span>
     <span class="k">network_mode:</span> <span class="v">host</span>
     <span class="k">environment:</span>
       <span class="k">&lt;&lt;:</span> <span class="v">*config</span>
     <span class="k">volumes:</span>
-      - <span class="v">fossstudio_data:/data</span>
+      - <span class="k">fossstudio_data:</span><span class="v">/data</span>
 
-  <span class="c"># Caddy fetches and renews the HTTPS certificate and puts the studio on
-  # ports 80 and 443. Already running nginx, Apache or another proxy on
-  # this machine? Do not start this service - those ports are taken.
-  # Delete it from this file and point your own proxy at the app on
-  # 127.0.0.1:3000 instead; the README has a ready nginx config.</span>
-  <span class="k">caddy:</span>
-    <span class="k">image:</span> <span class="v">caddy:2-alpine</span>
-    <span class="k">restart:</span> <span class="v">unless-stopped</span>
-    <span class="k">network_mode:</span> <span class="v">host</span>
-    <span class="k">environment:</span>
-      <span class="k">&lt;&lt;:</span> <span class="v">*config</span>
-    <span class="k">configs:</span>
-      - <span class="k">source:</span> <span class="v">caddyfile</span>
-        <span class="k">target:</span> <span class="v">/etc/caddy/Caddyfile</span>
-    <span class="k">volumes:</span>
-      - <span class="v">caddy_data:/data</span>
-      - <span class="v">caddy_config:/config</span>
+  <span class="c"># ---------------------------------------------------------------------</span>
+  <span class="c"># HTTPS. Most people want this. To switch it on, delete the "# " from</span>
+  <span class="c"># the caddy: block below, and at the foot of the file from the two</span>
+  <span class="c"># caddy volumes and the whole configs: block. Leave the hashes on these</span>
+  <span class="c"># sentences; they are only notes.</span>
+  <span class="c">#</span>
+  <span class="c"># Caddy fetches and renews your certificate and serves the studio on</span>
+  <span class="c"># ports 80 and 443. Without HTTPS there is no studio at all - browsers</span>
+  <span class="c"># refuse camera and microphone access on a plain-http page, and the</span>
+  <span class="c"># session cookie is Secure-only, so nobody can even log in.</span>
+  <span class="c">#</span>
+  <span class="c"># The one reason to leave it commented out: this machine already runs</span>
+  <span class="c"># nginx, Apache or another proxy, which already holds ports 80 and 443.</span>
+  <span class="c"># Then leave the hashes where they are, keep your own proxy terminating</span>
+  <span class="c"># TLS, and point it at 127.0.0.1:3000 - the README's "Bring your own</span>
+  <span class="c"># reverse proxy" section has a working nginx block.</span>
+  <span class="c"># ---------------------------------------------------------------------</span>
+  <span class="c"># caddy:</span>
+  <span class="c">#   image: caddy:2-alpine</span>
+  <span class="c">#   restart: unless-stopped</span>
+  <span class="c">#   network_mode: host</span>
+  <span class="c">#   environment:</span>
+  <span class="c">#     &lt;&lt;: *config</span>
+  <span class="c">#   configs:</span>
+  <span class="c">#     - source: caddyfile</span>
+  <span class="c">#       target: /etc/caddy/Caddyfile</span>
+  <span class="c">#   volumes:</span>
+  <span class="c">#     - caddy_data:/data</span>
+  <span class="c">#     - caddy_config:/config</span>
 
   <span class="k">coturn:</span>
     <span class="k">image:</span> <span class="v">coturn/coturn:4-alpine</span>
@@ -908,44 +936,49 @@
     <span class="k">network_mode:</span> <span class="v">host</span>
     <span class="k">environment:</span>
       <span class="k">&lt;&lt;:</span> <span class="v">*config</span>
+    <span class="c"># sh -c so the values come from the container's own environment</span>
+    <span class="c"># (this file has no .env for compose-time substitution)</span>
     <span class="k">entrypoint:</span> <span class="v">["/bin/sh", "-c"]</span>
     <span class="k">command:</span>
-      - <span class="v">&gt;
-        turnserver
-        --realm="$$DOMAIN"
-        --use-auth-secret
-        --static-auth-secret="$$TURN_SECRET"
-        --listening-port=3478
-        --min-port=49160 --max-port=49200
-        --no-cli
-        --no-multicast-peers</span>
-
-<span class="k">configs:</span>
-  <span class="k">caddyfile:</span>
-    <span class="k">content:</span> <span class="v">|
-      {
-        on_demand_tls {
-          ask http://127.0.0.1:{$$HTTP_PORT}/tls-allowed
-        }
-      }
-      {$$DOMAIN} {
-        encode zstd gzip
-        header Strict-Transport-Security "max-age=31536000"
-        reverse_proxy 127.0.0.1:{$$HTTP_PORT}
-      }
-      https:// {
-        tls {
-          on_demand
-        }
-        encode zstd gzip
-        header Strict-Transport-Security "max-age=31536000"
-        reverse_proxy 127.0.0.1:{$$HTTP_PORT}
-      }</span>
+      - <span class="v">&gt;</span>
+        <span class="v">turnserver</span>
+        <span class="v">--realm="$$DOMAIN"</span>
+        <span class="v">--use-auth-secret</span>
+        <span class="v">--static-auth-secret="$$TURN_SECRET"</span>
+        <span class="v">--listening-port=3478</span>
+        <span class="v">--min-port=49160 --max-port=49200</span>
+        <span class="v">--no-cli</span>
+        <span class="v">--no-multicast-peers</span>
 
 <span class="k">volumes:</span>
   <span class="k">fossstudio_data:</span>
-  <span class="k">caddy_data:</span>
-  <span class="k">caddy_config:</span></pre>
+  <span class="c"># HTTPS: these two go with the caddy: block above</span>
+  <span class="c"># caddy_data:</span>
+  <span class="c"># caddy_config:</span>
+
+<span class="c"># configs:</span>
+<span class="c">#   caddyfile:</span>
+<span class="c">#     # $$ keeps the {$VAR} placeholders for Caddy instead of compose</span>
+<span class="c">#     content: |</span>
+<span class="c">#       {</span>
+<span class="c">#         on_demand_tls {</span>
+<span class="c">#           ask http://127.0.0.1:{$$HTTP_PORT}/tls-allowed</span>
+<span class="c">#         }</span>
+<span class="c">#       }</span>
+<span class="c">#       {$$DOMAIN} {</span>
+<span class="c">#         encode zstd gzip</span>
+<span class="c">#         header Strict-Transport-Security "max-age=31536000"</span>
+<span class="c">#         reverse_proxy 127.0.0.1:{$$HTTP_PORT}</span>
+<span class="c">#       }</span>
+<span class="c">#       https:// {</span>
+<span class="c">#         tls {</span>
+<span class="c">#           on_demand</span>
+<span class="c">#         }</span>
+<span class="c">#         encode zstd gzip</span>
+<span class="c">#         header Strict-Transport-Security "max-age=31536000"</span>
+<span class="c">#         reverse_proxy 127.0.0.1:{$$HTTP_PORT}</span>
+<span class="c">#       }</span>
+</pre>
       </div>
     </div>
   </div>
@@ -978,7 +1011,7 @@
       </div>
       <div class="faq-item">
         <h3>Where do recordings end up?</h3>
-        <p>On your server, nowhere else: a lossless FLAC per person, a lossless mixdown of everyone, and a combined MP4 that matches what everyone saw. One click can send a finished recording to your own FOSSCast instance.</p>
+        <p>On your server, nowhere else. Each person is recorded on their own track in their own browser - uncompressed where the browser can do it, which a Chromium-based browser such as Chrome, Brave or Edge can - and you are handed that file exactly as it was recorded. Alongside it is one video of everyone that matches what was on screen. Nothing on the server opens or converts any of it.</p>
       </div>
     </div>
   </div>
