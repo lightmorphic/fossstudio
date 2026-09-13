@@ -17,7 +17,7 @@ import { isSessionBlocked, addSessionBlock } from "./blocklist.js";
 import { notifyUser } from "./push.js";
 import {
   startRecording, stopRecording, activeRecording,
-  addPeerToRecording, uploadCreds, markPeerDone
+  addPeerToRecording, uploadCreds, markPeerDone, notePeerMicLoss
 } from "./recording/manager.js";
 
 const ROOM_ID_RE = /^[a-zA-Z0-9_-]{4,32}$/;
@@ -161,6 +161,27 @@ export function attachSignaling() {
             room.control.bannerColors[peer.id] = data.color;
             reply({});
             broadcast(room, null, { event: "control", data: room.control });
+            break;
+          }
+
+          // A peer's own report that its microphone is not keeping up.
+          // The figure is the running total for this take, so a late
+          // message can never undo an earlier one; the host hears about
+          // it while there is still time to do something.
+          case "micTrouble": {
+            if (!peer) return fail("not joined");
+            const rec = activeRecording(room.id);
+            const lostMs = Math.min(24 * 3600 * 1000, Math.max(0, Number(data.lostMs) || 0));
+            if (rec) notePeerMicLoss(rec, peer.id, lostMs);
+            reply({});
+            for (const p of room.peers.values()) {
+              if (p.role === "host" && p.socket.readyState === 1) {
+                p.socket.send(JSON.stringify({
+                  event: "micTrouble",
+                  data: { peerId: peer.id, name: peer.name, lostMs }
+                }));
+              }
+            }
             break;
           }
 

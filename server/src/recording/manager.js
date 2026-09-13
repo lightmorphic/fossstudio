@@ -135,6 +135,16 @@ export async function appendChunk(recId, peerId, kind, ext, buf) {
   saveSnapshot(rec).catch(() => {});
 }
 
+// A peer says its microphone is failing to keep up. The figure is that
+// peer's running total for the take, so keep the largest rather than
+// adding: a repeated message must not inflate it.
+export function notePeerMicLoss(rec, peerId, lostMs) {
+  const p = rec.peers.get(peerId);
+  if (!p || !(lostMs > (p.micLostMs || 0))) return;
+  p.micLostMs = lostMs;
+  saveSnapshot(rec).catch(() => {});
+}
+
 export function markPeerDone(recId, peerId) {
   const rec = [...active.values()].find((r) => r.id === recId);
   if (!rec) return;
@@ -176,6 +186,18 @@ function safeName(name, used) {
   return candidate;
 }
 
+// The sentence the host reads beside a track whose microphone stalled.
+// Factual, and no apology: it says whose it is, how much went, and why.
+export function micLossNote(name, lostMs) {
+  const secs = Math.round(lostMs / 1000);
+  const who = String(name || "").trim() || "This person";
+  const amount = secs >= 120
+    ? `${Math.round(secs / 60)} minutes`
+    : `${secs} ${secs === 1 ? "second" : "seconds"}`;
+  return `${who}'s computer could not keep up. About ${amount} of this recording is ` +
+    `silence where the microphone stopped delivering. The file is the full length of the take.`;
+}
+
 // No render, no conversion: give each uploaded file a name a person can
 // read and list what is there. A rename inside one directory, so a long
 // show costs the same as a short one.
@@ -185,6 +207,7 @@ async function finalize(rec) {
   await fs.mkdir(out, { recursive: true });
   const files = [];
   const used = new Set();
+  const notes = [];
 
   for (const p of rec.peers.values()) {
     const who = safeName(p.name, used);
@@ -196,12 +219,20 @@ async function finalize(rec) {
       await fs.rename(path.join(raw, src), path.join(out, name))
         .then(() => files.push(name))
         .catch((err) => console.error(`filing ${src} failed:`, err.message));
+      // If their microphone could not keep up, say so beside the file
+      // it happened to, in seconds and in plain words. The file is the
+      // full length of the take - the lost moments are silence in it -
+      // so what the host needs to know is how much was lost, not that
+      // the file is short.
+      if (kind === "audio" && p.micLostMs >= 1000) {
+        notes.push({ file: name, text: micLossNote(p.name, p.micLostMs) });
+      }
     }
   }
 
   await saveIndex({
     id: rec.id, roomId: rec.roomId, ownerId: rec.ownerId, title: rec.title,
-    startedAt: rec.startedAt, endedAt: Date.now(), status: "ready", files
+    startedAt: rec.startedAt, endedAt: Date.now(), status: "ready", files, notes
   });
   await clearSnapshot(rec.id);
   const { notifyUser } = await import("../push.js");

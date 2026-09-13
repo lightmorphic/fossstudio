@@ -28,7 +28,7 @@
     muteBtn: $("muteBtn"), camBtn: $("camBtn"), leaveBtn: $("leaveBtn"),
     dimBtn: $("dimBtn"), handBtn: $("handBtn"), hostPanel: $("hostPanel"),
     hpAutoGain: $("hpAutoGain"), hpGuests: $("hpGuests"),
-    hpRecordBtn: $("hpRecordBtn"),
+    hpRecordBtn: $("hpRecordBtn"), hpMicTrouble: $("hpMicTrouble"),
     hpMuteAllBtn: $("hpMuteAllBtn"), hpSubBtn: $("hpSubBtn"), hpAdBtn: $("hpAdBtn"),
     hpBannerSwatches: $("hpBannerSwatches"), hpBannerHex: $("hpBannerHex"),
     hpBannerMulti: $("hpBannerMulti"), hpBannerChoice: $("hpBannerChoice"),
@@ -313,6 +313,42 @@
   function ensureAudioCtx() {
     if (!audioCtx) audioCtx = new AudioContext({ sampleRate: 48000 });
     return audioCtx;
+  }
+
+  // A microphone that stalls hands MediaRecorder nothing at all, and
+  // what the recorder is never given it cannot write. The file then
+  // comes back shorter than the take, and - because the holes are not
+  // kept - every word after a stall sits earlier than it was said, so
+  // that track slides further out of step with everybody else as the
+  // evening goes on. FOSSNerds lost 24 seconds of one person that way
+  // on 5 September 2026, in 119 separate stalls of about a fifth of a
+  // second each.
+  //
+  // Recording from a Web Audio graph instead fixes it, because the graph
+  // is driven by the audio context's own clock rather than by the
+  // device: it goes on producing through a stall, so the loss lands in
+  // the file as silence of exactly the right length and nothing after it
+  // moves. A silent source is mixed in and left running so the graph
+  // always has something of its own to render, even if the microphone
+  // never comes back at all.
+  const steadyParts = [];
+  function steadyTrack(track) {
+    const ctx = ensureAudioCtx();
+    const dest = ctx.createMediaStreamDestination();
+    ctx.createMediaStreamSource(new MediaStream([track])).connect(dest);
+    const keep = new ConstantSourceNode(ctx, { offset: 0 });
+    keep.connect(dest);
+    keep.start();
+    steadyParts.push({ keep, dest });
+    return dest.stream.getAudioTracks()[0];
+  }
+
+  function releaseSteadyTracks() {
+    for (const { keep, dest } of steadyParts.splice(0)) {
+      try { keep.stop(); } catch { /* already stopped */ }
+      keep.disconnect();
+      for (const t of dest.stream.getTracks()) t.stop();
+    }
   }
 
   // Route the mic through the RNNoise worklet; returns the cleaned track
@@ -1671,6 +1707,128 @@
     ].join("\n");
   }
 
+  // Padding the holes keeps the file honest, but the words said into
+  // them are still gone, and nobody found that out for a week. So count
+  // what the microphone fails to deliver while the take is running and
+  // tell the host as it happens.
+  //
+  // The counting reads frames from a clone of the device's own track -
+  // the raw one, before noise suppression, because that is the thing
+  // that stalls - and closes each frame as soon as its length has been
+  // added up. Nothing is decoded and no samples are copied. The clone
+  // means the recording's own copy of the track is left alone.
+  //
+  // Only Chrome and Edge can read a track this way. Elsewhere the
+  // padding still works and no figure is claimed, which is better than
+  // guessing one.
+  // peerId -> {name, lostMs}, for the line in the host's panel
+  const micTrouble = new Map();
+  function renderMicTrouble() {
+    const lines = [...micTrouble.values()]
+      .filter((p) => p.lostMs >= 1000)
+      .map((p) => {
+        const secs = Math.round(p.lostMs / 1000);
+        return `${p.name}'s computer is not keeping up - about ` +
+          `${secs} ${secs === 1 ? "second" : "seconds"} of their audio lost so far.`;
+      });
+    els.hpMicTrouble.textContent = lines.join(" ");
+    els.hpMicTrouble.hidden = lines.length === 0;
+  }
+
+  // The padding only keeps time while the audio context is running, and
+  // a suspended context is the one way it was possible to make it lose
+  // audio anyway (six seconds suspended, six seconds gone). Nothing in
+  // here suspends one, but a browser may - so wake it straight back up,
+  // and count what it cost while it was asleep.
+  let ctxWatchTimer = null;
+  function keepGraphAwake(watch) {
+    const ctx = ensureAudioCtx();
+    let asleepAt = 0;
+    ctxWatchTimer = setInterval(() => {
+      if (ctx.state === "running") {
+        if (asleepAt) {
+          watch.lostMs += performance.now() - asleepAt;
+          asleepAt = 0;
+          reportMicLoss(watch);
+        }
+        return;
+      }
+      if (!asleepAt) asleepAt = performance.now();
+      ctx.resume().catch(() => {});
+    }, 500);
+  }
+
+  let micWatch = null;
+  function watchMicDelivery() {
+    const startedAt = performance.now();
+    const watch = { reader: null, clone: null, lostMs: 0, toldMs: 0, end: null };
+    micWatch = watch;
+    keepGraphAwake(watch);
+
+    const raw = previewStream?.getAudioTracks?.()[0];
+    if (!raw || typeof MediaStreamTrackProcessor !== "function") return;
+    let clone;
+    try { clone = raw.clone(); } catch { return; }
+    watch.clone = clone;
+    const reader = new MediaStreamTrackProcessor({ track: clone }).readable.getReader();
+    watch.reader = reader;
+
+    (async () => {
+      for (;;) {
+        let frame;
+        try {
+          const { value, done } = await reader.read();
+          if (done) return;
+          frame = value;
+        } catch { return; }
+        const at = frame.timestamp / 1000;                    // ms
+        const len = (frame.numberOfFrames / frame.sampleRate) * 1000;
+        frame.close();
+        if (watch.end !== null && at - watch.end > 60) {
+          // A stall wide enough that it is the device, not ordinary
+          // jitter between one buffer and the next
+          watch.lostMs += at - watch.end;
+          reportMicLoss(watch);
+        }
+        watch.end = at + len;
+        if (micWatch !== watch) return;
+      }
+    })();
+
+    // The wall clock catches the other shape of this fault: a device
+    // that stops for good, where no later frame ever arrives to measure
+    // the hole against.
+    watch.timer = setInterval(() => {
+      if (watch.end === null) return;
+      const behind = (performance.now() - startedAt) - watch.end - 1000;
+      if (behind > watch.lostMs) { watch.lostMs = behind; reportMicLoss(watch); }
+    }, 5000);
+  }
+
+  // A second of loss over a whole take is a shrug; past that the host
+  // wants to know. Tell them each further second, not each frame.
+  function reportMicLoss(watch, final) {
+    if (watch.lostMs < 1000) return null;
+    if (!final && watch.lostMs - watch.toldMs < 1000) return null;
+    watch.toldMs = watch.lostMs;
+    return request("micTrouble", { lostMs: Math.round(watch.lostMs) }).catch(() => {});
+  }
+
+  // Called before the recorders stop, so the last part-second of loss
+  // reaches the server while the take is still open and the figure the
+  // dashboard shows is the whole of it.
+  async function stopWatchingMic() {
+    if (!micWatch) return;
+    const watch = micWatch;
+    micWatch = null;
+    clearInterval(watch.timer);
+    clearInterval(ctxWatchTimer);
+    ctxWatchTimer = null;
+    await reportMicLoss(watch, true);
+    watch.reader?.cancel().catch(() => {});
+    watch.clone?.stop();
+  }
+
   function startSelfRecording(upload) {
     recUpload = upload;
     const base = `/api/rec/chunk?rec=${encodeURIComponent(upload.recId)}&peer=${encodeURIComponent(upload.peerId)}&token=${encodeURIComponent(upload.token)}`;
@@ -1738,15 +1896,22 @@
       }
     }
 
-    // Audio: uncompressed PCM when the browser can, else Opus
-    startOne(micProducer?.track, "audio",
+    // Audio: uncompressed PCM when the browser can, else Opus. The
+    // microphone goes through steadyTrack so a stalled device leaves
+    // silence in the file rather than shortening it, and through
+    // watchMicDelivery so the host is told when that happens.
+    startOne(micProducer?.track && steadyTrack(micProducer.track), "audio",
       ["audio/webm;codecs=pcm", "audio/webm;codecs=opus", "audio/webm"]);
+    watchMicDelivery();
     startOne(camProducer?.track, "video",
       ["video/webm;codecs=vp8", "video/webm"], 2_500_000);
     setRecIndicator(true);
   }
 
   async function stopSelfRecording() {
+    // The final count goes first: the server files the note when every
+    // peer has said it is done, so this has to land before that.
+    await stopWatchingMic();
     const done = recorders.map(({ recorder, getQueue }) =>
       new Promise((resolve) => {
         recorder.onstop = () => resolve(getQueue());
@@ -1756,6 +1921,10 @@
     recorders = [];
     await Promise.all(done);
     mixer?.stop();
+    releaseSteadyTracks();
+    // The take is over; what it lost now belongs to the dashboard
+    micTrouble.clear();
+    renderMicTrouble();
     micBus = null;
     if (recUpload) {
       const { recId, peerId, token } = recUpload;
@@ -2027,6 +2196,16 @@
       };
       eventHandlers.recordingStopped = () => {
         recorders.length ? stopSelfRecording() : setRecIndicator(false);
+      };
+      // Somebody's microphone is losing audio. Say so now, by name, in
+      // the host's own panel: the padding keeps the file usable but the
+      // words spoken into a stall are gone either way, and a host who
+      // hears about it during the take can still ask them to close
+      // whatever is eating their machine.
+      eventHandlers.micTrouble = ({ peerId, name, lostMs }) => {
+        if (!isHost) return;
+        micTrouble.set(peerId, { name, lostMs });
+        renderMicTrouble();
       };
       eventHandlers.overlay = playDomOverlay;
       // The server's start time pre-seeds the button timer, so a host who

@@ -428,12 +428,21 @@ input[type="email"], input[type="url"] {
 }
 .rec-file {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.4rem;
   padding: 0.4rem 0.6rem;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--muted);
+}
+/* What went wrong with a track, under its own chip. Words, not a
+   painted box: the sentence is the whole of the signal. */
+.rec-note {
+  flex-basis: 100%;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--muted-fg);
 }
 .rec-fname {
   flex: 1;

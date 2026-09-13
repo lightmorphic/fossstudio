@@ -734,6 +734,15 @@ body.dim-ui .host-panel:hover { opacity: 1; }
 
 /* Host panel info dots: the same ⓘ as the join screen, but their text
    rides the floating #tipBubble so it never clips inside the panel */
+/* A plain sentence under the record button when somebody's microphone
+   is losing audio. Words only - no colour, no box: it belongs to the
+   panel it sits in. */
+.hp-note {
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--muted-fg, #9aa0a6);
+  margin-top: 0.15rem;
+}
 .hp-stack-row { display: flex; align-items: center; gap: 0.3rem; }
 .hp-stack-row .hp-btn { flex: 1; min-width: 0; }
 .hp-row > .info-btn { margin-left: auto; flex: none; }

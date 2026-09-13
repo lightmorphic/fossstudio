@@ -435,6 +435,15 @@
           await apiFetch(url, { method: "DELETE" });
           loadRecordings();
         }));
+        // Anything the take itself noticed about this file - so far,
+        // only a microphone that could not keep up
+        const note = (r.notes || []).find((n) => n.file === f);
+        if (note) {
+          const line = document.createElement("div");
+          line.className = "rec-note";
+          line.textContent = note.text;
+          fileRow.appendChild(line);
+        }
         filesEl.appendChild(fileRow);
       }
       // Bottom action row under the files: the two zip downloads, then
