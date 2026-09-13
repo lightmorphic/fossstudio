@@ -340,14 +340,27 @@ if (everyone) {
     takeSecs - secs < 0.5);
 }
 
-// The camera track: cameras stall too, and a short video file drifts
-// against the audio in exactly the same way
+// Cameras stall too, but a stalling camera does not shorten its file
+// the way a stalling microphone does, so it needs no padding. Every
+// video frame carries its own presentation time, so a frame that never
+// arrives leaves the one before it on screen for longer and the
+// timeline stays where it was; audio samples have no such stamp of
+// their own, which is the whole of why a hole there pulls everything
+// after it earlier. Measured on a camera starved for a second at a
+// time: 390 frames instead of 480, and the last of them still at
+// 15.96s of a 16.00s take.
+//
+// This check is the timeline, not the frame count: the video must end
+// where the take ended.
 const video = (rec?.files || []).find((f) => /^Eric.*-video\.(webm|mp4)$/.test(f));
 if (video) {
   const out = execFileSync("ffprobe", ["-v", "error", "-select_streams", "v:0",
-    "-count_packets", "-show_entries", "stream=nb_read_packets,duration", "-of", "csv=p=0",
-    path.join(dir, video)], { encoding: "utf8" });
-  console.log(`    Eric's camera track: ${out.trim()}`);
+    "-show_entries", "packet=pts_time", "-of", "csv=p=0", path.join(dir, video)],
+  { encoding: "utf8", maxBuffer: 1 << 28 });
+  const last = Number(out.trim().split("\n").pop().split(",")[0]);
+  console.log(`    Eric's camera track runs to ${last.toFixed(2)}s`);
+  check(`the camera track ends where the take ended (short by ${(takeSecs - last).toFixed(2)}s)`,
+    takeSecs - last < 1);
 }
 
 // And the same thing said again beside the file, for the host who was
