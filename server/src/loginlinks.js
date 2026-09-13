@@ -1,4 +1,4 @@
-// One-time sign-in links. Minted from the command line (admin-login-link.js)
+// One-time sign-in links. Minted from the command line (login-link.js)
 // by whoever runs the server, redeemed once at /link/<token> within ten
 // minutes, and useless afterwards. The file is read fresh on every
 // redemption rather than cached, because the link is written by a

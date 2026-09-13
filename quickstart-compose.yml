@@ -10,13 +10,14 @@
 #
 # That's the whole install: the image is built and published by GitHub,
 # the web pages are inside it, and your studio is at https://<your
-# domain>. Sign in with username "admin" and the password below, then
-# change it in the dashboard.
+# domain>. Sign in with username "admin" and the password below. The
+# password here is read on every start, so changing it here and running
+# "docker compose up -d" again is all it takes to change it.
 
 x-config: &config
   DOMAIN: studio.your-domain.com                # your public address
   PUBLIC_IP: "your-servers-public-ip"           # curl -4 https://api.ipify.org
-  HOST_PASSWORD: change-me-to-something-long    # the first "admin" login
+  HOST_PASSWORD: change-me-to-something-long    # the "admin" login
   SESSION_SECRET: also-change-me-to-random      # openssl rand -hex 32
   TURN_SECRET: and-change-me-to-random-too      # openssl rand -hex 32
   HTTP_PORT: "3000"

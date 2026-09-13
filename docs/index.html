@@ -25,7 +25,7 @@
   "name": "FOSSStudio",
   "operatingSystem": "Linux",
   "applicationCategory": "MultimediaApplication",
-  "description": "Self-hosted video podcast studio: no-account guest links, up to ten people in a room, a track per person recorded in their own browser and served exactly as recorded, one video of everyone that matches the screen, RNNoise noise suppression, a view-only output link that works as an OBS browser source, multi-host support, one-paste Docker Compose install.",
+  "description": "Self-hosted video podcast studio: no-account guest links, up to ten people in a room, a track per person recorded in their own browser and served exactly as recorded, one video of everyone that matches the screen, RNNoise noise suppression, a view-only output link that works as an OBS browser source, one-paste Docker Compose install.",
   "url": "https://fossstudio.org",
   "downloadUrl": "https://github.com/lightmorphic/fossstudio",
   "license": "https://www.gnu.org/licenses/agpl-3.0.html",
@@ -788,7 +788,7 @@
       <div class="card"><h3>Ten in a room</h3><p>Ten people on screen, plus up to four view-only connections. The media engine (mediasoup) forwards video rather than decoding it.</p></div>
       <div class="card"><h3>No database, no media tools</h3><p>Flat JSON files in one folder, and nothing on the server that opens a recording. Back it up, export it as a zip, restore it with a click. Daily backups built in.</p></div>
       <div class="card"><h3>Privacy by default</h3><p>No CDNs, no trackers, no cookies for guests, nothing fetched from another domain. Even the font is self-hosted. This page included.</p></div>
-      <div class="card"><h3>Multi-host</h3><p>Create a host and send them the invite link; each gets their own sessions, recordings and branding. Admin and host panels are separate logins, each lockable with a second factor.</p></div>
+      <div class="card"><h3>Your studio, one login</h3><p>An install is one person's studio: one login for the sessions, the recordings, the look and the box itself, lockable with a second factor. Guests need no account at all.</p></div>
       <div class="card"><h3>Publish to FOSSCast</h3><p>One click pushes a finished recording to your <a href="https://fosscast.org">FOSSCast</a> instance as a draft episode for the archive and RSS half.</p></div>
       <div class="card"><h3>Strict-network friendly</h3><p>A built-in TURN relay gets guests through corporate and mobile networks.</p></div>
       <div class="card"><h3>Installable dashboard</h3><p>The dashboard installs like an app and can nudge you when a guest arrives or a recording is ready, if you let it. Settings save themselves as you type.</p></div>
@@ -806,7 +806,7 @@
           <li><span><b>Point your domain</b> at a Linux server with Docker, ports 80/443 (TCP) and 3478, 40000-40003, 49160-49189 (UDP) open.</span></li>
           <li><span><b>Save this file</b> as <code>docker-compose.yml</code> and fill in the five values at the top.</span></li>
           <li><span><b>Turn HTTPS on</b> unless another proxy already holds ports 80 and 443 on that machine: delete the <code>#</code> from the <code>caddy</code> block and from the two volumes and the <code>configs</code> block at the foot. Without HTTPS the browser will not give the studio a camera.</span></li>
-          <li><span><b><code>docker compose up -d</code></b> - the app builds straight from GitHub, the pages ship inside the image, and the certificate arrives on its own. Sign in as <code>admin</code> and change the password.</span></li>
+          <li><span><b><code>docker compose up -d</code></b> - the app builds straight from GitHub, the pages ship inside the image, and the certificate arrives on its own. Sign in as <code>admin</code> with the password you set. Change it here and restart, or in the dashboard.</span></li>
         </ol>
         <p style="color:var(--muted); font-size:0.9rem">No clone, no <code>.env</code>, no other files. What this installs is exactly what development runs.</p>
         <div class="aside">
@@ -876,13 +876,14 @@
 <span class="c">#</span>
 <span class="c"># That's the whole install: the image is built and published by GitHub,</span>
 <span class="c"># the web pages are inside it, and your studio is at https://&lt;your</span>
-<span class="c"># domain&gt;. Sign in with username "admin" and the password below, then</span>
-<span class="c"># change it in the dashboard.</span>
+<span class="c"># domain&gt;. Sign in with username "admin" and the password below. The</span>
+<span class="c"># password here is read on every start, so changing it here and running</span>
+<span class="c"># "docker compose up -d" again is all it takes to change it.</span>
 
 <span class="k">x-config:</span> <span class="a">&amp;config</span>
   <span class="k">DOMAIN:</span> <span class="hl">studio.your-domain.com</span><span class="c">                # your public address</span>
   <span class="k">PUBLIC_IP:</span> <span class="hl">"your-servers-public-ip"</span><span class="c">           # curl -4 https://api.ipify.org</span>
-  <span class="k">HOST_PASSWORD:</span> <span class="hl">change-me-to-something-long</span><span class="c">    # the first "admin" login</span>
+  <span class="k">HOST_PASSWORD:</span> <span class="hl">change-me-to-something-long</span><span class="c">    # the "admin" login</span>
   <span class="k">SESSION_SECRET:</span> <span class="hl">also-change-me-to-random</span><span class="c">      # openssl rand -hex 32</span>
   <span class="k">TURN_SECRET:</span> <span class="hl">and-change-me-to-random-too</span><span class="c">      # openssl rand -hex 32</span>
   <span class="k">HTTP_PORT:</span> <span class="v">"3000"</span>

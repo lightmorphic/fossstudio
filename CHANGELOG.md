@@ -64,11 +64,15 @@ One click sends a finished recording to your own FOSSCast instance as
 a draft episode. FOSSCast is a separate self-hosted app that publishes
 a podcast; neither needs the other to run.
 
-The rest is the housekeeping a self-hosted thing needs. Admins invite
-hosts with a link and each host chooses their own password; either
-panel can be locked with a second factor; the admin and host panels
-are separate sessions on optional separate domains, certificates
-included. A guest who joins a shared link to abuse it can be blocked
+An install is one person's studio: one login, and no way to make a
+second, because somebody who wants their own runs their own copy. The
+password lives in the compose file and is read on every start, so
+changing it there and restarting is all it takes - a first run that
+went wrong cannot leave you locked out of your own studio. The login
+can be locked with a second factor, and the dashboard can have a
+domain of its own, certificate included.
+
+The rest is the housekeeping a self-hosted thing needs. A guest who joins a shared link to abuse it can be blocked
 from every session on the server, reversibly, with the block logged
 and the address never reaching a browser. Settings and session history
 are backed up daily and restorable from the dashboard, and the whole

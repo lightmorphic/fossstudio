@@ -19,13 +19,12 @@ For self-hosters assessing the project:
 
 - **Authentication**: scrypt password hashing, HMAC-signed HttpOnly
   cookies (`Secure`, `SameSite=Lax`), per-IP login rate limiting with
-  lockout, optional TOTP two-factor per account.
-- **Roles**: admins never host; hosts only ever see their own sessions,
-  recordings and settings. The admin panel and the host dashboards are
-  separate sessions with separate cookies, so signing in to one grants
-  nothing in the other and logging out of one leaves the other
-  untouched. Host powers in a session are granted from the
-  server-side session ownership check, never from client claims.
+  lockout, optional TOTP two-factor.
+- **One account**: an install has one login and no way to make a
+  second - no account creation, no invitations, nothing to escalate to.
+  Host powers in a session are granted from the server-side session
+  check, never from client claims; guests join by link with no account
+  at all, and a link is never treated as one.
 - **Session links** must exist in the session registry - arbitrary room
   IDs are rejected. The view-only output (`?output=1`) carries the same
   trust as the link itself: anyone holding the link could join and
@@ -62,27 +61,25 @@ For self-hosters assessing the project:
 - **No third parties**: no CDNs, trackers, or external calls from any
   page; fonts and libraries are self-hosted. Two things do leave the
   server, both because you asked them to: publishing a recording to
-  the FOSSCast address you entered, and - if a host turns on
-  notifications - the nudge that goes through that browser's own push
+  the FOSSCast address you entered, and - if notifications are
+  turned on - the nudge that goes through that browser's own push
   service.
 - **Data deletion**: deleting a recording, wallpaper, logo or ad-banner
   removes the stored file from disk, not just the database
-  record. Deleting a host account purges everything that account owned -
-  its recordings and their files, sessions, uploaded media and push
-  subscription. (Rotating local backups may retain snapshots until they
-  age out of the retention window - 5 backups by default, admin-set
-  between 1 and 100.)
+  record. (Rotating local backups may retain snapshots until they age
+  out of the retention window - 5 backups by default, set between 1 and
+  100 in the dashboard.)
 - **Secrets** live in the server's `.env` and the data directory -
   never in the repository. That includes the optional FOSSCast
   publisher token: publishing runs server-side, so the token is never
   sent to any browser.
 - **Unauthenticated endpoints** are deliberately few: `/healthz` (up
   or not), `/tls-allowed` (a yes/no answer Caddy consults before
-  fetching a certificate on demand; it approves only the panel domains
-  derived from `DOMAIN`, so a stranger pointing their name at the
-  server can never mint a certificate), the session page at
+  fetching a certificate on demand; it approves only the dashboard
+  domain derived from `DOMAIN`, so a stranger pointing their name at
+  the server can never mint a certificate), the session page at
   `/s/<session>` (session ids are unguessable, and the page still has
-  to join through the signalling socket), and the invite endpoints,
-  which need the invite token itself.
+  to join through the signalling socket), and the studio's advertising
+  banner, which is drawn into every guest's screen anyway.
 - **Headers**: `X-Content-Type-Options`, `X-Frame-Options: DENY`,
   `Referrer-Policy`, and a restrictive `Permissions-Policy`.

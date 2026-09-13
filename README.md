@@ -47,14 +47,15 @@ and you never will.
   default - then join, arriving muted so there are no accidental hot
   mics. The room holds ten people, plus up to four view-only
   connections. Choices are remembered for next time.
-- **Roles:** admins create **hosts** and look after the system; each
-  host owns their sessions, recordings and branding. Creating a host
-  gives you an invite link to send them; they open it and choose their
-  own password. The admin panel (`/admin/`) and host dashboards
-  (`/host/`) are separate sessions, so both can be open in one browser
-  at once - and each can have its own domain: point admin.<your-domain>
-  and host.<your-domain> at the server and they work, certificate
-  included. Either panel can be locked with a second factor.
+- **One account:** an install is one person's studio. One login runs
+  the sessions, holds the recordings, sets the look and looks after the
+  box, all from the one dashboard at `/host/`; it can be locked with a
+  second factor. There is no way to make a second account, because a
+  second person who wants a studio runs their own copy - the licence is
+  there for exactly that. Guests need no account at all, which is the
+  whole point of the link. The dashboard can have a domain of its own
+  if you like: point host.<your-domain> at the server and it works,
+  certificate included.
 - **In-session host controls:** spotlight or grid, per-guest volume,
   per-session automatic level balancing, mute one or mute everyone,
   lower a raised hand, start and stop recording, and two overlays -
@@ -236,8 +237,9 @@ docker compose up -d
 Nothing else: no clone, no `.env`, no config files. The app image
 builds straight from this repository (the web pages ship inside it),
 Caddy fetches your HTTPS certificate by itself, and the studio is at
-your domain - sign in as `admin` with the password you set, then
-change it in the dashboard.
+your domain - sign in as `admin` with the password you set. Change
+either in the dashboard; or change `HOST_PASSWORD` in the compose file
+and restart, because the file is read on every start and wins.
 
 **The full checkout** (for hacking on it, or the deploy-from-a-dev-box
 flow): clone the repo, and then
@@ -407,6 +409,7 @@ node test/geometry-test.mjs <url> <password>     # on-screen tile layout matches
 node test/spotlight-record-test.mjs <url> <password>  # a spotlit session records as a spotlight
 node test/obs-feed-test.mjs              # the view-only output: no controls, invisible, never recorded
 node test/session-block-test.mjs         # blocking a guest, and undoing it
+node test/one-account-test.mjs <url> <password>  # one account, and no road to a second
 node test/fosscast-publish-test.mjs      # publish-to-FOSSCast flow against a stub instance
 node test/ten-guest-fit.mjs              # ten people in one room, every tile the same size
 node test/firefox-compat-test.mjs <url> <password>  # same flows, real Firefox engine

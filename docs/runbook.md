@@ -6,8 +6,8 @@
 > change with it.
 
 Plain-language guide for keeping FOSSStudio running. **Almost everything
-lives in the dashboard** - https://YOUR-DOMAIN/admin/ for the admin panel, https://YOUR-DOMAIN/host/ for hosts →
-System tab. This file is for when the dashboard itself is unreachable.
+lives in the dashboard** - https://YOUR-DOMAIN/host/ → System tab.
+This file is for when the dashboard itself is unreachable.
 
 ## Day-to-day (no terminal needed)
 
