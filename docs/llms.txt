@@ -1,12 +1,13 @@
 # FOSSStudio
 
 > FOSSStudio is a free, open-source, self-hosted video podcast studio
-> (AGPL-3.0) by Lightmorphic Ltd. Guests join by link with no account, up
-> to ten people; lossless FLAC multitrack recording plus a combined MP4;
-> live streaming to your own domain with chat (and YouTube at the same
-> time on one encode); an OBS clean feed; one-paste Docker Compose
-> install. No database, no trackers, no external calls. There is no
-> screen sharing: the studio records people talking to each other.
+> (AGPL-3.0) by Lightmorphic Ltd. Guests join by link with no account,
+> up to ten in a room; lossless FLAC per person plus a combined MP4
+> that matches what everyone saw; a view-only output link that works as
+> an OBS browser source; one-paste Docker Compose install. No database,
+> no trackers, no external calls. It records a show and hands you the
+> files: it does not publish a podcast, does not broadcast, does not
+> edit, and has no screen sharing.
 
 Version 0.1.0, a public beta. It is not ready to be relied on: data loss
 and breaking changes are possible, and nobody should put a show they
@@ -19,4 +20,4 @@ GitHub.
 - Licence: AGPL-3.0 - https://www.gnu.org/licenses/agpl-3.0.html
 - Hosted, for people who would rather not run a server:
   https://castmorphic.com
-- Contact: complaints@fossstudio.org
+- Contact: complaints@lightmorphic.com

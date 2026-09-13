@@ -12,5 +12,5 @@ Plainly: fork it, change it, host it, sell support for it, all under the
 licence. Call your version something else. Saying "based on FOSSStudio" is
 fine and true; calling it FOSSStudio is not.
 
-Other names in this repository (hls.js, RNNoise, Manrope and the rest
+Other names in this repository (mediasoup, RNNoise, Manrope and the rest
 listed in NOTICE.md) belong to their own owners.

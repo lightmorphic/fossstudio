@@ -23,8 +23,6 @@ System tab. This file is for when the dashboard itself is unreachable.
 
 ## If the site is down (dashboard unreachable)
 
-You'll get an email from the uptime check when this happens.
-
 1. **Wait 5 minutes.** It may just be restarting itself.
 2. SSH to the VPS:
    ```
@@ -78,7 +76,10 @@ and keep them somewhere safe.
 
 ## Uptime check
 
-A GitHub Actions job (in this repo, `.github/workflows/uptime.yml`) pings
-the site every 15 minutes from outside and emails you if it's down. It
-needs SMTP secrets set in the GitHub repo settings - see the workflow
-file for the exact names.
+A GitHub Actions job (in this repo, `.github/workflows/uptime.yml`)
+pings the project's own instance every 15 minutes from outside and
+emails the maintainer if it does not answer. It runs only on the
+upstream repository. To watch your own studio the same way, fork it,
+change the address and the repository check, and set your own SMTP
+secrets in your repository settings - see the workflow file for the
+names.

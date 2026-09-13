@@ -23,18 +23,8 @@ repository that Lightmorphic did **not** write.
 ## Bundled third-party code
 
 These files are checked into the repository and served to browsers. All
-three are permissively licensed, so none of them constrains what
-Lightmorphic may do with its own code.
-
-### hls.js
-
-* **What:** the HLS player on the watch page, so a live stream plays in
-  browsers that have no native HLS (everything except Safari).
-* **Where:** `web/assets/hls.min.js` (version 1.5.20, the project's own
-  minified build, used unmodified).
-* **Whose:** Dailymotion and the hls.js contributors.
-* **Licence:** Apache-2.0.
-* **From:** <https://github.com/video-dev/hls.js>
+of them are permissively licensed, so none constrains what Lightmorphic
+may do with its own code.
 
 ### mediasoup-client
 
@@ -88,22 +78,6 @@ The font is bundled rather than fetched from a font service, so that an
 instance behind a firewall renders and no visitor's browser is made to
 call a third party.
 
-### Brand outlines in the off-air game
-
-* **What:** the watch page shows a small game while a show is off air,
-  in which the asteroids are big technology companies' logos. The
-  outlines are 24x24 path data.
-* **Where:** `web/js/offair.js`, and a copy at `docs/offair.js` for the
-  project website.
-* **Whose:** the Simple Icons project.
-* **Licence:** CC0-1.0, which waives copyright in the drawings.
-* **From:** <https://github.com/simple-icons/simple-icons>
-
-CC0 settles copyright and nothing else. The marks themselves are their
-owners' trademarks, drawn here as the target of a joke about lock-in.
-If you fork FOSSStudio, that is your judgement to make, not a right the
-AGPL or CC0 gives you.
-
 ## Runtime dependencies
 
 Four npm packages, all installed unmodified from the public registry
@@ -138,22 +112,15 @@ it.
 |---|---|---|
 | Node.js (`node:22-bookworm-slim` base image) | OpenJS Foundation | MIT |
 | Debian bookworm (base image) | Debian | mixed, mostly GPL/MIT/BSD |
-| ffmpeg (recording, streaming, level matching) | FFmpeg project | LGPL-2.1-or-later as packaged by Debian |
+| ffmpeg (turning a recording into its finished files) | FFmpeg project | LGPL-2.1-or-later as packaged by Debian |
 | zip (recording bundles) | Info-ZIP | Info-ZIP licence, BSD-like |
 | Caddy (the reverse proxy in the example compose files) | Light Code Labs | Apache-2.0 |
 
 ## Artwork and media
 
 * `server/assets/subscribe.mp4` is the subscribe overlay. It was
-  rendered for FOSSStudio (see the commit "Stream overlays (subscribe +
-  ad banner), raise hand, red mute lights"); the encoder was x264,
-  which does not make its output a derivative work.
-* `server/assets/banned-words.txt` is a starting word list written for
-  the chat filter, meant to be replaced by the operator's own copy at
-  `data/banned-words.txt`.
+  rendered for FOSSStudio; the encoder was x264, which does not make
+  its output a derivative work.
 * `web/icons/icon-192.png`, `web/icons/icon-512.png` and
   `docs/icon.png` are FOSSStudio's own icon.
 * The screenshots under `docs/shots/` are of FOSSStudio itself.
-* The Lightmorphic logo (`docs/lightmorphic-dark-tb-250x50-sq.webp`) is
-  Lightmorphic's trademark. The AGPL covers the code, not the brand:
-  remove it if you fork this and publish it as your own thing.
