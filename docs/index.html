@@ -868,7 +868,7 @@
 <span class="c">#</span>
 <span class="c">#   1. Save this file as docker-compose.yml on a Linux server whose</span>
 <span class="c">#      DNS (your domain) points at it, with ports 80/443 (TCP) and</span>
-<span class="c">#      3478 + 40000-40100 + 49160-49200 (UDP) open.</span>
+<span class="c">#      3478 + 40000-40003 + 49160-49189 (UDP) open.</span>
 <span class="c">#   2. Fill in the five values just below. Every one of them is a</span>
 <span class="c">#      stand-in: none will work as it is.</span>
 <span class="c">#   3. Turn HTTPS on: see the note above the caddy service.</span>
@@ -879,7 +879,7 @@
 <span class="c"># domain&gt;. Sign in with username "admin" and the password below, then</span>
 <span class="c"># change it in the dashboard.</span>
 
-<span class="k">x-config:</span> <span class="v">&amp;config</span>
+<span class="k">x-config:</span> <span class="a">&amp;config</span>
   <span class="k">DOMAIN:</span> <span class="hl">studio.your-domain.com</span><span class="c">                # your public address</span>
   <span class="k">PUBLIC_IP:</span> <span class="hl">"your-servers-public-ip"</span><span class="c">           # curl -4 https://api.ipify.org</span>
   <span class="k">HOST_PASSWORD:</span> <span class="hl">change-me-to-something-long</span><span class="c">    # the first "admin" login</span>
@@ -887,84 +887,99 @@
   <span class="k">TURN_SECRET:</span> <span class="hl">and-change-me-to-random-too</span><span class="c">      # openssl rand -hex 32</span>
   <span class="k">HTTP_PORT:</span> <span class="v">"3000"</span>
 
-  <span class="c"># Only if your reverse proxy runs on a DIFFERENT machine. The app</span>
-  <span class="c"># listens on 127.0.0.1 so nothing but a proxy on this box can reach</span>
-  <span class="c"># it, which is right for almost everybody. Uncomment to let a proxy</span>
-  <span class="c"># elsewhere in, then firewall this port so only that proxy's address</span>
-  <span class="c"># can connect: the app must never face the open internet directly.</span>
-  <span class="c"># Media does not follow the proxy - PUBLIC_IP and the UDP ports stay</span>
-  <span class="c"># this machine's - and TURN_HOST then needs an address that reaches</span>
-  <span class="c"># here directly, because your domain now points at the proxy.</span>
-  <span class="c"># BIND_HOST: "0.0.0.0"</span>
+<span class="c">  # The address the app listens on INSIDE its container. It has to be</span>
+<span class="c">  # 0.0.0.0, or a published port has nothing to reach. What the outside</span>
+<span class="c">  # world can get at is decided by the ports: list further down, not by</span>
+<span class="c">  # this - "127.0.0.1:3000:3000" there keeps the web port on this</span>
+<span class="c">  # machine, "3000:3000" opens it to anything that can route here.</span>
+  <span class="k">BIND_HOST:</span> <span class="v">"0.0.0.0"</span>
 
 <span class="k">services:</span>
   <span class="k">app:</span>
     <span class="k">image:</span> <span class="v">ghcr.io/lightmorphic/fossstudio:latest</span>
     <span class="k">restart:</span> <span class="v">unless-stopped</span>
-    <span class="c"># Host networking: the media engine hands out many UDP ports and</span>
-    <span class="c"># needs real client addresses. The app itself binds to 127.0.0.1</span>
-    <span class="c"># unless BIND_HOST above says otherwise.</span>
-    <span class="k">network_mode:</span> <span class="v">host</span>
     <span class="k">environment:</span>
-      <span class="k">&lt;&lt;:</span> <span class="v">*config</span>
+      &lt;&lt;: *config
+<span class="c">    # Every port is published host:container with the same number on</span>
+<span class="c">    # both sides, and that is not tidiness: the media engine tells each</span>
+<span class="c">    # guest which port to send audio and video to, so a port that means</span>
+<span class="c">    # something different outside the container is a room that opens and</span>
+<span class="c">    # stays silent. The media range is four ports because mediasoup</span>
+<span class="c">    # multiplexes every connection over them; the relay range belongs to</span>
+<span class="c">    # coturn below.</span>
+    <span class="k">ports:</span>
+      - "3000:3000"                          # the studio (put Caddy in front)
+      - "40000-40003:40000-40003/udp"        # media
+      - "40000-40003:40000-40003/tcp"        # media, for networks that block UDP
     <span class="k">volumes:</span>
-      - <span class="k">fossstudio_data:</span><span class="v">/data</span>
+      - fossstudio_data:/data
 
-  <span class="c"># ---------------------------------------------------------------------</span>
-  <span class="c"># HTTPS. Most people want this. To switch it on, delete the "# " from</span>
-  <span class="c"># the caddy: block below, and at the foot of the file from the two</span>
-  <span class="c"># caddy volumes and the whole configs: block. Leave the hashes on these</span>
-  <span class="c"># sentences; they are only notes.</span>
-  <span class="c">#</span>
-  <span class="c"># Caddy fetches and renews your certificate and serves the studio on</span>
-  <span class="c"># ports 80 and 443. Without HTTPS there is no studio at all - browsers</span>
-  <span class="c"># refuse camera and microphone access on a plain-http page, and the</span>
-  <span class="c"># session cookie is Secure-only, so nobody can even log in.</span>
-  <span class="c">#</span>
-  <span class="c"># The one reason to leave it commented out: this machine already runs</span>
-  <span class="c"># nginx, Apache or another proxy, which already holds ports 80 and 443.</span>
-  <span class="c"># Then leave the hashes where they are, keep your own proxy terminating</span>
-  <span class="c"># TLS, and point it at 127.0.0.1:3000 - the README's "Bring your own</span>
-  <span class="c"># reverse proxy" section has a working nginx block.</span>
-  <span class="c"># ---------------------------------------------------------------------</span>
-  <span class="c"># caddy:</span>
-  <span class="c">#   image: caddy:2-alpine</span>
-  <span class="c">#   restart: unless-stopped</span>
-  <span class="c">#   network_mode: host</span>
-  <span class="c">#   environment:</span>
-  <span class="c">#     &lt;&lt;: *config</span>
-  <span class="c">#   configs:</span>
-  <span class="c">#     - source: caddyfile</span>
-  <span class="c">#       target: /etc/caddy/Caddyfile</span>
-  <span class="c">#   volumes:</span>
-  <span class="c">#     - caddy_data:/data</span>
-  <span class="c">#     - caddy_config:/config</span>
+<span class="c">  # ---------------------------------------------------------------------</span>
+<span class="c">  # HTTPS. Most people want this. To switch it on, delete the "# " from</span>
+<span class="c">  # the caddy: block below, and at the foot of the file from the two</span>
+<span class="c">  # caddy volumes and the whole configs: block. Leave the hashes on these</span>
+<span class="c">  # sentences; they are only notes.</span>
+<span class="c">  #</span>
+<span class="c">  # Caddy fetches and renews your certificate and serves the studio on</span>
+<span class="c">  # ports 80 and 443. Without HTTPS there is no studio at all - browsers</span>
+<span class="c">  # refuse camera and microphone access on a plain-http page, and the</span>
+<span class="c">  # session cookie is Secure-only, so nobody can even log in.</span>
+<span class="c">  #</span>
+<span class="c">  # With Caddy on, change the app's "3000:3000" above to</span>
+<span class="c">  # "127.0.0.1:3000:3000": Caddy reaches the app by its service name on</span>
+<span class="c">  # the compose network, so the web port no longer needs to leave this</span>
+<span class="c">  # machine at all.</span>
+<span class="c">  #</span>
+<span class="c">  # The one reason to leave it commented out: this machine already runs</span>
+<span class="c">  # nginx, Apache or another proxy, which already holds ports 80 and 443.</span>
+<span class="c">  # Then leave the hashes where they are, keep your own proxy terminating</span>
+<span class="c">  # TLS, and point it at 127.0.0.1:3000 - the README's "Bring your own</span>
+<span class="c">  # reverse proxy" section has a working nginx block.</span>
+<span class="c">  # ---------------------------------------------------------------------</span>
+<span class="c">  # caddy:</span>
+<span class="c">  #   image: caddy:2-alpine</span>
+<span class="c">  #   restart: unless-stopped</span>
+<span class="c">  #   environment:</span>
+<span class="c">  #     &lt;&lt;: *config</span>
+<span class="c">  #   ports:</span>
+<span class="c">  #     - "80:80"</span>
+<span class="c">  #     - "443:443"</span>
+<span class="c">  #     - "443:443/udp"</span>
+<span class="c">  #   configs:</span>
+<span class="c">  #     - source: caddyfile</span>
+<span class="c">  #       target: /etc/caddy/Caddyfile</span>
+<span class="c">  #   volumes:</span>
+<span class="c">  #     - caddy_data:/data</span>
+<span class="c">  #     - caddy_config:/config</span>
 
   <span class="k">coturn:</span>
     <span class="k">image:</span> <span class="v">coturn/coturn:4-alpine</span>
     <span class="k">restart:</span> <span class="v">unless-stopped</span>
-    <span class="k">network_mode:</span> <span class="v">host</span>
     <span class="k">environment:</span>
-      <span class="k">&lt;&lt;:</span> <span class="v">*config</span>
-    <span class="c"># sh -c so the values come from the container's own environment</span>
-    <span class="c"># (this file has no .env for compose-time substitution)</span>
+      &lt;&lt;: *config
+    <span class="k">ports:</span>
+      - "3478:3478/tcp"                      # relay control
+      - "3478:3478/udp"                      # relay control
+      - "49160-49189:49160-49189/udp"        # relayed media
+<span class="c">    # sh -c so the values come from the container's own environment</span>
+<span class="c">    # (this file has no .env for compose-time substitution)</span>
     <span class="k">entrypoint:</span> <span class="v">["/bin/sh", "-c"]</span>
     <span class="k">command:</span>
-      - <span class="v">&gt;</span>
-        <span class="v">turnserver</span>
-        <span class="v">--realm="$$DOMAIN"</span>
-        <span class="v">--use-auth-secret</span>
-        <span class="v">--static-auth-secret="$$TURN_SECRET"</span>
-        <span class="v">--listening-port=3478</span>
-        <span class="v">--min-port=49160 --max-port=49200</span>
-        <span class="v">--no-cli</span>
-        <span class="v">--no-multicast-peers</span>
+      - &gt;
+        turnserver
+        --realm="$$DOMAIN"
+        --use-auth-secret
+        --static-auth-secret="$$TURN_SECRET"
+        --listening-port=3478
+        --min-port=49160 --max-port=49189
+        --external-ip="$$PUBLIC_IP"
+        --no-multicast-peers
 
 <span class="k">volumes:</span>
   <span class="k">fossstudio_data:</span>
-  <span class="c"># HTTPS: these two go with the caddy: block above</span>
-  <span class="c"># caddy_data:</span>
-  <span class="c"># caddy_config:</span>
+<span class="c">  # HTTPS: these two go with the caddy: block above</span>
+<span class="c">  # caddy_data:</span>
+<span class="c">  # caddy_config:</span>
 
 <span class="c"># configs:</span>
 <span class="c">#   caddyfile:</span>
@@ -972,13 +987,13 @@
 <span class="c">#     content: |</span>
 <span class="c">#       {</span>
 <span class="c">#         on_demand_tls {</span>
-<span class="c">#           ask http://127.0.0.1:{$$HTTP_PORT}/tls-allowed</span>
+<span class="c">#           ask http://app:{$$HTTP_PORT}/tls-allowed</span>
 <span class="c">#         }</span>
 <span class="c">#       }</span>
 <span class="c">#       {$$DOMAIN} {</span>
 <span class="c">#         encode zstd gzip</span>
 <span class="c">#         header Strict-Transport-Security "max-age=31536000"</span>
-<span class="c">#         reverse_proxy 127.0.0.1:{$$HTTP_PORT}</span>
+<span class="c">#         reverse_proxy app:{$$HTTP_PORT}</span>
 <span class="c">#       }</span>
 <span class="c">#       https:// {</span>
 <span class="c">#         tls {</span>
@@ -986,7 +1001,7 @@
 <span class="c">#         }</span>
 <span class="c">#         encode zstd gzip</span>
 <span class="c">#         header Strict-Transport-Security "max-age=31536000"</span>
-<span class="c">#         reverse_proxy 127.0.0.1:{$$HTTP_PORT}</span>
+<span class="c">#         reverse_proxy app:{$$HTTP_PORT}</span>
 <span class="c">#       }</span>
 </pre>
       </div>

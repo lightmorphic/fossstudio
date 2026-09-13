@@ -45,6 +45,10 @@ USER node
 ENV NODE_ENV=production
 ENV WEB_DIR=/app/web
 ENV DATA_DIR=/data
+# Inside a container, binding loopback would leave a published port with
+# nothing behind it. Who may reach the app is decided by the host half
+# of the port mapping instead; .env can still override this.
+ENV BIND_HOST=0.0.0.0
 # Cap the JS heap well above real usage (~80MB observed under load): a
 # leak degrades into a clean restart instead of eating the host's RAM.
 # Only the app's own heap - the mediasoup workers are separate processes
