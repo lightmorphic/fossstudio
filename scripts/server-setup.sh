@@ -21,8 +21,9 @@ ufw allow 443/tcp         # HTTPS
 ufw allow 443/udp         # HTTP/3
 ufw allow 3478/tcp        # TURN relay
 ufw allow 3478/udp        # TURN relay
-ufw allow 40000:40100/udp # WebRTC media
-ufw allow 49160:49200/udp # TURN relay range
+ufw allow 40000:40003/udp # WebRTC media
+ufw allow 40000:40003/tcp # WebRTC media, for networks that block UDP
+ufw allow 49160:49189/udp # TURN relay range
 ufw --force enable
 
 echo "== Folder layout =="

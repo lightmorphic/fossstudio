@@ -803,7 +803,7 @@
     <div class="install">
       <div>
         <ol class="steps">
-          <li><span><b>Point your domain</b> at a Linux server with Docker, ports 80/443 (TCP) and 3478, 40000-40100, 49160-49200 (UDP) open.</span></li>
+          <li><span><b>Point your domain</b> at a Linux server with Docker, ports 80/443 (TCP) and 3478, 40000-40003, 49160-49189 (UDP) open.</span></li>
           <li><span><b>Save this file</b> as <code>docker-compose.yml</code> and fill in the five values at the top.</span></li>
           <li><span><b>Turn HTTPS on</b> unless another proxy already holds ports 80 and 443 on that machine: delete the <code>#</code> from the <code>caddy</code> block and from the two volumes and the <code>configs</code> block at the foot. Without HTTPS the browser will not give the studio a camera.</span></li>
           <li><span><b><code>docker compose up -d</code></b> - the app builds straight from GitHub, the pages ship inside the image, and the certificate arrives on its own. Sign in as <code>admin</code> and change the password.</span></li>
