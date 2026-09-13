@@ -213,11 +213,16 @@ typeface, the scripts and the WASM all come from your own server.
 ## Running it
 
 You need a Linux server with Docker, a public IP, a domain pointed at
-it, and ports 80/443 (TCP) plus 3478 and the media ranges 40000-40100
-and 49160-49200 (UDP) open. (Running more than one studio on a host?
-`RTC_MIN_PORT`/`RTC_MAX_PORT` move the public media range and
-`LOCAL_PORT_BASE` moves the loopback-only range the recording capture
-uses, so instances never collide.)
+it, and ports 80/443 (TCP) plus 3478 and the media ranges 40000-40003
+and 49160-49189 (UDP) open.
+
+The stack runs on a normal bridge network and publishes those ports the
+ordinary way, host number equal to container number, so Dockge, Dokploy,
+Portainer and the rest list them and offer a link. The ranges are short
+because mediasoup carries every connection over the same few sockets:
+four ports hold a full room. (Running more than one studio on a host?
+`RTC_MIN_PORT`/`RTC_MAX_PORT` and `TURN_MIN_PORT`/`TURN_MAX_PORT` move
+the ranges, so instances never collide.)
 
 **The one-paste install.** Save
 [`quickstart-compose.yml`](quickstart-compose.yml) as
@@ -266,23 +271,27 @@ commented out, which is how it ships, and start the stack as usual:
 docker compose up -d --build
 ```
 
-The app binds to `127.0.0.1:${HTTP_PORT}` (3000 by default), so your
-proxy just needs to run on the same host (or in another host-networked
-container) and point at that address. Terminating TLS is then yours to
-do: browsers refuse camera and microphone access without HTTPS.
+Set `APP_BIND=127.0.0.1` in `.env` and the web port is published on
+loopback only - `127.0.0.1:3000` - so your proxy on this host can reach
+it and nothing else can. A proxy in another container on the same
+compose network reaches the app by service name (`app:3000`) instead.
+Terminating TLS is then yours to do: browsers refuse camera and
+microphone access without HTTPS.
 
 **Proxy on a different machine?** Also fine - the proxy only ever
 carries the web half; guests' WebRTC media and the TURN relay go
 directly to this machine and never pass through a proxy. Three
 settings make it work:
 
-- `BIND_HOST` - set it to this machine's private/VPN address (or
-  `0.0.0.0`) so the proxy can reach the app, then firewall the app
-  port so **only the proxy's IP** can connect to it. The app must
-  never be reachable from the open internet directly: cameras and
-  cookies only work through the HTTPS front door.
+- `APP_BIND` - set it to this machine's private/VPN address so the
+  proxy can reach the app, then firewall that port so **only the
+  proxy's IP** can connect to it. (`BIND_HOST` is a different thing:
+  the address the app listens on inside its container, which stays
+  `0.0.0.0` or the published port reaches nothing.) The app must never
+  be reachable from the open internet directly: cameras and cookies
+  only work through the HTTPS front door.
 - `PUBLIC_IP` stays this machine's public IPv4, and the UDP ranges
-  (3478, 40000-40100, 49160-49200) stay open **here**, not on the
+  (3478, 40000-40003, 49160-49189) stay open **here**, not on the
   proxy box - media doesn't follow the proxy.
 - `TURN_HOST` - set it to an address that reaches this machine
   directly. `DOMAIN` now resolves to the proxy, so without this the
@@ -333,8 +342,8 @@ server {
 }
 ```
 
-Everything else - the media ports (40000-40100/udp), coturn
-(3478 + 49160-49200/udp), `PUBLIC_IP`/`DOMAIN` in `.env` - is
+Everything else - the media ports (40000-40003/udp and /tcp), coturn
+(3478 + 49160-49189/udp), `PUBLIC_IP`/`DOMAIN` in `.env` - is
 identical to the Caddy path; only the HTTP(S) front door changes.
 
 ### Cloudflare Tunnel
@@ -344,7 +353,7 @@ at `http://127.0.0.1:3000`), with two things to know:
 
 - **Media cannot go through the tunnel.** WebRTC video/audio is UDP
   straight between guests and your server, so the media ports
-  (40000-40100/udp) and coturn ports (3478 + 49160-49200/udp) must
+  (40000-40003/udp) and coturn ports (3478 + 49160-49189/udp) must
   still be open to the internet directly, and `PUBLIC_IP` set to your
   server's real public IP. A tunnel hides the web pages, not the
   media.
@@ -358,8 +367,9 @@ at `http://127.0.0.1:3000`), with two things to know:
 For a studio reachable only inside your tailnet - nothing exposed to
 the internet - leave the `caddy` service commented out and:
 
-1. Set `BIND_HOST` in `.env` to your machine's Tailscale IP (the
-   `100.x.y.z` address).
+1. Set `APP_BIND` in `.env` to your machine's Tailscale IP (the
+   `100.x.y.z` address), so the web port is published on the tailnet
+   and nowhere else.
 2. Serve it over HTTPS with `tailscale serve` (browsers refuse
    camera/microphone access on plain HTTP):
    `tailscale serve --bg https / http://100.x.y.z:3000`
