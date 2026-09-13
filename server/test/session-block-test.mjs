@@ -2,12 +2,12 @@
 // them from rejoining (IP + device marker), the dashboard lists and
 // reverses it, and the stored address never reaches the browser.
 import { chromium } from "playwright";
-import { hostLogin, makeRoom, TEST_HOST, CAMS } from "./helpers.mjs";
+import { studioLogin, makeRoom, STUDIO, CAMS } from "./helpers.mjs";
 
 const B = process.argv[2] || "http://127.0.0.1:3999";
 const PW = process.argv[3] || "testpass123";
 const ROOM = await makeRoom(B, PW);
-const cookie = await hostLogin(B, PW);
+const cookie = await studioLogin(B, PW);
 
 const browser = await chromium.launch({
   args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream",
@@ -31,8 +31,8 @@ async function join(ctx, name, asHost) {
 const hostCtx = await browser.newContext({ permissions: ["camera", "microphone"] });
 const login = await hostCtx.newPage();
 await login.goto(`${B}/host/login.html`);
-await login.fill("#username", TEST_HOST.username);
-await login.fill("#password", TEST_HOST.password);
+await login.fill("#username", STUDIO.username);
+await login.fill("#password", STUDIO.password);
 await login.click("button[type=submit]");
 await login.waitForURL("**/host/");
 await login.close();

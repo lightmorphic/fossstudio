@@ -4,7 +4,7 @@ import { chromium } from "playwright";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { hostLogin, makeRoom, solidPng } from "./helpers.mjs";
+import { studioLogin, makeRoom, solidPng } from "./helpers.mjs";
 
 const B = process.argv[2] || "http://127.0.0.1:3999";
 const PW = process.argv[3] || "testpass123";
@@ -14,7 +14,7 @@ const check = (label, ok) => { console.log(`${ok ? "OK  " : "FAIL"} ${label}`); 
 const logoPng = path.join(os.tmpdir(), "fossstudio-testlogo.png");
 fs.writeFileSync(logoPng, solidPng("fbc711"));
 
-const cookie = await hostLogin(B, PW);
+const cookie = await studioLogin(B, PW);
 const up = await fetch(`${B}/api/logo`, {
   method: "POST", headers: { "Content-Type": "image/png", Cookie: cookie },
   body: fs.readFileSync(logoPng)
@@ -28,8 +28,8 @@ const browser = await chromium.launch({
 const ctx = await browser.newContext({ permissions: ["camera", "microphone"], viewport: { width: 1280, height: 860 } });
 const login = await ctx.newPage();
 await login.goto(`${B}/host/login.html`);
-await login.fill("#username", "testhost");
-await login.fill("#password", "testhostpass123");
+await login.fill("#username", "admin");
+await login.fill("#password", "testpass123");
 await login.click("button[type=submit]");
 await login.waitForURL("**/host/");
 await login.close();

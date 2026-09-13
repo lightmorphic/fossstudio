@@ -267,8 +267,8 @@ const silencesIn = (file) => {
 
 const dash = await ctx.newPage();
 await dash.goto(`${B}/host/login.html`);
-await dash.fill("#username", "testhost");
-await dash.fill("#password", "testhostpass123");
+await dash.fill("#username", "admin");
+await dash.fill("#password", "testpass123");
 await dash.click("button[type=submit]");
 await dash.waitForURL("**/host/");
 

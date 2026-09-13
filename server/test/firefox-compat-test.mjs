@@ -8,7 +8,7 @@
 // Usage: node test/firefox-compat-test.mjs <url> <password>
 import { firefox } from "playwright";
 import fs from "node:fs";
-import { hostLogin, makeRoom, TEST_HOST, probeMedia } from "./helpers.mjs";
+import { studioLogin, makeRoom, STUDIO, probeMedia } from "./helpers.mjs";
 
 const B = process.argv[2] || "http://127.0.0.1:3999";
 const PW = process.argv[3] || "testpass123";
@@ -40,8 +40,8 @@ async function join(browser, room, name, asHost) {
   if (asHost) {
     const login = await ctx.newPage();
     await login.goto(`${B}/host/login.html`);
-    await login.fill("#username", TEST_HOST.username);
-    await login.fill("#password", TEST_HOST.password);
+    await login.fill("#username", STUDIO.username);
+    await login.fill("#password", STUDIO.password);
     await login.click("button[type=submit]");
     await login.waitForURL("**/host/");
     await login.close();
@@ -163,7 +163,7 @@ const browser = await firefox.launch({ firefoxUserPrefs: FF_PREFS });
   await host.page.waitForTimeout(8000);
   await host.page.click("#hpRecordBtn");
 
-  const cookie = await hostLogin(B, PW);
+  const cookie = await studioLogin(B, PW);
   let rec = null;
   for (let i = 0; i < 60; i++) {
     const list = await fetch(`${B}/api/recordings`, { headers: { Cookie: cookie } }).then((r) => r.json());

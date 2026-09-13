@@ -89,12 +89,7 @@ try {
   await new Promise((r) => cast.listen(CAST_PORT, "127.0.0.1", r));
   if (!await waitHealthy()) throw new Error("server never became healthy");
 
-  const admin = await login("admin", "testpass123");
-  await fetch(`${B}/api/users`, {
-    method: "POST", headers: { "Content-Type": "application/json", Cookie: admin },
-    body: JSON.stringify({ username: "testhost", password: "testhostpass123" })
-  });
-  const host = await login("testhost", "testhostpass123");
+  const host = await login("admin", "testpass123");
   const j = (r) => r.json();
   const api = (p, opts = {}) => fetch(`${B}/api${p}`, {
     ...opts, headers: { "Content-Type": "application/json", Cookie: host, ...(opts.headers || {}) }
@@ -113,14 +108,13 @@ try {
   check("non-https fosscast address rejected", s2.fosscastUrl === `http://127.0.0.1:${CAST_PORT}`);
 
   // ---------- a recording to publish ----------
-  const uid = (await j(await api("/me"))).uid;
   const recId = "testroom-2026-08-16T12-00-00";
   const outDir = path.join(DATA_DIR, "recordings", recId, "out");
   fs.mkdirSync(outDir, { recursive: true });
   const bytes = Buffer.alloc(64 * 1024, 7);
   fs.writeFileSync(path.join(outDir, "combined.mp4"), bytes);
   fs.writeFileSync(path.join(DATA_DIR, "recordings.json"), JSON.stringify([{
-    id: recId, roomId: "testroom", ownerId: uid, mode: "browser",
+    id: recId, roomId: "testroom", mode: "browser",
     title: "The Pilot Episode!", startedAt: Date.parse("2026-08-16T12:00:00Z"),
     endedAt: Date.parse("2026-08-16T13:00:00Z"), status: "ready", files: ["combined.mp4"]
   }]));

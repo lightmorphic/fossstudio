@@ -2,14 +2,14 @@
 // generated face appears in more than one image on the site.
 import { chromium } from "playwright";
 import fs from "node:fs";
-import { hostLogin, TEST_HOST, REPO, CAMS } from "./helpers.mjs";
+import { studioLogin, STUDIO, REPO, CAMS } from "./helpers.mjs";
 
 const B = "http://127.0.0.1:3999";
 const PW = "testpass123";
 const OUT = `${REPO}docs/shots`;
 fs.mkdirSync(OUT, { recursive: true });
 
-const cookie = await hostLogin(B, PW);
+const cookie = await studioLogin(B, PW);
 const mk = (title) => fetch(`${B}/api/sessions`, {
   method: "POST",
   headers: { "Content-Type": "application/json", Cookie: cookie },
@@ -37,8 +37,8 @@ async function studio(cam, name, tagline, sessionId, asHost) {
   if (asHost) {
     const login = await ctx.newPage();
     await login.goto(`${B}/host/login.html`);
-    await login.fill("#username", TEST_HOST.username);
-    await login.fill("#password", TEST_HOST.password);
+    await login.fill("#username", STUDIO.username);
+    await login.fill("#password", STUDIO.password);
     await login.click("button[type=submit]");
     await login.waitForURL("**/host/");
     await login.close();
@@ -88,24 +88,18 @@ const plain = await chromium.launch();
 const dctx = await plain.newContext({ viewport: { width: 1560, height: 900 }, deviceScaleFactor: 2, colorScheme: "dark" });
 const dash = await dctx.newPage();
 await dash.goto(`${B}/host/login.html`);
-await dash.fill("#username", TEST_HOST.username);
-await dash.fill("#password", TEST_HOST.password);
+await dash.fill("#username", STUDIO.username);
+await dash.fill("#password", STUDIO.password);
 await dash.click("button[type=submit]");
 await dash.waitForURL("**/host/");
 await dash.waitForTimeout(700);
 await dash.screenshot({ path: `${OUT}/dashboard.png` });
 
-const actx = await plain.newContext({ viewport: { width: 1560, height: 900 }, deviceScaleFactor: 2, colorScheme: "dark" });
-const admin = await actx.newPage();
-await admin.goto(`${B}/host/login.html`);
-await admin.fill("#username", "admin");
-await admin.fill("#password", PW);
-await admin.click("button[type=submit]");
-await admin.waitForURL("**/admin/");
-await admin.waitForTimeout(700);
-await admin.click('#mainMenu button:has-text("Hosts")');
-await admin.waitForTimeout(500);
-await admin.screenshot({ path: `${OUT}/hosts.png` });
+// The System screen: backups, the log and the restart, all in the one
+// dashboard now rather than behind a panel of their own.
+await dash.click('#mainMenu button:has-text("System")');
+await dash.waitForTimeout(500);
+await dash.screenshot({ path: `${OUT}/system.png` });
 
 await plain.close();
 

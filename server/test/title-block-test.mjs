@@ -59,8 +59,8 @@ try {
   const hostCtx = await browser.newContext(opts);
   const login = await hostCtx.newPage();
   await login.goto(`${B}/host/login.html`);
-  await login.fill("#username", "testhost");
-  await login.fill("#password", "testhostpass123");
+  await login.fill("#username", "admin");
+  await login.fill("#password", "testpass123");
   await login.click("button[type=submit]");
   await login.waitForURL("**/host/");
   await login.close();

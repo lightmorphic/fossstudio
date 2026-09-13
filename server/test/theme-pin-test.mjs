@@ -1,12 +1,12 @@
 // Theme pinning: settings changed mid-session must not show to
 // rejoiners until the room has fully emptied.
 import { chromium } from "playwright";
-import { hostLogin, makeRoom } from "./helpers.mjs";
+import { studioLogin, makeRoom } from "./helpers.mjs";
 
 const B = process.argv[2] || "http://127.0.0.1:3999";
 const PW = process.argv[3] || "testpass123";
 
-const cookie = await hostLogin(B, PW);
+const cookie = await studioLogin(B, PW);
 const setBg = (bg) => fetch(`${B}/api/settings`, {
   method: "PUT",
   headers: { "Content-Type": "application/json", Cookie: cookie },
