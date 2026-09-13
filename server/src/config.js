@@ -45,8 +45,8 @@ export const config = {
   turnHost: process.env.TURN_HOST || domain,
   // Port ranges, so several studios can share one host under host
   // networking: the public media range (open it in the firewall) and
-  // the loopback-only base for the internal RTP legs (recording
-  // capture at base..base+900, stream inputs at base+1000..base+1900)
+  // the loopback-only base for the recording capture legs
+  // (base..base+900)
   rtcMinPort: Number(process.env.RTC_MIN_PORT || 40000),
   rtcMaxPort: Number(process.env.RTC_MAX_PORT || 40100),
   localPortBase: Number(process.env.LOCAL_PORT_BASE || 45000),
@@ -54,13 +54,5 @@ export const config = {
   webDir: process.env.WEB_DIR || path.join(root, "..", "web"),
   sessionSecret: required("SESSION_SECRET"),
   hostPassword: required("HOST_PASSWORD"),
-  turnSecret: required("TURN_SECRET"),
-  smtp: {
-    host: process.env.SMTP_HOST || "",
-    port: Number(process.env.SMTP_PORT || 587),
-    user: process.env.SMTP_USER || "",
-    pass: process.env.SMTP_PASS || "",
-    from: process.env.SMTP_FROM || "",
-    alertTo: process.env.ALERT_EMAIL || ""
-  }
+  turnSecret: required("TURN_SECRET")
 };

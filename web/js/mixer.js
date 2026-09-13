@@ -1,18 +1,16 @@
 /* The programme mixer: the host's browser draws the show.
  *
  * Everything the audience will see is already in the host's browser -
- * every face, the lower thirds, the title block, an intro, an overlay.
- * So rather than describing that picture to the server and having it
- * draw a second copy with ffmpeg, this browser
- * paints the show onto a 1280x720 canvas thirty times a second, mixes
- * every voice into one track, and encodes the result once. The server
- * passes it on to YouTube and the watch page without touching a pixel,
- * which is what lets a live show cost it a fraction of a core instead
- * of two whole ones.
+ * every face, the lower thirds, the title block, an overlay. So rather
+ * than describing that picture to the server and having it draw a second
+ * copy with ffmpeg, this browser paints the show onto a 1280x720 canvas
+ * thirty times a second, mixes every voice into one track, and encodes
+ * the result once. The server stores what it is handed, which is what
+ * lets a recording cost it almost nothing.
  *
  * The geometry is the recording's geometry, not the screen's: a host's
  * window is whatever shape their laptop is, but the programme is always
- * the same 16:9 frame the server compositor drew, laid out by the same
+ * the same 16:9 frame the server's compositor draws, laid out by the same
  * fractions (LAYOUT in server/src/composite.js; geometry-test.mjs keeps
  * the two in step). What the DOM contributes is the facts - who is in
  * the room, in what order, which layout is on, which banner is theirs.
@@ -168,7 +166,7 @@
 
   function create(opts) {
     const {
-      grid, tiles, control, introOverlay, introVideo,
+      grid, tiles, control,
       audioContext, bannerImage, titleImage, tickWorkerUrl
     } = opts;
 
@@ -179,13 +177,12 @@
 
     let ticker = null, stream = null, dest = null;
     let wallpaper = { url: "", img: null };
-    const introSources = new WeakMap();
 
     const mixer = {
       running: false,
       canvas,
       // Everything that should be heard connects here; session.js wires
-      // guests, the host's own mic and the soundboard into it.
+      // the guests and the host's own mic into it.
       get audioDest() { return dest; },
       start, stop, drawOnce: draw
     };
@@ -304,28 +301,6 @@
         x.restore();
       }
 
-      // A fullscreen intro, fading in and out as it does on screen
-      if (introOverlay && !introOverlay.hidden && ready(introVideo)) {
-        const alpha = parseFloat(getComputedStyle(introOverlay).opacity);
-        if (alpha > 0) {
-          x.save();
-          x.globalAlpha = alpha;
-          drawFit(x, introVideo, introVideo.videoWidth, introVideo.videoHeight, { x: 0, y: 0, w: W, h: H }, "pad");
-          x.restore();
-        }
-        // and its sound, wired once
-        if (dest && !introSources.has(introVideo)) {
-          try {
-            const cap = introVideo.captureStream ? introVideo.captureStream() : null;
-            const at = cap && cap.getAudioTracks()[0];
-            if (at) {
-              const src = audioContext().createMediaStreamSource(new MediaStream([at]));
-              src.connect(dest);
-              introSources.set(introVideo, src);
-            }
-          } catch { /* no intro sound on the feed; the picture still goes out */ }
-        }
-      }
     }
 
     return mixer;

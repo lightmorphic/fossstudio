@@ -36,22 +36,17 @@
     { id: "recordings", label: "Recordings", hostOnly: true, subs: [
       { id: "library", label: "Library" }
     ] },
-    { id: "media", label: "Effects", hostOnly: true, subs: [
-      { id: "sounds", label: "Sounds" },
-      { id: "intros", label: "Intros" }
-    ] },
     { id: "users", label: "Hosts", adminOnly: true, subs: [{ id: "users", label: "Manage hosts" }] },
     { id: "settings", label: "Settings", subs: [
       { id: "themes", label: "Themes", hostOnly: true },
       { id: "banner", label: "Ad Banner", hostOnly: true },
-      { id: "streaming", label: "Streaming", hostOnly: true },
+      { id: "publish", label: "Publish", hostOnly: true },
       { id: "blocked", label: "Blocked", hostOnly: true },
       { id: "account", label: "Account" },
       { id: "twofactor", label: "Two-factor" }
     ] },
     { id: "system", label: "System", adminOnly: true, subs: [
       { id: "service", label: "Service" },
-      { id: "email", label: "Email" },
       { id: "backups", label: "Backups" },
       { id: "logs", label: "Logs" }
     ] }
@@ -60,7 +55,6 @@
   let me = { role: "subadmin", username: "" };
   // Whether publishing recordings to FOSSCast is configured
   let canPublish = false;
-  let channelDomain = "";
   let currentMenu = null;
 
   function visibleMenus() {
@@ -103,7 +97,7 @@
     document.querySelectorAll("section[id^=pane-]").forEach((s) => {
       s.hidden = s.id !== `pane-${subId}`;
     });
-    if (subId === "blocked") { loadBlocked(); loadSessionBlocked(); }
+    if (subId === "blocked") loadSessionBlocked();
     // Remember the spot in the URL so a refresh comes back here
     history.replaceState(null, "", `#${currentMenu.id}/${subId}`);
   }
@@ -137,7 +131,6 @@
     tick: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12l5 5L20 7"/></svg>',
     obs: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/><circle cx="12" cy="10.5" r="3"/></svg>',
     pencil: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
-    live: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.9 19.1a10 10 0 0 1 0-14.2M7.8 16.2a6 6 0 0 1 0-8.4M19.1 4.9a10 10 0 0 1 0 14.2M16.2 7.8a6 6 0 0 1 0 8.4"/><circle cx="12" cy="12" r="2"/></svg>',
     publish: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 20h16"/></svg>'
   };
 
@@ -195,7 +188,7 @@
           <div class="title"></div>
           <div class="meta"></div>
         </div>
-        <span class="badge" ${s.live ? "" : "hidden"}>● live · ${s.participants}</span>
+        <span class="badge" ${s.active ? "" : "hidden"}>● in session · ${s.participants}</span>
         <span class="spacer"></span>`;
       row.querySelector(".title").textContent = s.title;
       row.querySelector(".meta").textContent =
@@ -236,7 +229,7 @@
         copy.innerHTML = ICONS.tick;
         setTimeout(() => { copy.classList.remove("done"); copy.innerHTML = ICONS.copy; }, 1500);
       });
-      const obs = iconBtn("obs", "Copy OBS clean-feed link - add it as a Browser Source and stream from OBS to anywhere", async () => {
+      const obs = iconBtn("obs", "Copy the view-only output link - a Browser Source in OBS or anything like it", async () => {
         await navigator.clipboard.writeText(`${link}?output=1`);
         obs.classList.add("done");
         obs.innerHTML = ICONS.tick;
@@ -249,13 +242,7 @@
         await apiFetch(`/api/sessions/${s.id}`, { method: "DELETE" });
         loadSessions();
       });
-      const liveBtn = iconBtn("live", "Copy your channel link - one permanent page where the audience watches and chats whenever you go live", async () => {
-        await navigator.clipboard.writeText(channelDomain ? `https://${channelDomain}/` : `${location.origin}/live/${me.username}`);
-        liveBtn.classList.add("done");
-        liveBtn.innerHTML = ICONS.tick;
-        setTimeout(() => { liveBtn.classList.remove("done"); liveBtn.innerHTML = ICONS.live; }, 1500);
-      });
-      row.append(edit, copy, obs, liveBtn, open, del);
+      row.append(edit, copy, obs, open, del);
       list.appendChild(row);
     }
   }
@@ -344,19 +331,11 @@
     try {
       const r = await apiFetch("/api/users/invite", {
         method: "POST",
-        body: JSON.stringify({
-          username: $("newUserName").value,
-          email: $("newUserEmail").value
-        })
+        body: JSON.stringify({ username: $("newUserName").value })
       });
       $("newUserName").value = "";
-      $("newUserEmail").value = "";
-      if (r.emailed) {
-        showUserMsg("✓ Invite emailed - they have 7 days to accept.", true);
-      } else {
-        await navigator.clipboard.writeText(r.inviteUrl).catch(() => {});
-        showUserMsg("Email isn't set up, so the invite link was copied to your clipboard instead - send it to them yourself.", true);
-      }
+      await navigator.clipboard.writeText(r.inviteUrl).catch(() => {});
+      showUserMsg("✓ Invite link copied - send it to them however you like. It works for 7 days, once.", true);
       loadUsers();
     } catch (err) { showUserMsg(err.message); }
   };
@@ -377,29 +356,6 @@
     } catch (err) { showUserMsg(err.message); }
   };
 
-  // ---------- SMTP (admin) ----------
-
-  const smtpMsg = (text, ok = true) => {
-    const m = $("smtpMsg");
-    m.className = `msg ${ok ? "ok" : "err"}`;
-    m.textContent = text;
-    m.hidden = false;
-    setTimeout(() => { m.hidden = true; }, 5000);
-  };
-
-  async function loadSmtp() {
-    if (me.role !== "admin") return;
-    const s = await apiFetch("/api/smtp");
-    $("smtpHost").value = s.host || "";
-    $("smtpPort").value = s.port || 587;
-    $("smtpUser").value = s.user || "";
-    $("smtpFrom").value = s.from || "";
-    $("smtpAlertTo").value = s.alertTo || "";
-    $("smtpPassHint").innerHTML = s.hasPass
-      ? '<span class="msg ok" style="display:inline">\u2713 saved</span> - leave blank to keep it'
-      : "";
-  }
-
   // Settings save themselves when a field changes - no Save buttons.
   // 'change' fires on blur (or enter), so nothing saves mid-keystroke.
   function autoSave(ids, save) {
@@ -407,39 +363,6 @@
       $(id).addEventListener("change", () => { save().catch(() => {}); });
     }
   }
-
-  async function saveSmtp() {
-    const hadPass = !!$("smtpPass").value;
-    await apiFetch("/api/smtp", {
-      method: "PUT",
-      body: JSON.stringify({
-        host: $("smtpHost").value,
-        port: Number($("smtpPort").value),
-        user: $("smtpUser").value,
-        pass: $("smtpPass").value || undefined,
-        from: $("smtpFrom").value,
-        alertTo: $("smtpAlertTo").value
-      })
-    });
-    // Don't reload the form here - a reload mid-tab would overwrite
-    // whatever field the user is typing in next
-    if (hadPass) {
-      $("smtpPass").value = "";
-      $("smtpPassHint").innerHTML =
-        '<span class="msg ok" style="display:inline">\u2713 saved</span> - leave blank to keep it';
-    }
-    smtpMsg("✓ Saved");
-  }
-  autoSave(["smtpHost", "smtpPort", "smtpUser", "smtpPass", "smtpFrom", "smtpAlertTo"], saveSmtp);
-
-  $("testSmtpBtn").onclick = async () => {
-    try {
-      const { to } = await apiFetch("/api/smtp/test", { method: "POST" });
-      smtpMsg(`✓ Test email sent to ${to} - check the inbox.`);
-    } catch (err) {
-      smtpMsg(err.message, false);
-    }
-  };
 
   // ---------- recordings ----------
 
@@ -458,7 +381,7 @@
     } else if (status === "recording") {
       badge.classList.add("status-icon");
       badge.dataset.tip = "Recording now";
-      badge.innerHTML = '<span class="rec-live" aria-label="Recording now"></span>';
+      badge.innerHTML = '<span class="rec-now" aria-label="Recording now"></span>';
     } else if (status === "failed") {
       badge.classList.add("status-icon", "status-fail");
       badge.dataset.tip = "Processing failed - the raw files are kept";
@@ -492,7 +415,7 @@
         <div class="files"></div>`;
       card.querySelector(".title").textContent = r.title || `Session ${r.roomId}`;
       card.querySelector(".meta").textContent =
-        `${when}${mins ? ` · ${mins} min` : ""} · ${r.mode === "live" ? "live stream" : r.mode === "server" ? "server-side" : "browser-side"}`;
+        `${when}${mins ? ` · ${mins} min` : ""} · ${r.mode === "server" ? "server-side" : "browser-side"}`;
       setStatusBadge(card.querySelector(".badge"), r.status);
       const filesEl = card.querySelector(".files");
       for (const f of r.files || []) {
@@ -571,59 +494,6 @@
     }
   }
 
-  async function saveStream() {
-    $("streamErr").hidden = true;
-    try {
-      const s = await apiFetch("/api/settings", {
-        method: "PUT",
-        body: JSON.stringify({
-          streamUrl: $("streamUrl").value.trim() || "rtmp://a.rtmp.youtube.com/live2",
-          streamKey: $("streamKey").value.trim(),
-          channelDomain: $("channelDomain").value.trim()
-        })
-      });
-      channelDomain = s.channelDomain || "";
-      $("channelDomain").value = channelDomain;
-      $("streamMsg").hidden = false;
-      setTimeout(() => { $("streamMsg").hidden = true; }, 2000);
-    } catch (err) {
-      if (err.message === "logged out") throw err;
-      $("streamErr").textContent = err.message;
-      $("streamErr").hidden = false;
-    }
-  }
-  autoSave(["streamUrl", "streamKey", "channelDomain"], saveStream);
-
-  // ---------- chat block list ----------
-
-  async function loadBlocked() {
-    const list = $("blockedList");
-    if (!list) return;
-    const blocked = await apiFetch("/api/chat/blocked");
-    list.innerHTML = "";
-    if (blocked.length === 0) {
-      list.innerHTML = '<p class="hint">Nobody is blocked. Block someone from the chat on the watch page while live.</p>';
-      return;
-    }
-    for (const b of blocked) {
-      const row = document.createElement("div");
-      row.className = "session-row";
-      const name = document.createElement("span");
-      name.className = "session-title";
-      name.textContent = b.name;
-      const when = document.createElement("span");
-      when.className = "hint";
-      when.textContent = `blocked ${new Date(b.blockedAt).toLocaleString()}`;
-      row.append(name, when);
-      row.appendChild(confirmBtn("del", "Unblock - lets them back into the chat", async () => {
-        await apiFetch(`/api/chat/blocked/${encodeURIComponent(b.id)}`, { method: "DELETE" });
-        loadBlocked();
-      }));
-      list.appendChild(row);
-    }
-  }
-
-  // ---------- session block list ----------
 
   async function loadSessionBlocked() {
     const list = $("sessionBlockedList");
@@ -672,10 +542,6 @@
 
   async function loadSettings() {
     const s = await apiFetch("/api/settings");
-    $("streamUrl").value = s.streamUrl || "";
-    $("streamKey").value = s.streamKey || "";
-    channelDomain = s.channelDomain || "";
-    $("channelDomain").value = channelDomain;
     $("fosscastUrl").value = s.fosscastUrl || "";
     $("fosscastToken").value = s.fosscastToken || "";
     canPublish = !!(s.fosscastUrl && s.fosscastToken);
@@ -722,62 +588,7 @@
     updateAdPreview(false);
   };
 
-  // ---------- soundboard clips ----------
-  let pendingSound = null;
-  function renderSounds(list) {
-    $("soundCount").textContent = list.length ? `(${list.length}/20)` : "";
-    const box = $("soundList");
-    if (!list.length) { box.textContent = "No sounds uploaded yet."; return; }
-    box.textContent = "";
-    for (const clip of list) {
-      const row = document.createElement("div");
-      row.className = "sound-row";
-      const name = document.createElement("span");
-      name.className = "sound-name";
-      name.textContent = clip.name;
-      const play = audioToggleButton(`/api/sounds/${me.uid}/${clip.id}`);
-      const del = confirmBtn("del", "Delete sound", async () => {
-        play.stopPreview();
-        await apiFetch(`/api/sounds/${clip.id}`, { method: "DELETE" });
-        loadSounds();
-      });
-      row.append(name, play, del);
-      box.appendChild(row);
-    }
-  }
-  async function loadSounds() {
-    renderSounds(await apiFetch("/api/sounds").catch(() => []));
-  }
-  $("soundPick").onclick = () => $("soundFile").click();
-  $("soundFile").onchange = () => {
-    pendingSound = $("soundFile").files[0] || null;
-    $("soundFileName").textContent = pendingSound ? pendingSound.name : "";
-    if (pendingSound && !$("soundName").value.trim()) {
-      $("soundName").value = pendingSound.name.replace(/\.[^.]+$/, "").slice(0, 40);
-    }
-    $("soundAdd").disabled = !pendingSound;
-  };
-  $("soundAdd").onclick = async () => {
-    if (!pendingSound) return;
-    $("soundMsg").hidden = true; $("soundErr").hidden = true;
-    const name = $("soundName").value.trim() || pendingSound.name;
-    try {
-      const res = await fetch(`/api/sounds?name=${encodeURIComponent(name)}`, {
-        method: "POST",
-        headers: { "Content-Type": pendingSound.type || "audio/mpeg" },
-        body: pendingSound
-      });
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Upload failed.");
-      $("soundMsg").hidden = false;
-      $("soundName").value = ""; $("soundFileName").textContent = "";
-      $("soundFile").value = ""; pendingSound = null; $("soundAdd").disabled = true;
-      loadSounds();
-    } catch (err) {
-      $("soundErr").textContent = err.message; $("soundErr").hidden = false;
-    }
-  };
-
-  // ---------- video preview modal (intros) ----------
+  // ---------- video preview modal ----------
   let videoModalOnClose = null;
   function openVideoModal(url, onClose) {
     closeVideoModal();              // revert any button already showing a preview
@@ -859,63 +670,6 @@
     a.innerHTML = ICO.download;
     return a;
   }
-
-  // ---------- intro videos ----------
-  let pendingIntro = null;
-  function renderIntros(list) {
-    $("introCount").textContent = list.length ? `(${list.length}/5)` : "";
-    const box = $("introList");
-    if (!list.length) { box.textContent = "No intros uploaded yet."; return; }
-    box.textContent = "";
-    for (const clip of list) {
-      const row = document.createElement("div");
-      row.className = "sound-row";
-      const name = document.createElement("span");
-      name.className = "sound-name";
-      name.textContent = clip.name + (clip.durationMs ? ` · ${(clip.durationMs / 1000).toFixed(1)}s` : "");
-      const play = videoToggleButton(`/api/intros/${me.uid}/${clip.id}`);
-      const del = confirmBtn("del", "Delete intro", async () => {
-        await apiFetch(`/api/intros/${clip.id}`, { method: "DELETE" });
-        loadIntros();
-      });
-      row.append(name, play, del);
-      box.appendChild(row);
-    }
-  }
-  async function loadIntros() {
-    renderIntros(await apiFetch("/api/intros").catch(() => []));
-  }
-  $("introPick").onclick = () => $("introFile").click();
-  $("introFile").onchange = () => {
-    pendingIntro = $("introFile").files[0] || null;
-    $("introFileName").textContent = pendingIntro ? pendingIntro.name : "";
-    if (pendingIntro && !$("introName").value.trim()) {
-      $("introName").value = pendingIntro.name.replace(/\.[^.]+$/, "").slice(0, 40);
-    }
-    $("introAdd").disabled = !pendingIntro;
-  };
-  $("introAdd").onclick = async () => {
-    if (!pendingIntro) return;
-    $("introMsg").hidden = true; $("introErr").hidden = true;
-    $("introAdd").disabled = true; $("introAdd").textContent = "Uploading…";
-    const name = $("introName").value.trim() || pendingIntro.name;
-    try {
-      const res = await fetch(`/api/intros?name=${encodeURIComponent(name)}`, {
-        method: "POST",
-        headers: { "Content-Type": pendingIntro.type || "video/mp4" },
-        body: pendingIntro
-      });
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Upload failed.");
-      $("introMsg").hidden = false;
-      $("introName").value = ""; $("introFileName").textContent = "";
-      $("introFile").value = ""; pendingIntro = null;
-      loadIntros();
-    } catch (err) {
-      $("introErr").textContent = err.message; $("introErr").hidden = false;
-    } finally {
-      $("introAdd").textContent = "Add intro";
-    }
-  };
 
   function updateLogoPreview(has) {
     const el = $("logoPreview");
@@ -1168,19 +922,15 @@
       loadBackups();
       loadBackupKeep();
       loadLogs();
-      loadSmtp();
     } else {
-      // Settings first: session rows and recording cards read the
-      // FOSSCast fields (live link button, publish button) as they render
+      // Settings first: the recording cards read the FOSSCast fields
+      // (the publish button) as they render
       loadSettings().then(() => {
         loadSessions();
         loadRecordings();
       });
-      loadBlocked();
       loadSessionBlocked();
-      loadSounds();
-      loadIntros();
-      setInterval(loadSessions, 10000);   // keep the live badges fresh
+      setInterval(loadSessions, 10000);   // keep the participant counts fresh
       setInterval(loadRecordings, 15000); // pick up processing -> ready
     }
   })();

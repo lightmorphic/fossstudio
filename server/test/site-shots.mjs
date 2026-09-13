@@ -85,7 +85,6 @@ await p.browser.close();
 
 // --- Dashboard shots (no faces) ---
 const plain = await chromium.launch();
-const plainWatch = await chromium.launch();
 const dctx = await plain.newContext({ viewport: { width: 1560, height: 900 }, deviceScaleFactor: 2, colorScheme: "dark" });
 const dash = await dctx.newPage();
 await dash.goto(`${B}/host/login.html`);
@@ -110,7 +109,7 @@ await admin.screenshot({ path: `${OUT}/hosts.png` });
 
 await plain.close();
 
-// --- Spotlight, from a guest's screen, and the watch page off air ---
+// --- Spotlight, from a guest's screen ---
 // These used to be taken by a separate ad-hoc script which was then lost,
 // so both pictures went a fortnight stale without anybody noticing.
 const spotSession = await mk("Episode 42: Live From FOSDEM");
@@ -132,18 +131,12 @@ await sG1.page.waitForTimeout(1500);
 await sG1.page.screenshot({ path: `${OUT}/spotlight.png` });
 for (const b of [sHost, sG1, sG2]) await b.browser.close();
 
-const wctx = await plainWatch.newContext({ viewport: { width: 1560, height: 975 }, deviceScaleFactor: 2, colorScheme: "dark" });
-const watch = await wctx.newPage();
-await watch.goto(`${B}/live/${spotSession.id}`);
-await watch.waitForTimeout(2500);
-await watch.screenshot({ path: `${OUT}/watch-offair.png` });
-await plainWatch.close();
 
 // --- The site uses JPGs; the script made PNGs ---
 // That gap is why five pictures aged a fortnight: the conversion was a
 // manual step somebody had to remember. It is part of the script now.
 import { execFileSync } from "node:child_process";
-for (const name of ["session", "spotlight", "host-panel", "preview", "watch-offair"]) {
+for (const name of ["session", "spotlight", "host-panel", "preview"]) {
   const png = `${OUT}/${name}.png`;
   if (!fs.existsSync(png)) continue;
   execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-i", png, "-vf", "scale=2000:-2", "-q:v", "4", `${OUT}/${name}.jpg`]);

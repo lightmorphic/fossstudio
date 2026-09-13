@@ -1,6 +1,6 @@
 // Post-processing: per-participant FLAC + one combined grid MKV.
 // Runs after the session ends - speed doesn't matter, so everything is
-// niced right down to keep live calls smooth.
+// niced right down to keep sessions in progress smooth.
 import { spawn } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -97,7 +97,7 @@ export async function processRecording(rec) {
   }
 
   // The host's browser may have recorded the programme itself - the
-  // very picture and sound it sent to the stream. Then the combined
+  // very picture and sound everyone saw. Then the combined
   // file is that, copied into an MP4 with the audio turned to AAC, and
   // the grid render below never runs: no libx264, no compositing, a
   // few seconds of audio work on a machine that would otherwise spend
@@ -144,7 +144,7 @@ export async function processRecording(rec) {
     // wallpaper if set, else its colour), gaps between tiles, and subtly
     // rounded corners. Canvas is a fixed 1280x720.
     const W = 1280, H = 720;
-    // Same fractions the live grid uses of its video area
+    // Same fractions the on-screen grid uses of its video area
     const PAD = Math.round(W * LAYOUT.pad);
     const GAP = Math.round(W * LAYOUT.gap);
     const RAD = Math.round(W * LAYOUT.radius);
@@ -261,81 +261,21 @@ export async function processRecording(rec) {
       finalLabel = `[vo${i}]`;
     });
 
-    // Soundboard clips fired during the take: place each on a silent
-    // timeline at its offset, mix them into one bus, then split it - one
-    // copy folds into the combined audio, the other becomes a separate
-    // lossless track the host can remix.
-    let clipFilters = "";
-    let clipMixLabel = null, clipOutLabel = null;
-    const clipParts = [];
-    (rec.clips || []).forEach((cl, i) => {
-      const off = Math.max(0, Math.round(cl.offsetMs));
-      const idx = inputIdx.size;
-      args.push("-i", path.join(raw, cl.file));
-      inputIdx.set(`__clip${i}`, idx);
-      clipFilters += `;[${idx}:a]aresample=44100,aformat=channel_layouts=mono,adelay=${off}[clipin${i}]`;
-      clipParts.push(`[clipin${i}]`);
-    });
-    if (clipParts.length) {
-      const merged = clipParts.length === 1
-        ? `${clipParts[0]}anull[clipall]`
-        : `${clipParts.join("")}amix=inputs=${clipParts.length}:normalize=0:duration=longest[clipall]`;
-      clipFilters += `;${merged};[clipall]asplit=2[clipmix][clipout]`;
-      clipMixLabel = "[clipmix]";
-      clipOutLabel = "[clipout]";
-    }
-
-    // Intro videos: each covers the whole frame for its window (scaled to
-    // the composite size), crossfading in over the grid and back out, with
-    // its audio fading with it. Positioned at its trigger time (setpts /
-    // adelay) and overlaid last, so it sits above everything.
-    const introW = W, introH = H;
-    const XF = 0.4; // crossfade seconds each side
-    const introAudioLabels = [];
-    (rec.intros || []).forEach((iv, i) => {
-      const off = Math.max(0, Math.round(iv.offsetMs));
-      const t0s = off / 1000;
-      const durS = Math.max(XF * 2 + 0.1, (iv.durationMs || 8000) / 1000);
-      const t0 = t0s.toFixed(2);
-      const t1 = (t0s + durS).toFixed(2);
-      const fo = (durS - XF).toFixed(2); // fade-out start, in the intro's own time
-      const idx = inputIdx.size;
-      args.push("-i", path.join(raw, iv.file));
-      inputIdx.set(`__intro${i}`, idx);
-      // Alpha-fade the intro in and out, then shift it to its trigger time
-      overlayFilters += `;[${idx}:v]scale=${introW}:${introH}:force_original_aspect_ratio=decrease,` +
-        `pad=${introW}:${introH}:(ow-iw)/2:(oh-ih)/2,setsar=1,format=yuva420p,` +
-        `fade=t=in:st=0:d=${XF}:alpha=1,fade=t=out:st=${fo}:d=${XF}:alpha=1,setpts=PTS+${t0}/TB[introv${i}];` +
-        `${finalLabel}[introv${i}]overlay=0:0:enable='between(t,${t0},${t1})':eof_action=pass[vintro${i}]`;
-      finalLabel = `[vintro${i}]`;
-      if (iv.hasAudio !== false) {
-        clipFilters += `;[${idx}:a]aresample=44100,aformat=channel_layouts=mono,` +
-          `afade=t=in:st=0:d=${XF},afade=t=out:st=${fo}:d=${XF},adelay=${off}[introa${i}]`;
-        introAudioLabels.push(`[introa${i}]`);
-      }
-    });
-
-    // Combined-audio mix = participants + the clip bus + intro audio.
-    // Everything is folded to mono first (voices arrive as stereo with
-    // the sound only in the left channel), so the mix and the MP4 are mono.
-    audios.forEach((p, i) => { clipFilters += `;[${p.aIdx}:a]pan=mono|c0=c0[pmono${i}]`; });
+    // Combined-audio mix: every participant, folded to mono first (voices
+    // arrive as stereo with the sound only in the left channel), so the
+    // mix and the MP4 are mono.
+    let audioFilters = "";
+    audios.forEach((p, i) => { audioFilters += `;[${p.aIdx}:a]pan=mono|c0=c0[pmono${i}]`; });
     const mixLabels = audios.map((_, i) => `[pmono${i}]`);
-    if (clipMixLabel) mixLabels.push(clipMixLabel);
-    mixLabels.push(...introAudioLabels);
     // Split the final mix: one copy feeds the MP4's AAC track, the other
     // becomes a standalone lossless combined.flac - everyone's voice
-    // (plus clips/intro audio) merged into one file, full quality.
+    // merged into one file, full quality.
     const amix = mixLabels.length === 0
       ? null
       : mixLabels.length === 1
         ? `${mixLabels[0]}asplit=2[aout][aoutflac]`
         : `${mixLabels.join("")}amix=inputs=${mixLabels.length}:normalize=0[aoutmix];[aoutmix]asplit=2[aout][aoutflac]`;
 
-    // An intro fired near the very end can run slightly past the last
-    // audio - don't let the hard cap clip it
-    for (const iv of rec.intros || []) {
-      maxEnd = Math.max(maxEnd, (iv.offsetMs || 0) / 1000 + (iv.durationMs || 8000) / 1000);
-    }
     // Hard duration cap: the background is an endless looped source, and
     // -shortest doesn't reliably terminate it with browser-recorded WebM.
     // -t stops the muxer at the real session length no matter what.
@@ -344,29 +284,25 @@ export async function processRecording(rec) {
     await ffmpeg([
       ...args,
       "-filter_complex",
-      grid + clipFilters + (amix ? ";" + amix : "") + overlayFilters,
+      grid + audioFilters + (amix ? ";" + amix : "") + overlayFilters,
       "-map", finalLabel, ...(amix ? ["-map", "[aout]"] : []),
       "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
       "-c:a", "aac", "-b:a", "192k",
       // MP4 (H.264/AAC) so it plays in any browser for preview and is a
-      // universal download; +faststart moves the index up front for streaming
+      // universal download; +faststart moves the index up front so it can
+      // start playing before the whole file has arrived
       "-movflags", "+faststart",
       ...capArgs,
       "-shortest",
       "-y", path.join(out, "combined.mp4"),
-      // Lossless mixdown: everyone (plus clips/intro audio), one file,
-      // full quality - the same mix as the MP4's audio track
+      // Lossless mixdown: everyone in one file, full quality - the same
+      // mix as the MP4's audio track
       ...(amix
         ? ["-map", "[aoutflac]", "-c:a", "flac", ...capArgs, "-shortest", "-y", path.join(out, "combined.flac")]
-        : []),
-      // Separate soundboard track: clips only, on their timeline
-      ...(clipOutLabel
-        ? ["-map", clipOutLabel, "-c:a", "flac", "-y", path.join(out, "soundboard.flac")]
         : [])
     ], "combined");
     files.push("combined.mp4");
     if (amix) files.push("combined.flac");
-    if (clipOutLabel) files.push("soundboard.flac");
   }
 
   return files;

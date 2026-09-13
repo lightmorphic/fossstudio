@@ -48,7 +48,7 @@
     </div>
     <div id="bannerRow">
       <label><span class="lab">Banner title <span class="soft">(required - max 24 characters)</span> <span class="info">
-        <button type="button" class="info-btn" data-tip="The big line on the name banner under your video. Everyone in the session sees it, and it is baked into the recording and the stream. Usually your name, or your name and what you do." aria-label="About the banner title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5h.01"/></svg></button>
+        <button type="button" class="info-btn" data-tip="The big line on the name banner under your video. Everyone in the session sees it, and it is baked into the recording. Usually your name, or your name and what you do." aria-label="About the banner title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5h.01"/></svg></button>
       </span></span>
         <input id="nameInput" maxlength="24" autocomplete="name" required>
       </label>
@@ -80,16 +80,6 @@
     <button type="button" id="mediaWarningClose" class="media-warning-close" aria-label="Dismiss">✕</button>
   </div>
   <div class="session-body">
-  <!-- Host-only: the channel page's chat, docked beside the show while
-       live on the channel. The host talks under their banner name. -->
-  <aside id="hostChat" class="host-chat" hidden>
-    <div class="chat-head">Chat <span id="hostChatViewers" class="soft"></span></div>
-    <div id="hostChatList" class="chat-list" aria-live="polite"></div>
-    <form id="hostChatSend" class="send-box">
-      <input id="hostChatInput" maxlength="500" placeholder="Say something…" autocomplete="off" aria-label="Message">
-      <button type="submit" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg></button>
-    </form>
-  </aside>
   <main id="grid" class="grid">
     <!-- Episode logo + title block: floats over the video; the host
          can drag it anywhere and the compositors follow -->
@@ -113,30 +103,17 @@
       <button type="button" id="tmText">Hide title</button>
     </div>
 
-    <!-- Soundboard: host-only thin strip across the bottom of the video -->
-    <div id="soundBar" class="sound-bar" hidden>
-      <div id="soundBarList" class="sound-bar-list"></div>
-      <button id="soundBarClose" type="button" class="sound-bar-close" aria-label="Close soundboard">✕</button>
-    </div>
   </main>
 
   <!-- Host-only control panel (always open for the host) -->
   <aside id="hostPanel" class="host-panel" hidden>
     <h2>Host controls</h2>
-    <!-- Record and the two live outputs stacked full width: each shows
-         its own elapsed clock while running, so they never shrink -->
+    <!-- Record, full width: it shows its elapsed clock while running, so
+         the button never grows and shoves its neighbours around -->
     <div class="hp-stack">
       <div class="hp-stack-row">
         <button id="hpRecordBtn" class="hp-btn record">● Record</button>
         <button type="button" class="info-btn" id="hpRecordInfo" data-tip="Records the show: one combined video plus lossless audio per person, ready in the dashboard when you stop." aria-label="About recording"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5h.01"/></svg></button>
-      </div>
-      <div class="hp-stack-row">
-        <button id="hpLiveBtn" class="hp-btn record">Go live</button>
-        <button type="button" class="info-btn" id="hpLiveInfo" data-tip="Go live on your channel page - video, chat and a saved copy, all on your own domain." aria-label="About going live"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5h.01"/></svg></button>
-      </div>
-      <div class="hp-stack-row">
-        <button id="hpYtBtn" class="hp-btn record">YouTube</button>
-        <button type="button" class="info-btn" id="hpYtInfo" data-tip="Also stream to YouTube - it needs the stream key from the dashboard, and can run alongside your channel page on one encode." aria-label="About the YouTube output"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5h.01"/></svg></button>
       </div>
     </div>
     <div class="hp-row">
@@ -148,9 +125,9 @@
     <div class="hp-row">
       <button id="hpSubBtn" class="hp-btn">Sub</button>
       <button id="hpAdBtn" class="hp-btn">Ad</button>
-      <button type="button" class="info-btn" data-tip="Sub: plays the subscribe-and-bell reminder over the show.&#10;Ad: shows your advertising banner for about 18 seconds.&#10;Both appear for everyone - screen, stream and recording." aria-label="About Sub and Ad"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5h.01"/></svg></button>
+      <button type="button" class="info-btn" data-tip="Sub: plays the subscribe-and-bell reminder over the show.&#10;Ad: shows your advertising banner for about 18 seconds.&#10;Both appear for everyone, on screen and in the recording." aria-label="About Sub and Ad"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5h.01"/></svg></button>
     </div>
-    <!-- Colours live behind two small buttons: guests' banners, and the
+    <!-- Colours sit behind two small buttons: guests' banners, and the
          logo/title block background -->
     <div class="hp-row">
       <button id="hpBannerColorsBtn" class="hp-btn">Banner colours</button>
@@ -159,7 +136,7 @@
     </div>
     <div class="hp-row">
       <button id="hpBackdropBtn" class="hp-btn">Backdrop</button>
-      <button type="button" class="info-btn" data-tip="Switch the show's background live - between segments, say.&#10;Colour: any of the palette, applied to every screen and the stream.&#10;Wallpaper: the image uploaded in Themes.&#10;Logo: the generated logo background saved in Themes.&#10;A recording keeps the backdrop it started with." aria-label="About the backdrop control"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5h.01"/></svg></button>
+      <button type="button" class="info-btn" data-tip="Switch the show's background mid-show - between segments, say.&#10;Colour: any of the palette, applied to every screen.&#10;Wallpaper: the image uploaded in Themes.&#10;Logo: the generated logo background saved in Themes.&#10;A recording keeps the backdrop it started with." aria-label="About the backdrop control"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5h.01"/></svg></button>
     </div>
     <!-- Both palettes share one layout: three rows of six, the hex box
          filling the right half of the third row -->
@@ -199,10 +176,6 @@
     <div class="hp-build">Build 20260823e</div>
   </aside>
   </div>
-  <!-- Fullscreen intro video: takes over every screen while it plays -->
-  <div id="introOverlay" class="intro-overlay" hidden>
-    <video id="introVideo" class="intro-video" playsinline></video>
-  </div>
 
   <footer class="controls">
     <div id="myColorPop" class="my-colors" hidden></div>
@@ -211,7 +184,6 @@
     <button id="handBtn" class="ctl" title="I want to talk" aria-label="I want to talk"></button>
     <button id="muteBtn" class="ctl" title="Mute microphone" aria-label="Mute microphone"></button>
     <button id="camBtn" class="ctl" title="Turn camera off" aria-label="Turn camera off"></button>
-    <button id="soundboardBtn" class="ctl" title="Soundboard" aria-label="Soundboard" hidden></button>
     <button id="dimBtn" class="ctl" title="Dim the controls" aria-label="Dim the controls"></button>
     <button id="leaveBtn" class="ctl leave" title="Leave session" aria-label="Leave session"></button>
   </footer>

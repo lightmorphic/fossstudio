@@ -13,10 +13,8 @@ import {
   getSettings, updateSettings, listSessions, createSession, deleteSession, findSession,
   renameSession,
   deleteSessionsByOwner,
-  listSounds, addSound, removeSound, findSound,
-  listIntros, addIntro, removeIntro, findIntro
 } from "./settings.js";
-import { listUsers, createUser, deleteUser, findById, updateUser, findByUsername, findByChannelDomain } from "./users.js";
+import { listUsers, createUser, deleteUser, findById, updateUser, findByUsername } from "./users.js";
 import { hashPassword } from "./auth.js";
 import { getRoom } from "./rooms.js";
 import {
@@ -25,14 +23,11 @@ import {
 } from "./recording/manager.js";
 import {
   recentLogs, makeBackup, listBackups, backupPath,
-  restoreBackup, restartApp, streamFullExport,
+  restoreBackup, restartApp, sendFullExport,
   getBackupKeep, setBackupKeep
 } from "./ops.js";
 import { publicKey, addSubscription } from "./push.js";
-import { isStreaming, streamingSince, liveOutputs, channelRoomForOwner } from "./streaming.js";
-import { listBlocked, unblock } from "./livechat.js";
 import { listSessionBlocked, unblockSession } from "./blocklist.js";
-import { probeMedia, transcodeIntro, needsConversion } from "./introcoder.js";
 
 export const api = express.Router();
 api.use(express.json({ limit: "64kb" }));
@@ -134,33 +129,15 @@ api.post("/users", requireAdmin, async (req, res) => {
   }
 });
 
-// Invite a host by email: they set their own password via the link
+// Invite a host: the reply carries the link they use to choose their
+// own password. The admin passes it on however they like.
 api.post("/users/invite", requireAdmin, async (req, res) => {
   try {
     const { createInvitedUser } = await import("./users.js");
-    const { sendEmail, getSmtpConfig, isConfigured } = await import("./email.js");
     const user = await createInvitedUser(
-      req.body.username, req.body.email, !!req.body.allowServerRecording
+      req.body.username, !!req.body.allowServerRecording
     );
-    const inviteUrl = `https://${config.domain}/host/invite.html?token=${user.inviteToken}`;
-    let emailed = false;
-    if (isConfigured(await getSmtpConfig())) {
-      try {
-        await sendEmail(user.email, "You're invited to host on FOSSStudio", {
-          paragraphs: [
-            `Hello ${user.username},`,
-            "You've been invited to host shows on FOSSStudio - your own sessions, recordings and branding, all ready to go.",
-            "Click the button below to choose your password and get started."
-          ],
-          button: { label: "Choose your password", url: inviteUrl },
-          footer: "The link works for 7 days and can only be used once. If it expires, just ask for a fresh invite."
-        });
-        emailed = true;
-      } catch (err) {
-        console.error("invite email failed:", err.message);
-      }
-    }
-    res.json({ ok: true, emailed, inviteUrl });
+    res.json({ ok: true, inviteUrl: `https://${config.domain}/host/invite.html?token=${user.inviteToken}` });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -180,37 +157,6 @@ api.post("/invite/accept", async (req, res) => {
     const { acceptInvite } = await import("./users.js");
     await acceptInvite(String(req.body.token || ""), String(req.body.password || ""));
     res.json({ ok: true });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-// SMTP settings (password write-only; never echoed back)
-api.get("/smtp", requireAdmin, async (req, res) => {
-  const { getSmtpConfig } = await import("./email.js");
-  const smtp = await getSmtpConfig();
-  res.json({ ...smtp, pass: undefined, hasPass: !!smtp.pass });
-});
-
-api.put("/smtp", requireAdmin, async (req, res) => {
-  const { saveSmtpConfig } = await import("./email.js");
-  const saved = await saveSmtpConfig(req.body || {});
-  res.json({ ...saved, pass: undefined, hasPass: !!saved.pass });
-});
-
-api.post("/smtp/test", requireAdmin, async (req, res) => {
-  try {
-    const { sendEmail, getSmtpConfig } = await import("./email.js");
-    const smtp = await getSmtpConfig();
-    const to = smtp.alertTo || smtp.from || smtp.user;
-    if (!to) return res.status(400).json({ error: "Add an alert address first." });
-    await sendEmail(to, "FOSSStudio test email", {
-      paragraphs: [
-        "If you can read this, email is working. 🎙",
-        "Host invites and warning emails will arrive looking just like this one."
-      ]
-    });
-    res.json({ ok: true, to });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -240,7 +186,7 @@ api.delete("/users/:id", requireAdmin, async (req, res) => {
     const udir = path.join(config.dataDir, "uploads");
     try {
       for (const f of await fs.readdir(udir)) {
-        // wallpaper-/logo-/ad-/sound-/intro- files all embed the owner uid
+        // wallpaper-/logo-/ad- files all embed the owner uid
         if (f.includes(uid)) await fs.unlink(path.join(udir, f)).catch(() => {});
       }
     } catch { /* no uploads dir */ }
@@ -328,7 +274,7 @@ api.get("/wallpaper", requireAuth, async (req, res) => {
   res.sendFile(path.join(config.dataDir, "uploads", path.basename(s.wallpaper)));
 });
 
-// Advertising banner for stream overlays: per-user image
+// Advertising banner for the in-show overlay: per-user image
 api.post("/adbanner", requireAuth,
   express.raw({ type: ["image/jpeg", "image/png", "image/webp"], limit: "4mb" }),
   async (req, res) => {
@@ -376,7 +322,7 @@ api.get("/sessions", requireAuth, async (req, res) => {
   const sessions = await listSessions(req.user);
   res.json(sessions.map((s) => ({
     ...s,
-    live: !!getRoom(s.id),
+    active: !!getRoom(s.id),
     participants: getRoom(s.id)?.peers.size || 0
   })));
 });
@@ -390,8 +336,9 @@ api.post("/sessions", requireAuth, async (req, res) => {
   res.json(await createSession(req.user, title));
 });
 
-// Rename a session (the episode title). A live room keeps its pinned
-// title until it empties; the new name shows from the next gathering.
+// Rename a session (the episode title). A room with people in it keeps
+// its pinned title until it empties; the new name shows from the next
+// gathering.
 api.post("/sessions/:id/title", requireAuth, async (req, res) => {
   const title = String(req.body.title || "").trim();
   if (!title) return res.status(400).json({ error: "Give the episode a title - it names the session and its recordings." });
@@ -415,7 +362,7 @@ api.get("/room-theme/:roomId/:kind", async (req, res) => {
 });
 
 // Podcast logo (part of the theme): shown above the episode title on
-// the video and baked into recordings/streams
+// the video and baked into recordings
 api.post("/logo", requireAuth,
   express.raw({ type: ["image/jpeg", "image/png", "image/webp"], limit: "2mb" }),
   async (req, res) => {
@@ -457,153 +404,6 @@ api.get("/logo", requireAuth, async (req, res) => {
   const s = await getSettings(req.user.uid);
   if (!s.logo) return res.status(404).end();
   res.sendFile(path.join(config.dataDir, "uploads", path.basename(s.logo)));
-});
-
-// ---------- soundboard clips ----------
-// Short audio the host fires one-click from the in-session soundboard.
-const SOUND_TYPES = {
-  "audio/mpeg": "mp3", "audio/mp3": "mp3", "audio/mp4": "m4a",
-  "audio/x-m4a": "m4a", "audio/aac": "aac", "audio/x-aac": "aac",
-  "audio/ogg": "ogg", "audio/wav": "wav", "audio/x-wav": "wav",
-  "audio/wave": "wav", "audio/flac": "flac", "audio/x-flac": "flac",
-  "audio/webm": "webm"
-};
-
-api.get("/sounds", requireAuth, async (req, res) => res.json(await listSounds(req.user.uid)));
-
-api.post("/sounds", requireAuth,
-  express.raw({ type: Object.keys(SOUND_TYPES), limit: "5mb" }),
-  async (req, res) => {
-    const ext = SOUND_TYPES[req.headers["content-type"]];
-    if (!ext) return res.status(400).json({ error: "Send an MP3, WAV, OGG, AAC, M4A or WebM audio file." });
-    if (!Buffer.isBuffer(req.body) || req.body.length === 0) {
-      return res.status(400).json({ error: "That file was empty." });
-    }
-    try {
-      const clip = await addSound(req.user.uid, { name: req.query.name, ext });
-      const dir = path.join(config.dataDir, "uploads");
-      await fs.mkdir(dir, { recursive: true });
-      const dst = path.join(dir, `sound-${req.user.uid}-${clip.id}.${ext}`);
-      // Level to speech loudness so a clip never blasts over the guests
-      const tmp = path.join(dir, `sound-tmp-${req.user.uid}-${Date.now()}.${ext}`);
-      await fs.writeFile(tmp, req.body);
-      try {
-        await normalizeLoudness(tmp, dst, { ext });
-        await fs.unlink(tmp).catch(() => {});
-      } catch {
-        await fs.rename(tmp, dst); // unlevelled beats a failed upload
-      }
-      res.json(clip);
-    } catch (err) {
-      res.status(400).json({ error: err.message });
-    }
-  });
-
-api.delete("/sounds/:id", requireAuth, async (req, res) => {
-  const id = path.basename(req.params.id);
-  const clip = await findSound(req.user.uid, id);
-  if (clip) {
-    await removeSound(req.user.uid, id);
-    await fs.unlink(path.join(config.dataDir, "uploads",
-      `sound-${req.user.uid}-${clip.id}.${clip.ext}`)).catch(() => {});
-  }
-  res.json({ ok: true });
-});
-
-// The host's session page fetches the clip audio to play it. Resolved
-// via the room owner, like the logo - the clip itself isn't sensitive.
-api.get("/sounds/:uid/:id", async (req, res) => {
-  const uid = path.basename(req.params.uid);
-  const id = path.basename(req.params.id);
-  const clip = await findSound(uid, id);
-  if (!clip) return res.status(404).end();
-  res.sendFile(path.join(config.dataDir, "uploads", `sound-${uid}-${clip.id}.${clip.ext}`));
-});
-
-// ---------- intro videos ----------
-// Fullscreen takeovers the host fires between segments.
-const VIDEO_TYPES = { "video/mp4": "mp4", "video/webm": "webm" };
-
-// Level a clip's audio to speech loudness (EBU R128, -16 LUFS) once at
-// upload, so intros and soundboard clips never blast over the guests -
-// in the session, on the stream and in the recording alike.
-const AUDIO_CODECS = { mp3: "libmp3lame", wav: "pcm_s16le", ogg: "libvorbis", aac: "aac", m4a: "aac", mp4: "aac", webm: "libopus" };
-function normalizeLoudness(src, dst, { copyVideo = false, ext } = {}) {
-  return new Promise((resolve, reject) => {
-    const p = spawn("ffmpeg", ["-nostdin", "-loglevel", "error", "-i", src,
-      ...(copyVideo ? ["-c:v", "copy"] : []),
-      "-af", "loudnorm=I=-16:TP=-1.5:LRA=11",
-      ...(AUDIO_CODECS[ext] ? ["-c:a", AUDIO_CODECS[ext]] : []),
-      "-y", dst]);
-    p.on("error", reject);
-    p.on("close", (code) => (code === 0 ? resolve() : reject(new Error(`loudnorm exited ${code}`))));
-  });
-}
-
-api.get("/intros", requireAuth, async (req, res) => res.json(await listIntros(req.user.uid)));
-
-api.post("/intros", requireAuth,
-  express.raw({ type: Object.keys(VIDEO_TYPES), limit: "80mb" }),
-  async (req, res) => {
-    const ext = VIDEO_TYPES[req.headers["content-type"]];
-    if (!ext) return res.status(400).json({ error: "Send an MP4 or WebM video." });
-    if (!Buffer.isBuffer(req.body) || req.body.length === 0) {
-      return res.status(400).json({ error: "That file was empty." });
-    }
-    const dir = path.join(config.dataDir, "uploads");
-    await fs.mkdir(dir, { recursive: true });
-    const tmp = path.join(dir, `intro-tmp-${req.user.uid}-${Date.now()}.${ext}`);
-    try {
-      await fs.writeFile(tmp, req.body);
-      const probe = await probeMedia(tmp);
-      const { durationMs, hasAudio } = probe;
-      // Oversized or heavy-codec video is converted to bounded 720p
-      // H.264 once, here - decoding it fullscreen on top of WebRTC has
-      // frozen a real host's machine. Already-cheap uploads skip the
-      // encode entirely: audio levelling only, video untouched.
-      const convert = needsConversion(ext, probe);
-      const storedExt = convert ? "mp4" : ext;
-      const clip = await addIntro(req.user.uid, { name: req.query.name, ext: storedExt, durationMs, hasAudio });
-      const dst = path.join(dir, `intro-${req.user.uid}-${clip.id}.${storedExt}`);
-      if (convert) {
-        await transcodeIntro(tmp, dst, hasAudio);
-        await fs.unlink(tmp).catch(() => {});
-      } else if (hasAudio) {
-        // Level the soundtrack to speech loudness; keep the video as-is
-        try {
-          await normalizeLoudness(tmp, dst, { copyVideo: true, ext });
-          await fs.unlink(tmp).catch(() => {});
-        } catch {
-          await fs.rename(tmp, dst); // unlevelled beats a failed upload
-        }
-      } else {
-        await fs.rename(tmp, dst);
-      }
-      res.json(clip);
-    } catch (err) {
-      await fs.unlink(tmp).catch(() => {});
-      res.status(400).json({ error: err.message });
-    }
-  });
-
-api.delete("/intros/:id", requireAuth, async (req, res) => {
-  const id = path.basename(req.params.id);
-  const clip = await findIntro(req.user.uid, id);
-  if (clip) {
-    await removeIntro(req.user.uid, id);
-    await fs.unlink(path.join(config.dataDir, "uploads",
-      `intro-${req.user.uid}-${clip.id}.${clip.ext}`)).catch(() => {});
-  }
-  res.json({ ok: true });
-});
-
-// Everyone's session page fetches the intro to play it fullscreen.
-api.get("/intros/:uid/:id", async (req, res) => {
-  const uid = path.basename(req.params.uid);
-  const id = path.basename(req.params.id);
-  const clip = await findIntro(uid, id);
-  if (!clip) return res.status(404).end();
-  res.sendFile(path.join(config.dataDir, "uploads", `intro-${uid}-${clip.id}.${clip.ext}`));
 });
 
 // ---------- recording ----------
@@ -659,97 +459,8 @@ api.get("/recordings/:id/files/:file", requireAuth, async (req, res) => {
   });
 });
 
-// Watch page status: live or not, and what the show is called. Public,
-// same trust as the watch page itself; nothing here a viewer would not
-// see on joining. The slug is either a session id (one show) or a
-// host's username - their permanent channel page (/live/fossnerds),
-// which switches to whichever of their sessions is live right now.
-// Idle channel pages poll their status every 5s per viewer; a hundred
-// waiting viewers is 20 disk-JSON parses a second for an answer that
-// barely changes. Three seconds of memory turns that into noise.
-const liveStatusCache = new Map(); // key -> { at, body }
-function cachedStatus(key, res, build) {
-  const hit = liveStatusCache.get(key);
-  if (hit && Date.now() - hit.at < 3000) return res.json(hit.body);
-  return build().then((body) => {
-    if (!body) return res.status(404).json({ error: "not found" });
-    liveStatusCache.set(key, { at: Date.now(), body });
-    if (liveStatusCache.size > 500) liveStatusCache.clear(); // bound it
-    res.json(body);
-  });
-}
-
-// The owner's podcast logo, if they uploaded one - the offline watch
-// page wears it instead of the stock icon
-async function channelLogo(ownerId) {
-  if (!ownerId) return null;
-  const s = await getSettings(ownerId);
-  return s.logo ? `/api/logo/${ownerId}` : null;
-}
-
-api.get("/live/:slug", (req, res) => {
-  const slug = path.basename(req.params.slug);
-  cachedStatus(`slug:${slug}`, res, async () => {
-    const session = await findSession(slug);
-    if (session) {
-      const outs = liveOutputs(slug);
-      return {
-        live: outs.channel,
-        since: outs.channelSince,
-        // "programme" when the host's browser is the mixer and the
-        // server only passes the feed on; "composite" when it draws
-        mode: outs.mode,
-        roomId: slug,
-        title: session.title || "",
-        logo: await channelLogo(session.ownerId)
-      };
-    }
-    const user = await findByUsername(slug.toLowerCase());
-    if (!user || user.role === "admin") return null;
-    const roomId = channelRoomForOwner(user.id);
-    const live = roomId ? await findSession(roomId) : null;
-    return {
-      live: !!roomId,
-      since: roomId ? streamingSince(roomId) : null,
-      roomId: roomId || null,
-      title: live?.title || user.username,
-      logo: await channelLogo(user.id)
-    };
-  }).catch(() => { if (!res.headersSent) res.status(500).end(); });
-});
-
-// The same status for a page served at the root of a host's custom
-// channel domain (live.fossnerds.org), where there is no slug in the
-// path - the Host header says whose channel this is.
-api.get("/live-here", (req, res) => {
-  cachedStatus(`host:${req.hostname}`, res, async () => {
-    const user = await findByChannelDomain(req.hostname);
-    if (!user) return null;
-    const roomId = channelRoomForOwner(user.id);
-    const live = roomId ? await findSession(roomId) : null;
-    return {
-      logo: await channelLogo(user.id),
-      live: !!roomId,
-      since: roomId ? streamingSince(roomId) : null,
-      roomId: roomId || null,
-      title: live?.title || user.username
-    };
-  }).catch(() => { if (!res.headersSent) res.status(500).end(); });
-});
-
-// Chat moderation: the reversible block list. Any host can manage it -
-// blocking is per person, not per show.
-api.get("/chat/blocked", requireAuth, async (req, res) => {
-  res.json(await listBlocked());
-});
-api.delete("/chat/blocked/:id", requireAuth, async (req, res) => {
-  const ok = await unblock(path.basename(req.params.id), req.user.uid);
-  if (!ok) return res.status(404).json({ error: "not found" });
-  res.json({ ok: true });
-});
-
-// Session moderation: guests blocked from joining sessions, managed
-// the same way - any host, instant either direction.
+// Session moderation: the reversible list of guests blocked from
+// joining sessions. Any host can manage it, instant either direction.
 api.get("/session/blocked", requireAuth, async (req, res) => {
   res.json(await listSessionBlocked());
 });
@@ -770,7 +481,7 @@ api.post("/recordings/:id/publish", requireAuth, async (req, res) => {
   if (!rec) return res.status(404).json({ error: "not found" });
   const settings = await getSettings(req.user.uid);
   if (!settings.fosscastUrl || !settings.fosscastToken) {
-    return res.status(400).json({ error: "Add your FOSSCast address and publisher token in Settings → Live streaming first." });
+    return res.status(400).json({ error: "Add your FOSSCast address and publisher token in Settings → Publish first." });
   }
   const file = path.basename(String(req.body.file || "combined.mp4"));
   if (!(rec.files || []).includes(file)) {
@@ -897,7 +608,7 @@ api.post("/ops/restart", requireAdmin, (req, res) => {
 });
 
 api.get("/ops/export", requireAdmin, (req, res) => {
-  streamFullExport(res);
+  sendFullExport(res);
 });
 
 // ---------- push notifications (per user) ----------

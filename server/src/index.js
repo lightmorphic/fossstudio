@@ -7,14 +7,10 @@ import { startMediasoup } from "./media.js";
 import { attachSignaling } from "./signaling.js";
 import { api } from "./api.js";
 import { isAuthedRequest } from "./auth.js";
-import { scheduleDailyBackups, sendAlertEmail } from "./ops.js";
+import { scheduleDailyBackups } from "./ops.js";
 import { initPush } from "./push.js";
 import { resumeOrphanedRecordings, activeRenderCount } from "./recording/manager.js";
-import { diagnostics } from "./diagnostics.js";
-import { attachChat } from "./livechat.js";
-import { migrateIntros } from "./introcoder.js";
-import { findSession } from "./settings.js";
-import { findByChannelDomain, findById } from "./users.js";
+import { findById } from "./users.js";
 import { redeemLink } from "./loginlinks.js";
 import { setAuthCookie } from "./auth.js";
 
@@ -124,28 +120,13 @@ app.get("/render-status", (req, res) => {
   res.json({ rendering: activeRenderCount() });
 });
 
-// Setup self-check for whoever installed this. Unauthenticated on
-// purpose - see the note at the top of diagnostics.js.
-app.get("/diagnostics", (req, res) => {
-  res.sendFile(path.join(config.webDir, "diagnostics.html"));
-});
-app.get("/diagnostics.json", (req, res) => {
-  res.json(diagnostics(req));
-});
-
 // The root goes to the dashboard: on the dedicated panel domains
 // (admin.example.com / host.example.com, when configured) straight to
 // that panel; anywhere else to the host side. Each shows its login when
 // signed out. Guests never visit the root - they arrive on /s/<id>
 // links - so nothing is lost by forwarding it.
-app.get("/", async (req, res) => {
+app.get("/", (req, res) => {
   const name = (req.hostname || "").toLowerCase();
-  // A host's custom channel domain serves their channel page at the
-  // root: the audience visits live.fossnerds.org and is watching.
-  // (try/catch: Express 4 does not catch a rejecting async handler,
-  // and an unreadable users.json must not hang the front door)
-  const channelOwner = await findByChannelDomain(name).catch(() => null);
-  if (channelOwner) return res.sendFile(path.join(config.webDir, "live.html"));
   const target = panelDomains("admin").has(name) ? "/admin/" : "/host/";
   res.redirect(target);
 });
@@ -155,50 +136,15 @@ app.get("/", async (req, res) => {
 // HOST_DOMAIN) are approved, so pointing a random name at this server
 // can never mint a certificate. Same public posture as /healthz - the
 // answer reveals nothing beyond names any visitor already sees.
-app.get("/tls-allowed", async (req, res) => {
+app.get("/tls-allowed", (req, res) => {
   const d = String(req.query.domain || "").toLowerCase();
-  // .catch: this is the endpoint Caddy consults for on-demand TLS -
-  // it must answer (with a no) even if the user store is unreadable
-  const ok = panelDomains("admin").has(d) || panelDomains("host").has(d) ||
-    !!(await findByChannelDomain(d).catch(() => null));
+  const ok = panelDomains("admin").has(d) || panelDomains("host").has(d);
   res.status(ok ? 200 : 404).end();
 });
 
 // Session links guests receive: https://<domain>/s/<room-id>
 app.get("/s/:roomId([a-zA-Z0-9_-]{4,32})", (req, res) => {
   res.sendFile(path.join(config.webDir, "session.html"));
-});
-
-// The audience watch page: the live show with chat beside it. Public by
-// design, same trust as a session link - it can only ever receive. The
-// slug is a session id, or a host's username: their permanent channel
-// page, one link that never changes between shows.
-app.get("/live/:slug([a-zA-Z0-9_-]{2,32})", async (req, res) => {
-  const slug = req.params.slug;
-  const session = await findSession(slug);
-  if (!session) {
-    const { findByUsername } = await import("./users.js");
-    const user = await findByUsername(slug.toLowerCase());
-    if (!user || user.role === "admin") {
-      return res.status(404).sendFile(path.join(config.webDir, "404.html"), (err) => {
-        if (err) res.status(404).send("Not found");
-      });
-    }
-  }
-  res.sendFile(path.join(config.webDir, "live.html"));
-});
-
-// HLS playlist and segments for the watch page, written by the stream
-// engine under data/live/<room>. The playlist must never be cached (it
-// grows while live); finished segments never change, so a short cache
-// keeps many viewers cheap.
-app.get("/live/:roomId([a-zA-Z0-9_-]{4,32})/media/:file", (req, res) => {
-  const file = path.basename(req.params.file);
-  if (!/^(live\.m3u8|seg-\d+-\d+\.m4s|init-\d+\.mp4)$/.test(file)) return res.status(404).end();
-  res.setHeader("Cache-Control", file.endsWith(".m3u8") ? "no-store" : "public, max-age=60");
-  res.sendFile(path.join(config.dataDir, "live", req.params.roomId, file), (err) => {
-    if (err && !res.headersSent) res.status(404).end();
-  });
 });
 
 // Big unchanging assets get real caching; pages stay fresh
@@ -213,35 +159,14 @@ app.use((req, res) => {
   });
 });
 
-// A crash mid-stream leaves data/live/<room> orphaned (a clean stop
-// removes it, a failed finalize keeps it deliberately for recovery).
-// Sweep anything a week old at boot so the disk cannot fill forever;
-// a week is ample time for an operator to rescue kept segments.
-(async () => {
-  const liveRoot = path.join(config.dataDir, "live");
-  try {
-    for (const d of await fs.promises.readdir(liveRoot)) {
-      const dir = path.join(liveRoot, d);
-      const age = Date.now() - (await fs.promises.stat(dir)).mtimeMs;
-      if (age > 7 * 24 * 3600 * 1000) {
-        await fs.promises.rm(dir, { recursive: true, force: true });
-        console.log(`swept stale live dir ${d} (${Math.round(age / 86400000)} days old)`);
-      }
-    }
-  } catch { /* no live dir yet */ }
-})();
-
 const server = http.createServer(app);
-// Two WebSocket endpoints share the server: /ws (session signaling) and
-// /chat (watch-page chat). Routed here by path - ws's own per-path
-// binding rejects the other endpoint's upgrades with a 400.
+// Session signaling is the one WebSocket endpoint; an upgrade asked for
+// anywhere else is not ours.
 const wssSignal = attachSignaling();
-const wssChat = attachChat();
 server.on("upgrade", (req, socket, head) => {
   const { pathname } = new URL(req.url, "http://localhost");
-  const wss = pathname === "/ws" ? wssSignal : pathname === "/chat" ? wssChat : null;
-  if (!wss) return socket.destroy();
-  wss.handleUpgrade(req, socket, head, (ws) => wss.emit("connection", ws, req));
+  if (pathname !== "/ws") return socket.destroy();
+  wssSignal.handleUpgrade(req, socket, head, (ws) => wssSignal.emit("connection", ws, req));
 });
 
 await startMediasoup();
@@ -254,31 +179,16 @@ scheduleDailyBackups();
 // stuck on "processing" forever with no active render behind them.
 resumeOrphanedRecordings().then((n) => {
   if (n > 0) {
-    console.log(`resumed ${n} orphaned recording(s) from a previous run`);
-    sendAlertEmail(
-      "FOSSStudio resumed interrupted recording(s)",
-      `${n} recording(s) were mid-render when the server last stopped and have been resumed automatically. Worth checking the dashboard to confirm they came out correctly.`
-    ).catch(() => {});
+    console.log(`resumed ${n} orphaned recording(s) from a previous run - worth checking they came out correctly`);
   }
 }).catch((err) => console.error("resumeOrphanedRecordings failed:", err.message));
 
-// Intros uploaded before the 720p bound existed get converted once,
-// quietly, after boot - so no guest's machine ever has to fight an
-// oversized fullscreen video mid-show again.
-migrateIntros().then((n) => {
-  if (n > 0) console.log(`${n} intro(s) converted to bounded 720p H.264`);
-}).catch((err) => console.error("intro migration failed:", err.message));
-
 process.on("uncaughtException", (err) => {
   console.error("uncaught exception:", err.stack || err.message);
-  // Exit once the alert is away (or after 3s regardless): a process
-  // that limps on after an uncaught throw is in an unknown state - a
-  // failed port bind used to leave a zombie server squatting RAM
-  // forever. Dying cleanly lets Docker restart it fresh.
-  const bye = () => process.exit(1);
-  sendAlertEmail("FOSSStudio hit an error", String(err.stack || err.message))
-    .catch(() => {}).finally(bye);
-  setTimeout(bye, 3000).unref();
+  // A process that limps on after an uncaught throw is in an unknown
+  // state - a failed port bind used to leave a zombie server squatting
+  // RAM forever. Dying cleanly lets Docker restart it fresh.
+  process.exit(1);
 });
 process.on("unhandledRejection", (err) => {
   console.error("unhandled rejection:", err?.stack || String(err));

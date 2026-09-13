@@ -1,7 +1,7 @@
-// Geometry shared by the two things that composite a session into
-// video: the recording processor and the live stream. Both draw the
-// same picture, so anything that decides how big something lands in
-// the frame belongs here rather than being written out twice.
+// Geometry for compositing a session into video. The recording
+// processor and the host's browser draw the same picture, so anything
+// that decides how big something lands in the frame belongs here rather
+// than being written out twice.
 
 // The episode logo/title block, as a fraction of frame width. The
 // browser sizes the on-screen block by the same fraction of the video
@@ -17,7 +17,7 @@ export function titleWidth(scale, frameWidth = 1280) {
 }
 
 // Tile grid geometry, as fractions of frame width. session.js lays the
-// live grid out with the same fractions of its video area, so the
+// on-screen grid out with the same fractions of its video area, so the
 // recording is the same picture instead of a tighter, more zoomed-in
 // one. Kept in step by test/geometry-test.mjs rather than by a shared
 // import, since the browser cannot load anything from server/src.

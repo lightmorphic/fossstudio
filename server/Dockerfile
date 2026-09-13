@@ -1,6 +1,6 @@
 # Two stages keep the runtime image minimal: python3/make/g++ exist only
 # in the build stage to compile the mediasoup media worker, and are never
-# shipped. The runtime carries just Node, ffmpeg (recording/streaming)
+# shipped. The runtime carries just Node, ffmpeg (recording)
 # and zip (recording bundles) - no compilers, no npm.
 
 FROM node:22-bookworm-slim AS build

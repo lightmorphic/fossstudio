@@ -28,10 +28,7 @@
     muteBtn: $("muteBtn"), camBtn: $("camBtn"), leaveBtn: $("leaveBtn"),
     dimBtn: $("dimBtn"), handBtn: $("handBtn"), hostPanel: $("hostPanel"),
     hpAutoGain: $("hpAutoGain"), hpGuests: $("hpGuests"),
-    hpRecordBtn: $("hpRecordBtn"), hpLiveBtn: $("hpLiveBtn"), hpYtBtn: $("hpYtBtn"),
-    hostChat: $("hostChat"), hostChatList: $("hostChatList"),
-    hostChatSend: $("hostChatSend"), hostChatInput: $("hostChatInput"),
-    hostChatViewers: $("hostChatViewers"),
+    hpRecordBtn: $("hpRecordBtn"),
     hpServerRec: $("hpServerRec"),
     hpMuteAllBtn: $("hpMuteAllBtn"), hpSubBtn: $("hpSubBtn"), hpAdBtn: $("hpAdBtn"),
     hpBannerSwatches: $("hpBannerSwatches"), hpBannerHex: $("hpBannerHex"),
@@ -41,9 +38,6 @@
     hpTitleSwatches: $("hpTitleSwatches"), hpTitleHex: $("hpTitleHex"),
     hpBackdropBtn: $("hpBackdropBtn"), hpBackdropPop: $("hpBackdropPop"),
     hpBackdropSwatches: $("hpBackdropSwatches"), hpBackdropHex: $("hpBackdropHex"),
-    soundboardBtn: $("soundboardBtn"), soundBar: $("soundBar"),
-    soundBarList: $("soundBarList"), soundBarClose: $("soundBarClose"),
-    introOverlay: $("introOverlay"), introVideo: $("introVideo"),
     myColorBtn: $("myColorBtn"), myColorPop: $("myColorPop")
   };
 
@@ -58,9 +52,8 @@
     hand: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 11V6a1.5 1.5 0 0 1 3 0v4V4.5a1.5 1.5 0 0 1 3 0V10V6a1.5 1.5 0 0 1 3 0v5.5l1.6-2.2a1.5 1.5 0 0 1 2.5 1.6L17.5 17a6 6 0 0 1-5.6 4H11a6 6 0 0 1-6-6v-4z"/></svg>',
     leave: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3M15 16l4-4-4-4M19 12H9"/></svg>',
     recDot: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="7"/></svg>',
-    soundboard: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17V5l11-2v12"/><circle cx="6" cy="17" r="3"/><circle cx="17" cy="15" r="3"/></svg>'
   };
-  for (const [id, icon] of [["muteBtn", "mic"], ["camBtn", "cam"], ["dimBtn", "dim"], ["leaveBtn", "leave"], ["myColorBtn", "palette"], ["handBtn", "hand"], ["recLight", "recDot"], ["soundboardBtn", "soundboard"]]) {
+  for (const [id, icon] of [["muteBtn", "mic"], ["camBtn", "cam"], ["dimBtn", "dim"], ["leaveBtn", "leave"], ["myColorBtn", "palette"], ["handBtn", "hand"], ["recLight", "recDot"]]) {
     document.getElementById(id).innerHTML = ICONS[icon];
   }
 
@@ -490,11 +483,10 @@
   const consumers = new Map(); // consumerId -> {consumer, peerId}
 
   // ---------- The programme: this browser as the mixer ----------
-  // When the host goes live or records, this page draws the show onto a
-  // canvas, mixes every voice, and sends one finished stream. The
-  // server passes it on without drawing or encoding anything.
+  // When the host records, this page draws the show onto a canvas, mixes
+  // every voice and encodes the result, so the finished video needs no
+  // drawing on the server at all.
   let mixer = null;
-  let programmeVideo = null, programmeAudio = null;
   let micBus = null;                // the host's own mic into the programme, muted with the button
   const bannerImgs = new Map();     // peerId -> Image, the same PNG the recording would use
   let titleImg = null;
@@ -1181,20 +1173,20 @@
   }
 
   // ---------- Banner snapshots ----------
-  // The recording/stream compositors run ffmpeg, which can't draw text,
-  // so the host's browser renders each lower-third to a PNG (same font,
-  // same colours as on screen) and the server overlays those.
+  // The recording compositor runs ffmpeg, which can't draw text, so the
+  // host's browser renders each lower-third to a PNG (same font, same
+  // colours as on screen) and the server overlays those.
 
   let bannerSnapTimer = null;
   function scheduleBannerSnapshots() {
-    if (!isHost || (!recording && !live())) return;
+    if (!isHost || !recording) return;
     clearTimeout(bannerSnapTimer);
     bannerSnapTimer = setTimeout(() => sendBannerSnapshots().catch(() => {}), 600);
   }
 
   let lastBannerPayload = "";
   async function sendBannerSnapshots(force) {
-    if (!isHost || (!force && !recording && !live())) return;
+    if (!isHost || (!force && !recording)) return;
     await document.fonts.ready;
     const images = {};
     for (const [peerId, tile] of tiles) {
@@ -1635,11 +1627,10 @@
   let recorders = [];
   let recUpload = null;
   let recording = false;
-  // Elapsed timers on the host's record/stream buttons. Start times come
+  // The elapsed timer on the host's record button. The start time comes
   // from the server where possible, so a host who reloads mid-take still
   // sees the true elapsed time.
   let recStartAt = null;
-  let channelSince = null, rtmpSince = null;
   const fmtElapsed = (ms) => {
     const t = Math.max(0, Math.floor(ms / 1000));
     const p = (n) => String(n).padStart(2, "0");
@@ -1650,12 +1641,6 @@
     if (!isHost) return;
     if (recording && recStartAt) {
       els.hpRecordBtn.textContent = `■ ${fmtElapsed(Date.now() - recStartAt)}`;
-    }
-    if (outputs.channel && channelSince) {
-      els.hpLiveBtn.textContent = `■ ${fmtElapsed(Date.now() - channelSince)}`;
-    }
-    if (outputs.rtmp && rtmpSince) {
-      els.hpYtBtn.textContent = `■ ${fmtElapsed(Date.now() - rtmpSince)}`;
     }
   }, 1000);
 
@@ -1686,18 +1671,18 @@
   }
 
   // The browser/server capture pipeline is picked when recording starts,
-  // so the switch has to lock while recording or live.
+  // so the switch has to lock while a take is running.
   function updateServerRecLock() {
     if (!isHost || !els.hpServerRec) return;
-    els.hpServerRec.disabled = recording || live();
+    els.hpServerRec.disabled = recording;
     updateServerRecTip();
   }
   function updateServerRecTip() {
     // The row's info dot describes all three controls as bullets; the
     // recording-mode and mute lines follow the current state
     const server = els.hpServerRec.classList.contains("active");
-    const modeLine = (recording || live())
-      ? "Recording mode is locked while recording or live."
+    const modeLine = recording
+      ? "Recording mode is locked while recording."
       : server
         ? "Recording mode: server - the server captures everyone (best for 2-3 guests). Click to switch to browser."
         : "Recording mode: browser - each person captures their own track (best for bigger sessions). Click to switch to server.";
@@ -1736,21 +1721,17 @@
       recorders.push({ recorder, getQueue: () => queue, kind });
     };
 
-    // The host's browser also records the finished programme - the same
-    // picture and sound the stream carries - so the combined file needs
-    // no render on the server at all
+    // The host's browser draws and encodes the finished programme itself,
+    // so the combined file needs no render on the server at all
     if (isHost) {
       const m = ensureMixer();
       const stream = m.start();
-      if (!programmeVideo) {
-        const ctx = ensureAudioCtx();
-        for (const tile of tiles.values()) if (tile.gain) tile.gain.connect(m.audioDest);
-        if (clipBus) clipBus.connect(m.audioDest);
-        if (micProducer?.track && !micBus) {
-          micBus = ctx.createGain();
-          micBus.gain.value = micProducer.paused ? 0 : 1;
-          ctx.createMediaStreamSource(new MediaStream([micProducer.track])).connect(micBus).connect(m.audioDest);
-        }
+      const ctx = ensureAudioCtx();
+      for (const tile of tiles.values()) if (tile.gain) tile.gain.connect(m.audioDest);
+      if (micProducer?.track && !micBus) {
+        micBus = ctx.createGain();
+        micBus.gain.value = micProducer.paused ? 0 : 1;
+        ctx.createMediaStreamSource(new MediaStream([micProducer.track])).connect(micBus).connect(m.audioDest);
       }
       const mimes = ["video/webm;codecs=h264,opus", "video/mp4;codecs=avc1,mp4a.40.2", "video/webm;codecs=avc1,opus"];
       const type = mimes.find((t) => MediaRecorder.isTypeSupported(t));
@@ -1789,7 +1770,8 @@
     );
     recorders = [];
     await Promise.all(done);
-    if (mixer && !programmeVideo) mixer.stop();
+    mixer?.stop();
+    micBus = null;
     if (recUpload) {
       const { recId, peerId, token } = recUpload;
       await fetch(`/api/rec/done?rec=${encodeURIComponent(recId)}&peer=${encodeURIComponent(peerId)}&token=${encodeURIComponent(token)}`, { method: "POST" }).catch(() => {});
@@ -1801,9 +1783,9 @@
   // ---------- In-session overlay playback (subscribe / ad) ----------
 
   function playDomOverlay({ kind, duration, url }) {
-    document.querySelectorAll(".live-overlay").forEach((el) => el.remove());
+    document.querySelectorAll(".show-overlay").forEach((el) => el.remove());
     const el = document.createElement("div");
-    el.className = `live-overlay ${kind}`;
+    el.className = `show-overlay ${kind}`;
     if (kind === "subscribe") {
       el.innerHTML = `
         <div class="lo-btn">SUBSCRIBE</div>
@@ -1824,209 +1806,6 @@
     setTimeout(() => el.classList.remove("in"), (duration - 0.6) * 1000);
     setTimeout(() => el.remove(), duration * 1000);
   }
-
-  // ---------- Soundboard (host) ----------
-  // Clips uploaded in the dashboard, fired one-click. A single always-on
-  // "clips" audio producer (silent when idle) carries them to guests and
-  // the live stream, so firing a clip never relaunches the stream. The
-  // recording captures them separately, from the source files server-side.
-  let soundboardClips = [];
-  let introClips = [];
-  let soundboardOwner = null;
-  let clipBus = null;             // gain node every clip plays through
-  let clipsProducer = null;
-  const clipBuffers = new Map();  // soundId -> decoded AudioBuffer
-  const clipSinkEls = [];         // keep guest clip elements alive (Chrome quirk)
-
-  async function setupSoundboard(sounds, intros, ownerId) {
-    soundboardClips = Array.isArray(sounds) ? sounds : [];
-    introClips = Array.isArray(intros) ? intros : [];
-    soundboardOwner = ownerId || null;
-    const ctx = ensureAudioCtx();
-    clipBus = ctx.createGain();
-    clipBus.gain.value = 1;
-    const dest = ctx.createMediaStreamDestination();
-    // A steady zero source keeps the track producing (silent) samples, so
-    // the producer - and the live mixer - never starve between clips
-    const keepalive = ctx.createConstantSource();
-    keepalive.offset.value = 0;
-    keepalive.connect(dest);
-    keepalive.start();
-    clipBus.connect(dest);        // -> guests + live stream
-    clipBus.connect(audioSink()); // -> the host's own monitor
-    if (mixer?.audioDest) clipBus.connect(mixer.audioDest);
-    clipsProducer = await sendTransport.produce({
-      track: dest.stream.getAudioTracks()[0],
-      appData: { source: "clips" }
-    });
-    renderSoundBar();
-    // Decode ahead so the first hit is instant
-    for (const clip of soundboardClips) loadClipBuffer(clip).catch(() => {});
-  }
-
-  async function loadClipBuffer(clip) {
-    if (clipBuffers.has(clip.id)) return clipBuffers.get(clip.id);
-    const res = await fetch(`/api/sounds/${soundboardOwner}/${clip.id}`);
-    if (!res.ok) throw new Error("clip fetch failed");
-    const buf = await ensureAudioCtx().decodeAudioData(await res.arrayBuffer());
-    clipBuffers.set(clip.id, buf);
-    return buf;
-  }
-
-  async function playClip(clip, mute) {
-    try {
-      const ctx = ensureAudioCtx();
-      if (ctx.state === "suspended") await ctx.resume();
-      const buf = await loadClipBuffer(clip);
-      const src = ctx.createBufferSource();
-      src.buffer = buf;
-      src.connect(clipBus);
-      // Server logs it into any recording and, for a sting, mutes everyone
-      // for the clip's length then restores them
-      request("hostControl", {
-        action: "playClip",
-        soundId: clip.id,
-        mute: !!mute,
-        durationMs: Math.ceil(buf.duration * 1000)
-      }).catch(() => {});
-      src.start();
-    } catch (err) {
-      console.error("clip playback failed:", err.message);
-    }
-  }
-
-  // A guest receiving the host's clip channel: play it, but it isn't a
-  // person, so keep it off the tiles and the per-guest volume graph
-  function attachClipAudio(track) {
-    const ctx = ensureAudioCtx();
-    const el = new Audio();
-    el.muted = true;
-    el.srcObject = new MediaStream([track]);
-    el.play().catch(() => {});
-    clipSinkEls.push(el);
-    const g = ctx.createGain();
-    g.gain.value = 1;
-    ctx.createMediaStreamSource(new MediaStream([track])).connect(g).connect(audioSink());
-  }
-
-  // Group symbols (tooltip carries the words)
-  const SB_ICONS = {
-    intros: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M10 8.5l5 3.5-5 3.5z"/></svg>',
-    sounds: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>'
-  };
-
-  function sbGroup(iconSvg, tip) {
-    const group = document.createElement("div");
-    group.className = "sb-group";
-    const lab = document.createElement("div");
-    lab.className = "sb-group-label";
-    lab.innerHTML = iconSvg;
-    lab.dataset.tip = tip;
-    lab.setAttribute("aria-label", tip);
-    const row = document.createElement("div");
-    row.className = "sb-group-row";
-    group.append(lab, row);
-    return { group, row };
-  }
-
-  function renderSoundBar() {
-    const list = els.soundBarList;
-    list.textContent = "";
-    if (!soundboardClips.length && !introClips.length) {
-      const empty = document.createElement("div");
-      empty.className = "sb-empty";
-      empty.textContent = "Nothing yet - upload clips in Settings → Sounds and videos in Settings → Intros.";
-      list.appendChild(empty);
-      return;
-    }
-    if (introClips.length) {
-      const { group, row } = sbGroup(SB_ICONS.intros, "Intros - fullscreen, mutes everyone");
-      for (const intro of introClips) {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "sb-intro";
-        const name = document.createElement("span");
-        name.className = "sb-name";
-        name.textContent = intro.name;
-        const hint = document.createElement("span");
-        hint.className = "sb-hint";
-        hint.textContent = "▶ Take over";
-        btn.append(name, hint);
-        btn.onclick = () => playIntro(intro);
-        row.appendChild(btn);
-      }
-      list.appendChild(group);
-    }
-    if (soundboardClips.length) {
-      const { group, row } = sbGroup(SB_ICONS.sounds, "Sounds - play over, or mute everyone then play");
-      for (const clip of soundboardClips) {
-        const tile = document.createElement("div");
-        tile.className = "sb-tile";
-        const play = document.createElement("button");
-        play.type = "button";
-        play.className = "sb-play";
-        const name = document.createElement("span");
-        name.className = "sb-name";
-        name.textContent = clip.name;
-        const hint = document.createElement("span");
-        hint.className = "sb-hint";
-        hint.textContent = "▶ Play over";
-        play.append(name, hint);
-        play.onclick = () => playClip(clip, false);
-        const solo = document.createElement("button");
-        solo.type = "button";
-        solo.className = "sb-solo";
-        solo.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M22 9l-6 6M16 9l6 6"/></svg>';
-        solo.dataset.tip = "Mute everyone, then play";
-        solo.setAttribute("aria-label", `Mute everyone and play ${clip.name}`);
-        solo.onclick = () => playClip(clip, true);
-        tile.append(play, solo);
-        row.appendChild(tile);
-      }
-      list.appendChild(group);
-    }
-  }
-
-  // Fire a fullscreen intro; the server broadcasts it to everyone, mutes
-  // the room for its length, and (if live/recording) bakes it in
-  function playIntro(intro) {
-    request("hostControl", { action: "playIntro", introId: intro.id })
-      .catch((e) => console.error("intro failed:", e.message));
-  }
-
-  // Everyone (host included) plays the intro fullscreen from the file,
-  // crossfading in over the grid and back out (matching the recording)
-  let introHideTimer = null;
-  function playDomIntro({ url, durationMs }) {
-    const ov = els.introOverlay, v = els.introVideo;
-    v.src = url;
-    try { v.currentTime = 0; } catch { /* not seekable yet */ }
-    ov.hidden = false;                                     // display, still at opacity 0
-    requestAnimationFrame(() => ov.classList.add("in"));   // fade in over the grid
-    if (sinkSupported && els.spkSelect.value) v.setSinkId?.(els.spkSelect.value).catch(() => {});
-    v.play().catch(() => {});
-    const done = () => {
-      clearTimeout(introHideTimer);
-      ov.classList.remove("in");                           // fade back out to the grid
-      setTimeout(() => {
-        ov.hidden = true;
-        try { v.pause(); v.removeAttribute("src"); v.load(); } catch { /* ignore */ }
-      }, 450);
-    };
-    v.onended = done;
-    clearTimeout(introHideTimer);
-    introHideTimer = setTimeout(done, (durationMs || 8000) + 800);
-  }
-
-  els.soundboardBtn.onclick = () => {
-    const show = els.soundBar.hidden;
-    els.soundBar.hidden = !show;
-    els.soundboardBtn.classList.toggle("active", show);
-  };
-  els.soundBarClose.onclick = () => {
-    els.soundBar.hidden = true;
-    els.soundboardBtn.classList.remove("active");
-  };
 
   // Panel sound meters: read each analyser ~8x a second
   const meterBuf = new Uint8Array(128);
@@ -2082,204 +1861,12 @@
     updateServerRecTip();
   };
 
-  // The two live outputs are independent: "channel" is the studio's own
-  // watch page (chat, saved copy), "rtmp" is YouTube. Each has its own
-  // button and its own clock.
-  let outputs = { channel: false, rtmp: false };
-  const live = () => outputs.channel || outputs.rtmp;
-  function setLiveIndicator(next) {
-    outputs = { channel: !!next.channel, rtmp: !!next.rtmp };
-    if (!outputs.channel && !outputs.rtmp && programmeVideo) stopProgramme().catch(() => {});
-    channelSince = next.channelSince || null;
-    rtmpSince = next.rtmpSince || null;
-    els.banner.classList.toggle("live", live());
-    els.hpLiveBtn.textContent = outputs.channel
-      ? `■ ${fmtElapsed(Date.now() - (channelSince || Date.now()))}`
-      : "Go live";
-    // The state-aware wording lives on the info dot beside the button
-    $("hpLiveInfo").dataset.tip = outputs.channel
-      ? "End the channel stream. The exact video the audience watched files itself as a ready recording."
-      : "Go live on your channel page - video, chat and a saved copy, all on your own domain.";
-    els.hpLiveBtn.classList.toggle("rec-on", outputs.channel);
-    els.hpYtBtn.textContent = outputs.rtmp
-      ? `■ ${fmtElapsed(Date.now() - (rtmpSince || Date.now()))}`
-      : "YouTube";
-    $("hpYtInfo").dataset.tip = outputs.rtmp
-      ? "End the YouTube stream. Your channel page carries on if it is running."
-      : "Also stream to YouTube - it needs the stream key from the dashboard, and can run alongside your channel page on one encode.";
-    els.hpYtBtn.classList.toggle("rec-on", outputs.rtmp);
-    updateServerRecLock();
-    if (live()) scheduleBannerSnapshots();
-    if (isHost) syncHostChat();
-  }
-  // The channel page's chat, docked on the left while the channel is
-  // live. The host talks under their banner name and can block people
-  // straight from the messages.
-  let hostChatWs = null;
-  let hostChatJoined = false;
-  let hostChatNextId = 1;
-  const hostChatPending = new Map();
-
-  function hostChatRequest(method, data) {
-    return new Promise((resolve, reject) => {
-      if (!hostChatWs || hostChatWs.readyState !== 1) return reject(new Error("Chat not connected."));
-      const id = hostChatNextId++;
-      hostChatPending.set(id, { resolve, reject });
-      hostChatWs.send(JSON.stringify({ id, method, data }));
-      setTimeout(() => { if (hostChatPending.delete(id)) reject(new Error("No reply.")); }, 10000);
-    });
-  }
-
-  // Moderation is a right-click menu on the message (a plain click
-  // works too): hide the one message, or ban the person outright -
-  // the same menu the watch page gives a host
-  let hostChatMenu = null;
-  function hideHostChatMenu() { if (hostChatMenu) { hostChatMenu.remove(); hostChatMenu = null; } }
-  document.addEventListener("pointerdown", (e) => {
-    if (hostChatMenu && !hostChatMenu.contains(e.target)) hideHostChatMenu();
-  });
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape") hideHostChatMenu(); });
-
-  function openHostChatMenu(e, m) {
-    e.preventDefault();
-    hideHostChatMenu();
-    hostChatMenu = document.createElement("div");
-    hostChatMenu.className = "chat-menu";
-    const mk = (label, cls, fn) => {
-      const b = document.createElement("button");
-      b.textContent = label;
-      if (cls) b.className = cls;
-      b.onclick = fn;
-      hostChatMenu.appendChild(b);
-      return b;
-    };
-    mk("Hide this message", "", () => {
-      hostChatRequest("hide", { id: m.id }).catch(() => {});
-      hideHostChatMenu();
-    });
-    if (!m.host) {
-      const ban = mk(`Ban ${m.name}`, "danger", () => {
-        if (!ban.classList.contains("confirm")) {
-          ban.classList.add("confirm");
-          ban.textContent = `Ban ${m.name} - click again`;
-          return;
-        }
-        hostChatRequest("block", { name: m.name }).catch(() => {});
-        hideHostChatMenu();
-      });
-    }
-    document.body.appendChild(hostChatMenu);
-    const mw = hostChatMenu.offsetWidth, mh = hostChatMenu.offsetHeight;
-    hostChatMenu.style.left = `${Math.min(e.clientX, window.innerWidth - mw - 8)}px`;
-    hostChatMenu.style.top = `${Math.min(e.clientY, window.innerHeight - mh - 8)}px`;
-  }
-
-  function hostChatAdd(m) {
-    const row = document.createElement("div");
-    row.className = "chat-msg" + (m.host ? " host" : "");
-    row.dataset.name = m.name.toLowerCase();
-    row.dataset.id = m.id;
-    const who = document.createElement("span");
-    who.className = "who";
-    who.textContent = m.name;
-    const text = document.createElement("span");
-    text.textContent = m.text;
-    row.append(who, text);
-    row.classList.add("moderatable");
-    row.addEventListener("contextmenu", (e) => openHostChatMenu(e, m));
-    row.addEventListener("click", (e) => openHostChatMenu(e, m));
-    els.hostChatList.appendChild(row);
-    while (els.hostChatList.children.length > 200) els.hostChatList.firstChild.remove();
-    els.hostChatList.scrollTop = els.hostChatList.scrollHeight;
-  }
-
-  async function hostChatJoin() {
-    // The banner name is who the host is everywhere - the chat included.
-    // If a viewer somehow took it first, a suffix keeps it recognisable.
-    for (const name of [selfName, `${selfName} (host)`]) {
-      try {
-        await hostChatRequest("join", { name });
-        hostChatJoined = true;
-        return;
-      } catch { /* taken - try the next */ }
-    }
-  }
-
-  function syncHostChat() {
-    const want = isHost && outputs.channel;
-    els.hostChat.hidden = !want;
-    if (!want) {
-      hostChatWs?.close();
-      hostChatWs = null;
-      hostChatJoined = false;
-      return;
-    }
-    if (hostChatWs) return;
-    const proto = location.protocol === "https:" ? "wss" : "ws";
-    hostChatWs = new WebSocket(`${proto}://${location.host}/chat?room=${roomId}`);
-    hostChatWs.onmessage = (e) => {
-      let msg;
-      try { msg = JSON.parse(e.data); } catch { return; }
-      if (msg.id) {
-        const pnd = hostChatPending.get(msg.id);
-        if (pnd) { hostChatPending.delete(msg.id); msg.ok ? pnd.resolve(msg.data) : pnd.reject(new Error(msg.error)); }
-        return;
-      }
-      const { event, data } = msg;
-      if (event === "hello") {
-        els.hostChatList.innerHTML = "";
-        for (const m of data.history || []) hostChatAdd(m);
-        els.hostChatViewers.textContent = data.viewers ? `· ${data.viewers} watching` : "";
-        if (!hostChatJoined) hostChatJoin();
-      } else if (event === "message") {
-        hostChatAdd(data);
-      } else if (event === "viewers") {
-        els.hostChatViewers.textContent = data.viewers ? `· ${data.viewers} watching` : "";
-      } else if (event === "hidden") {
-        els.hostChatList.querySelector(`[data-id="${CSS.escape(data.id)}"]`)?.remove();
-      } else if (event === "blocked") {
-        for (const el of els.hostChatList.querySelectorAll(`[data-name="${CSS.escape(data.name.toLowerCase())}"]`)) {
-          el.remove();
-        }
-      }
-    };
-    hostChatWs.onclose = () => {
-      hostChatJoined = false;
-      hostChatWs = null;
-      // Still live? The socket dropped, not the show - come back
-      if (isHost && outputs.channel) setTimeout(syncHostChat, 2000);
-    };
-  }
-  els.hostChatSend.onsubmit = async (e) => {
-    e.preventDefault();
-    const text = els.hostChatInput.value.trim();
-    if (!text) return;
-    try {
-      await hostChatRequest("message", { text });
-      els.hostChatInput.value = "";
-    } catch { /* rate limit or not joined; the input keeps the text */ }
-  };
-
-  const toggleOutput = (target) => async () => {
-    try {
-      if (!outputs[target]) {
-        await sendBannerSnapshots(true).catch(() => {});
-        // This browser draws and encodes the show; the server only
-        // passes it on. Without that the server would have to encode,
-        // which is exactly the cost this design exists to avoid.
-        await startProgramme();
-      }
-      await request("hostControl", { action: "stream", target, start: !outputs[target] });
-    } catch (e) { alert(e.message); }
-  };
-
-  // ---------- The programme feed ----------
+  // ---------- The programme: the mixer the recording is drawn from ----------
   function ensureMixer() {
     if (mixer) return mixer;
     mixer = FSMixer.create({
       grid: els.grid, tiles,
       control: () => control,
-      introOverlay: els.introOverlay, introVideo: els.introVideo,
       audioContext: ensureAudioCtx,
       bannerImage: (peerId) => bannerImgs.get(peerId) || null,
       titleImage: () => titleImg,
@@ -2287,65 +1874,6 @@
     });
     return mixer;
   }
-
-  // Start drawing and mixing, and hand the result to the server as the
-  // programme feed. Idempotent: recording and going live both call it.
-  async function startProgramme() {
-    if (!isHost) return;
-    const m = ensureMixer();
-    if (!m.running) {
-      const stream = m.start();
-      const ctx = ensureAudioCtx();
-      // Everyone already in the room, the host's own mic, and the clips
-      for (const tile of tiles.values()) if (tile.gain) tile.gain.connect(m.audioDest);
-      if (clipBus) clipBus.connect(m.audioDest);
-      if (micProducer?.track) {
-        micBus = ctx.createGain();
-        micBus.gain.value = micProducer.paused ? 0 : 1;
-        ctx.createMediaStreamSource(new MediaStream([micProducer.track])).connect(micBus).connect(m.audioDest);
-      }
-      window.__programmeStream = stream;
-    }
-    if (programmeVideo) return;
-    // H.264, so the server can pass the picture on untouched. A browser
-    // that cannot encode it would push the work back onto the server,
-    // and this feature exists to take it off.
-    const h264 = device.rtpCapabilities.codecs.find((c) => /video\/H264/i.test(c.mimeType));
-    if (!h264) throw new Error("This browser cannot encode H.264, which live streaming needs. Chrome, Edge or Safari can.");
-    const stream = m.start();
-    const [vt] = stream.getVideoTracks();
-    const [at] = stream.getAudioTracks();
-    // The picture is the product: when the encoder has to give
-    // something up it drops frames, never resolution, so a busy laptop
-    // sends a slightly less smooth 720p rather than a smooth 360p.
-    try { vt.contentHint = "detail"; } catch { /* optional */ }
-    programmeVideo = await sendTransport.produce({
-      track: vt,
-      codec: h264,
-      encodings: [{ maxBitrate: 3_000_000, scaleResolutionDownBy: 1 }],
-      codecOptions: { videoGoogleStartBitrate: 2000 },
-      appData: { source: "programme" }
-    });
-    try {
-      const params = programmeVideo.rtpSender.getParameters();
-      params.degradationPreference = "maintain-resolution";
-      await programmeVideo.rtpSender.setParameters(params);
-    } catch { /* older browsers: the encoder picks */ }
-    programmeAudio = await sendTransport.produce({ track: at, appData: { source: "programme" } });
-  }
-
-  async function stopProgramme() {
-    for (const p of [programmeVideo, programmeAudio]) {
-      if (!p) continue;
-      try { await request("closeProducer", { producerId: p.id }); } catch { /* gone */ }
-      try { p.close(); } catch { /* closed */ }
-    }
-    programmeVideo = programmeAudio = null;
-    if (mixer && !recorders.some((r) => r.kind === "programme")) mixer.stop();
-    micBus = null;
-  }
-  els.hpLiveBtn.onclick = toggleOutput("channel");
-  els.hpYtBtn.onclick = toggleOutput("rtmp");
 
   // ---------- Consuming ----------
 
@@ -2359,11 +1887,7 @@
       id: consumerId, producerId, kind, rtpParameters
     });
     consumers.set(consumerId, { consumer, peerId });
-    if (kind === "audio" && source === "clips") {
-      // The host's soundboard channel: play it, but it isn't anyone's mic
-      // - keep it off the tiles and the per-guest volume/meter graph
-      attachClipAudio(consumer.track);
-    } else if (kind === "audio") {
+    if (kind === "audio") {
       attachAudio(peerId, consumer.track);
     } else {
       const tile = tiles.get(peerId);
@@ -2424,7 +1948,6 @@
       applyTheme(info.theme);
       els.hostPanel.hidden = !isHost; // sidebar is always open for the host
       els.dimBtn.hidden = !isHost;    // dimming is a host tool
-      els.soundboardBtn.hidden = !isHost; // soundboard is a host tool
       document.body.classList.toggle("is-guest", !isHost);
       if (isHost) enableTitleDrag();
 
@@ -2479,11 +2002,6 @@
         appData: { source: "camera" }
       });
 
-      // Host soundboard: open the always-on clip channel now, before any
-      // stream launches, so firing a clip never relaunches the stream
-      if (isHost) await setupSoundboard(info.sounds || [], info.intros || [], info.ownerId)
-        .catch((e) => console.error("soundboard setup failed:", e.message));
-
       // Everyone already here joined before us, so their tiles come
       // first and our own goes after them - the same join order the
       // compositors use, so every screen agrees with the output (a
@@ -2534,14 +2052,11 @@
       eventHandlers.recordingStopped = () => {
         recorders.length ? stopSelfRecording() : setRecIndicator(false);
       };
-      eventHandlers.streaming = (outs) => setLiveIndicator(outs);
       eventHandlers.overlay = playDomOverlay;
-      eventHandlers.intro = playDomIntro;
-      // Server start times pre-seed the button timers, so a host who
+      // The server's start time pre-seeds the button timer, so a host who
       // reloads mid-take sees true elapsed, not zero - and a stale
       // local value never leaks into a new take
       recStartAt = info.recordingSince || null;
-      if (info.streaming) setLiveIndicator(info.streaming);
       // Replay anything that arrived while we were wiring up - a
       // recordingStarted for a mid-recording join must not be lost
       drainEarlyEvents();
@@ -2615,7 +2130,6 @@
         }
       };
       eventHandlers.overlay = playDomOverlay;
-      eventHandlers.intro = playDomIntro;
       drainEarlyEvents();
       joined = true;
       els.session.hidden = false;

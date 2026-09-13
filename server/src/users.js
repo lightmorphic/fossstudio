@@ -1,6 +1,6 @@
 // User accounts: one admin plus any number of sub-admins. Each user
-// carries their own settings (theme, stream key, recording mode), so
-// several shows can share the server without sharing anything else.
+// carries their own settings (theme, recording mode), so several shows
+// can share the server without sharing anything else.
 import crypto from "node:crypto";
 import { readJson, writeJson } from "./storage.js";
 import { hashPassword } from "./auth.js";
@@ -9,12 +9,7 @@ import { config } from "./config.js";
 export const USER_SETTINGS_DEFAULTS = {
   wallpaper: null,
   bg: null,
-  logo: null,
-  streamUrl: "rtmp://a.rtmp.youtube.com/live2",
-  streamKey: "",
-  channelDomain: "",  // optional custom domain for the channel page (live.example.org)
-  sounds: [],  // soundboard clips: [{ id, name, ext }]
-  intros: []   // fullscreen intro videos: [{ id, name, ext }]
+  logo: null
 };
 
 let cache = null;
@@ -77,14 +72,6 @@ export async function findById(id) {
   return users.find((u) => u.id === id) || null;
 }
 
-// The host whose custom channel domain this is, if any - how a request
-// arriving on live.fossnerds.org finds the channel it should show.
-export async function findByChannelDomain(hostname) {
-  const d = String(hostname || "").toLowerCase();
-  if (!d) return null;
-  const users = await load();
-  return users.find((u) => u.settings?.channelDomain === d) || null;
-}
 
 export async function listUsers() {
   const users = await load();
@@ -123,11 +110,11 @@ export async function createUser(username, password, role = "subadmin", allowSer
   return { id: user.id, username: user.username, role: user.role };
 }
 
-// ---------- email invitations ----------
-// The admin enters a username + email; the new host follows an emailed
-// link and picks their own password. No password ever changes hands.
+// ---------- invitations ----------
+// The admin enters a username and gets a link back; the new host opens
+// it and picks their own password. No password ever changes hands.
 
-export async function createInvitedUser(username, email, allowServerRecording) {
+export async function createInvitedUser(username, allowServerRecording) {
   const users = await load();
   const name = String(username).trim().toLowerCase();
   if (!/^[a-z0-9_-]{2,24}$/.test(name)) {
@@ -136,14 +123,9 @@ export async function createInvitedUser(username, email, allowServerRecording) {
   if (users.some((u) => u.username.toLowerCase() === name)) {
     throw new Error("That username is taken.");
   }
-  const addr = String(email).trim();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(addr)) {
-    throw new Error("That email address doesn't look right.");
-  }
   const user = {
     id: crypto.randomUUID(),
     username: name,
-    email: addr,
     role: "subadmin",
     allowServerRecording: !!allowServerRecording,
     passwordHash: null, // can't log in until the invite is accepted

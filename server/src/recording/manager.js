@@ -57,7 +57,7 @@ function snapshotPath(recId) {
 }
 
 // Best-effort: a missed snapshot costs a little resume fidelity on the
-// rare crash, never a live recording. Never let it throw.
+// rare crash, never a recording in progress. Never let it throw.
 async function saveSnapshot(rec) {
   try {
     const snap = {
@@ -67,7 +67,7 @@ async function saveSnapshot(rec) {
       startedAt: rec.startedAt,
       bg: rec.bg, wallpaper: rec.wallpaper, titleFile: rec.titleFile,
       peers: Object.fromEntries(rec.peers),
-      overlays: rec.overlays, clips: rec.clips, intros: rec.intros
+      overlays: rec.overlays
     };
     // writeJson: atomic (temp file + rename) and owner-only (0600), same
     // as every other file under the data directory.
@@ -81,47 +81,14 @@ async function clearSnapshot(recId) {
   await fs.unlink(snapshotPath(recId)).catch(() => {});
 }
 
-// A soundboard clip fired mid-recording. Copy the source file now (the
-// host could delete it later) and note when it played; the processor
-// mixes these into combined.mp4 and exports them as one separate track.
-export async function logClip(rec, clip, file) {
-  const idx = rec.clips.length;
-  const dest = `clip-${idx}-${clip.id}${path.extname(file)}`;
-  try {
-    await fs.copyFile(file, path.join(recDir(rec.id), "raw", dest));
-    rec.clips.push({ name: clip.name, offsetMs: Date.now() - rec.startedAt, file: dest });
-    await saveSnapshot(rec);
-  } catch (err) {
-    console.error("logClip failed:", err.message);
-  }
-}
-
-// A fullscreen intro video played mid-recording. Copy the source now and
-// note when it played and for how long; the processor covers the grid
-// with it (and mixes its audio) over that window.
-export async function logIntro(rec, intro, file, durationMs) {
-  const idx = rec.intros.length;
-  const dest = `intro-${idx}-${intro.id}${path.extname(file)}`;
-  try {
-    await fs.copyFile(file, path.join(recDir(rec.id), "raw", dest));
-    rec.intros.push({
-      offsetMs: Date.now() - rec.startedAt, file: dest, durationMs,
-      hasAudio: intro.hasAudio !== false
-    });
-    await saveSnapshot(rec);
-  } catch (err) {
-    console.error("logIntro failed:", err.message);
-  }
-}
-
+// A subscribe or ad overlay triggered mid-recording, so the processor
+// bakes it into the finished video at the moment it was fired.
 export async function logOverlay(rec, kind, adFile) {
   const entry = { kind, offsetMs: Date.now() - rec.startedAt };
   if (adFile) {
     // Snapshot the ad image now, in case the host replaces it later
-    const fsMod = await import("node:fs/promises");
-    const pathMod = await import("node:path");
-    const name = `ad-ov-${rec.overlays.length}${pathMod.extname(adFile)}`;
-    await fsMod.copyFile(adFile, pathMod.join(recDir(rec.id), "raw", name));
+    const name = `ad-ov-${rec.overlays.length}${path.extname(adFile)}`;
+    await fs.copyFile(adFile, path.join(recDir(rec.id), "raw", name));
     entry.file = name;
   }
   rec.overlays.push(entry);
@@ -132,8 +99,6 @@ export function uploadCreds(rec, peerId) {
   return { recId: rec.id, peerId, token: uploadToken(rec.id, peerId) };
 }
 
-// Also used by the live-stream engine to file the watched stream as a
-// ready recording when a stream ends
 export async function saveIndex(entry) {
   const list = await readJson("recordings.json", []);
   const i = list.findIndex((r) => r.id === entry.id);
@@ -161,8 +126,6 @@ export async function startRecording(room, mode) {
     startedAt: Date.now(),
     peers: new Map(), // peerId -> {name, files:{}, clientStartOffsetMs, done}
     overlays: [],     // {kind, offsetMs, file?} baked into combined.mp4
-    clips: [],        // soundboard clips fired during the take (separate track)
-    intros: [],       // fullscreen intro videos, baked into combined.mp4
     stopping: false
   };
   // Background for the composite: the room's pinned theme, so the video
@@ -177,7 +140,7 @@ export async function startRecording(room, mode) {
     addPeerToRecording(rec, peer);
   }
 
-  // Banners the host uploaded earlier (e.g. already live) apply here too
+  // Banners the host uploaded earlier in the session apply here too
   const bdir = path.join(config.dataDir, "banners", room.id);
   try {
     for (const f of await fs.readdir(bdir)) {

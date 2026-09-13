@@ -12,18 +12,14 @@ import {
 } from "./rooms.js";
 import { iceServers } from "./turn.js";
 import { isAuthedRequest } from "./auth.js";
-import { getSettings, updateSettings, findSession, findSound, findIntro } from "./settings.js";
+import { getSettings, updateSettings, findSession } from "./settings.js";
 import { isSessionBlocked, addSessionBlock } from "./blocklist.js";
 import { notifyUser } from "./push.js";
 import {
   startRecording, stopRecording, activeRecording,
-  addPeerToRecording, uploadCreds, markPeerDone, logOverlay, logClip, logIntro, recDir
+  addPeerToRecording, uploadCreds, markPeerDone, logOverlay, recDir
 } from "./recording/manager.js";
 import { capturePeer } from "./recording/serverRecorder.js";
-import {
-  startOutput, stopOutput, stopStream, isStreaming, liveOutputs, streamingSince,
-  refreshStream, showOverlay, playIntroOnStream
-} from "./streaming.js";
 
 const ROOM_ID_RE = /^[a-zA-Z0-9_-]{4,32}$/;
 // Mirrors BANNER_COLOURS in web/js/session.js: guests' own picks are
@@ -35,33 +31,9 @@ const BANNER_PALETTE = [
 ];
 const NAME_MAX = 24;
 
-// Silence every mic for a fixed window (a clip sting or an intro video),
-// then restore each person to how they were. The pre-mute snapshot is
-// taken once, so overlapping windows never restore to the all-muted state.
-function forceMuteWindow(room, durationMs) {
-  const c = room.control;
-  if (!room.clipUnmuteTimer) room.clipMuteBefore = { ...c.muted };
-  for (const p2 of room.peers.values()) {
-    c.muted[p2.id] = true;
-    delete c.hands[p2.id];
-  }
-  broadcast(room, null, { event: "control", data: c });
-  const dur = Math.min(120000, Math.max(500, Number(durationMs) || 4000));
-  clearTimeout(room.clipUnmuteTimer);
-  room.clipUnmuteTimer = setTimeout(() => {
-    for (const [pid, was] of Object.entries(room.clipMuteBefore || {})) {
-      if (room.peers.has(pid)) c.muted[pid] = was;
-    }
-    room.clipUnmuteTimer = null;
-    room.clipMuteBefore = null;
-    broadcast(room, null, { event: "control", data: c });
-  }, dur + 250);
-}
-
 export function attachSignaling() {
-  // noServer: index.js routes upgrade requests by path, because two
-  // path-scoped WebSocketServers on one HTTP server fight over the
-  // upgrade event (the first rejects the other's paths with a 400)
+  // noServer: index.js decides which upgrades are ours by path, so the
+  // HTTP server keeps ownership of the upgrade event.
   const wss = new WebSocketServer({ noServer: true });
 
   wss.on("connection", async (socket, req) => {
@@ -132,20 +104,16 @@ export function attachSignaling() {
               peerId: peer.id,
               role,
               canServerRecord,
-              // The host fires these one-click from the in-session soundboard
               ownerId: role === "host" ? room.ownerId : undefined,
-              sounds: role === "host" ? (settings.sounds || []) : undefined,
-              intros: role === "host" ? (settings.intros || []) : undefined,
               routerRtpCapabilities: room.router.rtpCapabilities,
               iceServers: iceServers(),
               control: room.control,
-              streaming: liveOutputs(room.id),
               recordingSince: activeRecording(room.id)?.startedAt || null,
               theme: {
                 // The pinned theme: identical for everyone until the
                 // room empties, however the settings change meanwhile.
-                // The backdrop within it can be switched live by the
-                // host, between copies pinned at first join.
+                // The backdrop within it can be switched mid-show by
+                // the host, between copies pinned at first join.
                 title: room.title,
                 logo: room.theme.logoUrl,
                 bg: room.theme.bg,
@@ -201,7 +169,7 @@ export function attachSignaling() {
 
           case "bannerSnapshots": {
             // The host's browser renders each on-screen lower-third to a
-            // PNG; the stream/recording compositors overlay these so the
+            // PNG; the recording compositor overlays these so the
             // published video matches the screen.
             if (!peer || peer.role !== "host") return fail("host only");
             const entries = Object.entries(data.images || {}).slice(0, 30);
@@ -232,8 +200,6 @@ export function attachSignaling() {
                 rec.titleFile = "title.png";
               }
             }
-            // Live graph is fixed at launch: relaunch to show new banners
-            if (isStreaming(room.id)) refreshStream(room.id);
             reply({});
             break;
           }
@@ -250,8 +216,8 @@ export function attachSignaling() {
           case "selfMute": {
             if (!peer) return fail("not joined");
             // Mute is carried as silence in the track itself (the client
-            // disables it); producers stay active so recordings and the
-            // live-stream mixer keep receiving frames
+            // disables it); producers stay active so the recording keeps
+            // receiving frames
             room.control.muted[peer.id] = !!data.muted;
             if (!data.muted) delete room.control.hands[peer.id];
             reply({});
@@ -266,16 +232,15 @@ export function attachSignaling() {
               case "layout": {
                 c.layout = data.layout === "spotlight" ? "spotlight" : "grid";
                 c.spotlightPeerId = c.layout === "spotlight" ? String(data.peerId || "") : null;
-                // The compositors lay tiles out the same way, so a
-                // recording and a stream show the spotlight too. A
-                // recording renders once, at the end, so a mid-take
-                // change applies to the whole take (as titlePos does).
+                // The compositor lays tiles out the same way, so the
+                // recording shows the spotlight too. A recording renders
+                // once, at the end, so a mid-take change applies to the
+                // whole take (as titlePos does).
                 const recLayout = activeRecording(room.id);
                 if (recLayout) {
                   recLayout.layout = c.layout;
                   recLayout.spotlightPeerId = c.spotlightPeerId;
                 }
-                if (isStreaming(room.id)) refreshStream(room.id);
                 break;
               }
               case "volume": {
@@ -349,41 +314,33 @@ export function attachSignaling() {
               }
               case "titlePos": {
                 // Host dragged the logo/title block; fractions of the
-                // free space so every screen and the compositors agree
+                // free space so every screen and the compositor agree
                 const clamp = (v) => Math.min(1, Math.max(0, Number(v) || 0));
                 const next = { x: clamp(data.x), y: clamp(data.y) };
-                // A drag that ends where it started is a no-op - never
-                // worth a stream relaunch
                 const prev = c.titlePos || { x: 0.5, y: 0 };
                 if (next.x === prev.x && next.y === prev.y) break;
                 c.titlePos = next;
                 const recPos = activeRecording(room.id);
                 if (recPos) recPos.titlePos = c.titlePos;
-                // The stream bakes the position into its filter graph,
-                // so a move relaunches it - debounced generously, since
-                // a host nudging the block into place drags repeatedly
-                // and each relaunch is a multi-second encode restart
-                if (isStreaming(room.id)) refreshStream(room.id, 5000);
                 break;
               }
               case "titleScale": {
-                // Host resized the block. The compositors scale the
+                // Host resized the block. The compositor scales the
                 // uploaded PNG by the same factor, so screen and video
                 // stay the same size relative to the frame.
                 const s = Math.min(2, Math.max(0.5, Number(data.scale) || 1));
                 c.titleScale = s;
                 const recScale = activeRecording(room.id);
                 if (recScale) recScale.titleScale = s;
-                if (isStreaming(room.id)) refreshStream(room.id);
                 break;
               }
               case "backdrop": {
-                // Switch the show's backdrop live. Two ideas only:
+                // Switch the show's backdrop mid-show. Two ideas only:
                 // colour (solid, or the host's browser generates a
                 // logo layout in that colour and sends the PNG along,
                 // like banner snapshots), or the pinned wallpaper.
-                // Everyone's screen and the stream follow; a recording
-                // keeps the backdrop it started with, like titlePos.
+                // Everyone's screen follows; a recording keeps the
+                // backdrop it started with, like titlePos.
                 const mode = String(data.mode || "");
                 if (!["colour", "wallpaper", "generated"].includes(mode)) return fail("bad backdrop");
                 const t = room.theme;
@@ -415,13 +372,12 @@ export function attachSignaling() {
                   event: "theme",
                   data: { bg: t.bg, wallpaper: activeBackdropUrl(room) }
                 });
-                if (isStreaming(room.id)) refreshStream(room.id, 5000);
                 break;
               }
               case "titleBg": {
                 // Background colour of the logo/title block; the host's
-                // browser redraws the block PNG with it, so recordings
-                // and streams follow automatically
+                // browser redraws the block PNG with it, so the recording
+                // follows automatically
                 if (data.color !== null && !/^#[0-9a-fA-F]{6}$/.test(String(data.color))) {
                   return fail("bad colour");
                 }
@@ -457,68 +413,6 @@ export function attachSignaling() {
                 }
                 break;
               }
-              case "playClip": {
-                // Host fired a soundboard clip. Guests already hear it via
-                // the host's always-on "clips" audio producer (and the live
-                // stream mixes it in); here we (a) log it so the recording
-                // processor bakes it in as a separate track, and (b) for a
-                // "mute + play" sting, silence every mic for the clip's
-                // length and restore each person to how they were.
-                const clip = await findSound(room.ownerId, String(data.soundId || ""));
-                if (!clip) return fail("no such sound");
-                const recClip = activeRecording(room.id);
-                if (recClip) {
-                  const file = path.join(config.dataDir, "uploads",
-                    `sound-${room.ownerId}-${clip.id}.${clip.ext}`);
-                  await logClip(recClip, clip, file);
-                }
-                if (data.mute) forceMuteWindow(room, data.durationMs);
-                return reply({});
-              }
-              case "playIntro": {
-                // Fullscreen intro video: it takes over every screen, the
-                // recording and the stream, muting everyone until it ends.
-                const intro = await findIntro(room.ownerId, String(data.introId || ""));
-                if (!intro) return fail("no such intro");
-                const file = path.join(config.dataDir, "uploads",
-                  `intro-${room.ownerId}-${intro.id}.${intro.ext}`);
-                // Duration is measured server-side at upload; fall back if a
-                // legacy intro predates that
-                const durationMs = Math.min(120000, Math.max(500,
-                  intro.durationMs || Number(data.durationMs) || 8000));
-                const url = `/api/intros/${room.ownerId}/${intro.id}`;
-                // Everyone plays it fullscreen from the file
-                broadcast(room, null, { event: "intro", data: { url, durationMs } });
-                forceMuteWindow(room, durationMs);
-                const recIntro = activeRecording(room.id);
-                if (recIntro) await logIntro(recIntro, intro, file, durationMs);
-                if (isStreaming(room.id)) {
-                  playIntroOnStream(room.id, file, durationMs, intro.hasAudio !== false).catch((e) =>
-                    console.error("intro on stream failed:", e.message));
-                }
-                return reply({});
-              }
-              case "stream": {
-                // Two independent outputs: "channel" is the studio's
-                // own watch page (chat, DVR), "rtmp" is YouTube or any
-                // RTMP destination. One shared encode carries both.
-                const target = data.target === "rtmp" ? "rtmp" : "channel";
-                if (data.start) {
-                  let url = null;
-                  if (target === "rtmp") {
-                    const settings = await getSettings(room.ownerId);
-                    if (!settings.streamKey) {
-                      return fail("Add your YouTube stream server and key in the dashboard first.");
-                    }
-                    url = `${settings.streamUrl.replace(/\/$/, "")}/${settings.streamKey}`;
-                  }
-                  await startOutput(room, target, url);
-                } else {
-                  await stopOutput(room.id, target);
-                }
-                broadcast(room, null, { event: "streaming", data: liveOutputs(room.id) });
-                return reply({});
-              }
               case "overlay": {
                 if (!["subscribe", "ad"].includes(data.kind)) return fail("unknown overlay");
                 let adFile = null;
@@ -526,7 +420,7 @@ export function attachSignaling() {
                 if (data.kind === "ad") {
                   const settings2 = await getSettings(room.ownerId);
                   if (!settings2.adBanner) {
-                    return fail("Upload an advertising banner in Settings → Streaming first.");
+                    return fail("Upload an advertising banner in Settings → Ad Banner first.");
                   }
                   adFile = path.join(config.dataDir, "uploads", path.basename(settings2.adBanner));
                   url = `/api/adbanner/${room.ownerId}`;
@@ -537,10 +431,6 @@ export function attachSignaling() {
                 // Recording? bake it into the final video at this moment
                 const recNow2 = activeRecording(room.id);
                 if (recNow2) await logOverlay(recNow2, data.kind, adFile);
-                // Live? composite it onto the stream too
-                if (isStreaming(room.id)) {
-                  await showOverlay(room.id, { kind: data.kind, duration, file: adFile });
-                }
                 return reply({});
               }
               case "record": {
@@ -605,27 +495,6 @@ export function attachSignaling() {
             const transport = peer.transports.get(data.transportId);
             if (!transport) return fail("no such transport");
             const source = String(data.source || data.kind).slice(0, 20);
-            // The programme feed is the host's browser acting as the
-            // mixer: the finished picture and sound, ready to pass on.
-            // Only a host may send it, it is never shown as anybody's
-            // tile, and it is what the live stream carries when present.
-            if (source === "programme") {
-              if (peer.role !== "host") return fail("only the host sends the programme feed");
-              const producer = await transport.produce({
-                kind: data.kind,
-                rtpParameters: data.rtpParameters,
-                appData: { source }
-              });
-              room.programme = room.programme || {};
-              const previous = room.programme[producer.kind];
-              if (previous) { try { previous.close(); } catch { /* closed */ } }
-              room.programme[producer.kind] = producer;
-              producer.on("transportclose", () => {
-                if (room.programme?.[producer.kind] === producer) delete room.programme[producer.kind];
-              });
-              reply({ producerId: producer.id });
-              break;
-            }
             const producer = await transport.produce({
               kind: data.kind,
               rtpParameters: data.rtpParameters,
@@ -641,8 +510,6 @@ export function attachSignaling() {
                 source: producer.appData?.source || producer.kind
               }
             });
-            // Live stream picks up new members (debounced relaunch)
-            if (isStreaming(room.id) && peer.producers.size >= 2) refreshStream(room.id);
             // Server-mode recording: start piping this peer once their
             // mic + camera are both up
             const recNow = activeRecording(room.id);
@@ -657,18 +524,6 @@ export function attachSignaling() {
 
           case "closeProducer": {
             if (!peer) return fail("not joined");
-            // The programme feed lives on the room, not among the
-            // peer's tile producers
-            let closedProgramme = false;
-            for (const kind of ["video", "audio"]) {
-              const pp = room.programme?.[kind];
-              if (pp && pp.id === data.producerId) {
-                pp.close();
-                delete room.programme[kind];
-                closedProgramme = true;
-              }
-            }
-            if (closedProgramme) { reply({}); break; }
             const producer = peer.producers.get(data.producerId);
             if (producer) {
               producer.close();
@@ -736,7 +591,7 @@ export function attachSignaling() {
     socket.on("close", () => {
       if (!peer) return;
       if (peer.role === "viewer") {
-        // Invisible on the way out too: no peerLeft, no stream relaunch
+        // Invisible on the way out too: no peerLeft
         removePeer(room, peer.id);
         return;
       }
@@ -744,7 +599,6 @@ export function attachSignaling() {
       if (rec) markPeerDone(rec.id, peer.id);
       removePeer(room, peer.id);
       broadcast(room, null, { event: "peerLeft", data: { peerId: peer.id } });
-      if (isStreaming(room.id)) refreshStream(room.id);
       // Last one out stops the tape (lingering viewers don't count)
       const left = [...room.peers.values()].filter((p) => p.role !== "viewer").length;
       if (rec && left === 0) {

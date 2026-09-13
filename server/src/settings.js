@@ -3,8 +3,7 @@ import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { readJson, writeJson } from "./storage.js";
-import { getUserSettings, updateUserSettings, findByChannelDomain } from "./users.js";
-import { config, panelDomains } from "./config.js";
+import { getUserSettings, updateUserSettings } from "./users.js";
 
 export async function getSettings(uid) {
   return getUserSettings(uid);
@@ -24,46 +23,12 @@ export async function updateSettings(uid, patch) {
   if (patch.adBanner === null || typeof patch.adBanner === "string") {
     clean.adBanner = patch.adBanner;
   }
-  if (typeof patch.streamUrl === "string") {
-    const u = patch.streamUrl.trim();
-    // file: destinations are for automated tests only
-    if (/^rtmps?:\/\/[^\s]+$/.test(u) ||
-        (process.env.ALLOW_FILE_STREAM === "1" && u.startsWith("file:"))) {
-      clean.streamUrl = u.slice(0, 200);
-    }
-  }
-  if (typeof patch.streamKey === "string") {
-    clean.streamKey = patch.streamKey.trim().slice(0, 200);
-  }
-  // Custom channel domain: the host's own address for their channel
-  // page (live.fossnerds.org). Point its DNS at this server and the
-  // certificate is fetched on demand, like the panel domains. Empty
-  // clears it.
-  if (typeof patch.channelDomain === "string") {
-    const d = patch.channelDomain.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
-    if (d === "") {
-      clean.channelDomain = "";
-    } else {
-      if (!/^(?=.{4,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/.test(d)) {
-        throw new Error("That doesn't look like a domain name (expected something like live.example.org).");
-      }
-      // The studio's own names stay the studio's
-      if (d === config.domain.toLowerCase() ||
-          panelDomains("admin").has(d) || panelDomains("host").has(d)) {
-        throw new Error("That domain is reserved for this studio.");
-      }
-      const holder = await findByChannelDomain(d);
-      if (holder && holder.id !== uid) {
-        throw new Error("Another host already uses that domain.");
-      }
-      clean.channelDomain = d;
-    }
-  }
   // FOSSCast publish API, for pushing finished recordings as episodes
   if (typeof patch.fosscastUrl === "string") {
     const u = patch.fosscastUrl.trim().replace(/\/$/, "");
-    if (u === "" || /^https:\/\/[^\s]+$/.test(u) ||
-        (process.env.ALLOW_FILE_STREAM === "1" && u.startsWith("http://127.0.0.1"))) {
+    // A plain-http loopback address is allowed so the publish flow can
+    // be driven against a FOSSCast running on the same machine.
+    if (u === "" || /^https:\/\/[^\s]+$/.test(u) || u.startsWith("http://127.0.0.1")) {
       clean.fosscastUrl = u.slice(0, 200);
     }
   }
@@ -71,68 +36,6 @@ export async function updateSettings(uid, patch) {
     clean.fosscastToken = patch.fosscastToken.trim().slice(0, 300);
   }
   return updateUserSettings(uid, clean);
-}
-
-// ---------- soundboard clips (per user) ----------
-// The host uploads short audio clips (laughs, applause, stings) in the
-// dashboard and fires them one-click from the in-session soundboard.
-export const MAX_SOUNDS = 20;
-
-export async function listSounds(uid) {
-  const s = await getUserSettings(uid);
-  return Array.isArray(s.sounds) ? s.sounds : [];
-}
-
-export async function findSound(uid, id) {
-  return (await listSounds(uid)).find((c) => c.id === id) || null;
-}
-
-export async function addSound(uid, { name, ext }) {
-  const sounds = await listSounds(uid);
-  if (sounds.length >= MAX_SOUNDS) {
-    throw new Error(`You can keep up to ${MAX_SOUNDS} sounds - remove one first.`);
-  }
-  const id = crypto.randomBytes(4).toString("hex");
-  const clip = { id, name: String(name || "").trim().slice(0, 40) || "Sound", ext };
-  await updateUserSettings(uid, { sounds: [...sounds, clip] });
-  return clip;
-}
-
-export async function removeSound(uid, id) {
-  const sounds = await listSounds(uid);
-  await updateUserSettings(uid, { sounds: sounds.filter((c) => c.id !== id) });
-}
-
-// Fullscreen intro videos: the host fires one and it takes over every
-// screen (and the recording/stream), muting everyone until it ends.
-export const MAX_INTROS = 5;
-
-export async function listIntros(uid) {
-  const s = await getUserSettings(uid);
-  return Array.isArray(s.intros) ? s.intros : [];
-}
-
-export async function findIntro(uid, id) {
-  return (await listIntros(uid)).find((c) => c.id === id) || null;
-}
-
-export async function addIntro(uid, { name, ext, durationMs = 0, hasAudio = true }) {
-  const intros = await listIntros(uid);
-  if (intros.length >= MAX_INTROS) {
-    throw new Error(`You can keep up to ${MAX_INTROS} intro videos - remove one first.`);
-  }
-  const id = crypto.randomBytes(4).toString("hex");
-  const clip = {
-    id, name: String(name || "").trim().slice(0, 40) || "Intro", ext,
-    durationMs: Math.max(0, Math.round(durationMs)), hasAudio: hasAudio !== false
-  };
-  await updateUserSettings(uid, { intros: [...intros, clip] });
-  return clip;
-}
-
-export async function removeIntro(uid, id) {
-  const intros = await listIntros(uid);
-  await updateUserSettings(uid, { intros: intros.filter((c) => c.id !== id) });
 }
 
 // ---------- sessions (each belongs to a user) ----------

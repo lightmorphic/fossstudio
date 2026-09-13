@@ -200,72 +200,9 @@ body {
 }
 .media-warning-close:hover { opacity: 1; }
 .session-body .grid { flex: 1; min-width: 0; }
-/* The channel chat, docked on the host's left while live there */
-.host-chat {
-  flex: 0 0 220px;
-  width: 220px;
-  display: flex;
-  flex-direction: column;
-  background: var(--bg);
-  border-right: 1px solid var(--line);
-  z-index: 10;
-}
-.host-chat .chat-head {
-  padding: 0.5rem 0.7rem;
-  font-weight: 700;
-  font-size: 0.8rem;
-  border-bottom: 1px solid var(--line);
-}
-.host-chat .chat-head .soft { color: var(--muted); font-weight: 400; font-size: 0.72rem; }
-.host-chat .chat-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0.5rem 0.7rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  font-size: 0.78rem;
-  line-height: 1.4;
-  overflow-wrap: anywhere;
-}
-.host-chat .chat-msg { display: flex; gap: 0.35rem; align-items: baseline; }
-.host-chat .chat-msg .who { font-weight: 700; flex: none; }
-.host-chat .chat-msg.host .who { color: #9aa0a8; }
-.host-chat .send-box {
-  display: flex;
-  gap: 0.35rem;
-  padding: 0.5rem 0.6rem;
-  border-top: 1px solid var(--line);
-}
-.host-chat .send-box input {
-  flex: 1;
-  min-width: 0;
-  font: inherit;
-  font-size: 0.78rem;
-  color: var(--text);
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 0.4rem 0.5rem;
-}
-.host-chat .send-box button {
-  font: inherit;
-  border: 0;
-  border-radius: 8px;
-  padding: 0.4rem 0.55rem;
-  background: #4a7dbd;
-  color: #fff;
-  cursor: pointer;
-  display: grid;
-  place-items: center;
-}
-.host-chat .send-box button svg { width: 0.95rem; height: 0.95rem; }
-@media (max-width: 760px) {
-  .host-chat { display: none; }
-}
 /* Episode logo + title block: 180px wide, logo up to 180x50 with the
    title (up to 30px) underneath; text-only titles fill the space.
-   The host drags it anywhere; recordings and streams mirror it. */
+   The host drags it anywhere; the recording mirrors it. */
 #grid .banner {
   /* #grid prefix keeps this ahead of generic .banner rules,
      which otherwise knocks the host's block out of absolute layout */
@@ -339,7 +276,7 @@ body {
 }
 /* #grid prefix so this outranks #grid .banner's display:flex - without
    it an empty block sat visible on sessions with no logo and no title */
-#grid .banner.blank:not(.live) { display: none; }
+#grid .banner.blank { display: none; }
 
 /* Right-click menu on the logo/title block (host only) */
 .title-menu {
@@ -375,13 +312,13 @@ body {
   padding: 0.15rem 0.6rem 0.25rem;
 }
 /* The host keeps a faint placeholder after dropping both parts, so the
-   tools stay reachable. Guests, the stream and the recording see none. */
-#grid .banner.blank.host-drag:not(.live) {
+   tools stay reachable. Guests and the recording see none. */
+#grid .banner.blank.host-drag {
   display: flex;
   min-height: calc(var(--title-w, 266px) * 0.09);
   opacity: 0.3;
 }
-#grid .banner.blank.host-drag:not(.live):hover { opacity: 1; }
+#grid .banner.blank.host-drag:hover { opacity: 1; }
 
 .hp-build {
   margin-top: 0.7rem;
@@ -400,15 +337,6 @@ body {
    brighten under the pointer - no button involved */
 body.is-guest.rec-dim .controls { opacity: 0.5; }
 body.is-guest.rec-dim .controls:hover { opacity: 1; }
-.banner.live::after {
-  content: " LIVE";
-  color: #f34236;
-  font-size: 0.8em;
-  border: 1px solid #f34236;
-  border-radius: 4px;
-  padding: 0 0.35em;
-  margin-left: 0.6em;
-}
 .hp-btn.record { white-space: nowrap; font-size: 0.72rem; padding-left: 0.45rem; padding-right: 0.45rem; }
 .grid {
   position: relative;
@@ -500,152 +428,19 @@ body.is-guest.rec-dim .controls:hover { opacity: 1; }
 .ctl.leave { background: #7a2e2e; border-color: #7a2e2e; }
 .ctl.active { border-color: #fbc711; color: #fbc711; }
 
-/* ---------- Soundboard bar (host) ---------- */
-/* A thin strip across the bottom of the video area (inside #grid, so it
-   spans exactly the video, not the host panel). Single horizontal row. */
-.sound-bar {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 8;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: var(--panel);
-  border-top: 1px solid var(--line);
-  box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.35);
-  padding: 0.45rem 0.6rem calc(0.45rem + env(safe-area-inset-bottom));
-}
-.sound-bar-close {
-  flex: 0 0 auto;
-  background: none;
-  border: 0;
-  color: var(--muted);
-  cursor: pointer;
-  font-size: 1rem;
-  line-height: 1;
-  padding: 0.35rem 0.45rem;
-  border-radius: 6px;
-}
-.sound-bar-close:hover { color: var(--text); background: rgba(255, 255, 255, 0.08); }
-.sound-bar-list {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: row;
-  align-items: stretch;
-  gap: 0.6rem;
-  overflow-x: auto;
-  padding-bottom: 2px;
-}
-.sb-empty { color: var(--muted); font-size: 0.85rem; padding: 0.4rem 0.2rem; white-space: nowrap; }
-.sb-group { display: flex; align-items: center; gap: 0.5rem; }
-.sb-group + .sb-group { border-left: 1px solid var(--line); padding-left: 0.6rem; }
-.sb-group-label {
-  display: flex;
-  align-items: center;
-  flex: 0 0 auto;
-  color: var(--muted);
-}
-.sb-group-label svg { width: 1.15rem; height: 1.15rem; display: block; }
-.sb-group-row { display: flex; flex-direction: row; gap: 0.5rem; }
-.sb-tile {
-  display: flex;
-  align-items: stretch;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  overflow: hidden;
-  background: var(--bg);
-  flex: 0 0 auto;
-}
-.sb-play {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 0.05rem;
-  border: 0;
-  background: none;
-  color: var(--text);
-  cursor: pointer;
-  padding: 0.3rem 0.6rem;
-  min-width: 5rem;
-  text-align: left;
-}
-.sb-play:hover { background: rgba(255, 255, 255, 0.06); }
-.sb-name {
-  font-weight: 600;
-  font-size: 0.8rem;
-  max-width: 9rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.sb-hint { font-size: 0.62rem; color: var(--muted); white-space: nowrap; }
-.sb-solo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  border-left: 1px solid var(--line);
-  background: none;
-  color: var(--muted);
-  cursor: pointer;
-  padding: 0 0.6rem;
-}
-.sb-solo svg { width: 1.05rem; height: 1.05rem; display: block; }
-.sb-solo:hover { background: #f34236; color: #fff; }
-.sb-intro {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 0.05rem;
-  border: 1px solid #3a4a6a;
-  border-radius: 8px;
-  background: #232a3a;
-  color: var(--text);
-  cursor: pointer;
-  padding: 0.3rem 0.6rem;
-  min-width: 5rem;
-  text-align: left;
-  flex: 0 0 auto;
-}
-.sb-intro:hover { background: #2c3550; }
-
-/* ---------- Fullscreen intro takeover ----------
-   Everyone sees the intro fullscreen in the session; the recording and
-   live stream are fullscreen too (handled server-side). */
-.intro-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 40;
-  background: #000;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.4s ease;
-}
-/* Guard display behind :not([hidden]) - a bare `display` would override
-   the hidden attribute and leave the black overlay permanently visible */
-.intro-overlay:not([hidden]) { display: flex; }
-.intro-overlay.in { opacity: 1; }
-.intro-video { width: 100%; height: 100%; object-fit: contain; background: #000; }
-
 :is(button, select, input, a):focus-visible {
   outline: 2px solid var(--accent, #4a7dbd);
   outline-offset: 2px;
 }
 
 /* ---------- In-session overlays (subscribe / ad) ---------- */
-.live-overlay {
+.show-overlay {
   position: absolute;
   z-index: 6;
   pointer-events: none;
   transition: transform 450ms ease, opacity 450ms ease;
 }
-.live-overlay.subscribe {
+.show-overlay.subscribe {
   left: 50%;
   bottom: 20px;
   display: flex;
@@ -660,7 +455,7 @@ body.is-guest.rec-dim .controls:hover { opacity: 1; }
   transform: translate(-50%, 150%);
   opacity: 0;
 }
-.live-overlay.subscribe.in { transform: translate(-50%, 0); opacity: 1; }
+.show-overlay.subscribe.in { transform: translate(-50%, 0); opacity: 1; }
 .lo-btn {
   background: linear-gradient(135deg, #ff3b30, #e60023);
   color: #fff;
@@ -689,13 +484,13 @@ body.is-guest.rec-dim .controls:hover { opacity: 1; }
 .lo-msg .lo-t { font-weight: 800; font-size: 1.2em; letter-spacing: -0.01em; }
 .lo-msg .lo-s { font-weight: 500; font-size: 0.92em; color: #c7ccd4; }
 .lo-msg b { color: #fbc711; font-weight: 800; }
-.live-overlay.ad {
+.show-overlay.ad {
   right: 24px;
   bottom: 24px;
   transform: translateY(calc(100% + 24px));
 }
-.live-overlay.ad.in { transform: translateY(0); }
-.live-overlay.ad img { display: block; height: clamp(70px, 12vh, 150px); width: auto; border-radius: 8px; }
+.show-overlay.ad.in { transform: translateY(0); }
+.show-overlay.ad img { display: block; height: clamp(70px, 12vh, 150px); width: auto; border-radius: 8px; }
 
 /* ---------- Spotlight layout ----------
    Featured tile fills the top; everyone else shrinks to a bottom strip. */
@@ -976,31 +771,3 @@ body.output-mode #hostPanel { display: none; }
 body.output-mode .media-warning { display: none; }
 body.output-mode #tipBubble { display: none; }
 
-/* Right-click moderation menu on chat messages (hosts only) */
-.chat-msg.moderatable { cursor: context-menu; }
-.chat-menu {
-  position: fixed;
-  z-index: 100;
-  min-width: 12rem;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 0.3rem;
-  box-shadow: 0 12px 34px rgba(0,0,0,0.5);
-}
-.chat-menu button {
-  display: block;
-  width: 100%;
-  text-align: left;
-  font: inherit;
-  font-size: 0.86rem;
-  color: var(--text);
-  background: none;
-  border: 0;
-  border-radius: 7px;
-  padding: 0.45rem 0.6rem;
-  cursor: pointer;
-}
-.chat-menu button:hover { background: rgba(232,234,237,0.06); }
-.chat-menu button.danger { color: #ff6b60; }
-.chat-menu button.confirm { background: rgba(243,66,54,0.14); }

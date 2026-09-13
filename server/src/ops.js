@@ -112,7 +112,7 @@ export function scheduleDailyBackups() {
 
 // ---------- export everything ----------
 
-export function streamFullExport(res) {
+export function sendFullExport(res) {
   res.setHeader("Content-Type", "application/gzip");
   res.setHeader("Content-Disposition", 'attachment; filename="fossstudio-export.tar.gz"');
   const tar = spawn("tar", ["-czf", "-", "-C", config.dataDir, "."]);
@@ -127,7 +127,3 @@ export function restartApp() {
   console.log("restart requested from dashboard");
   setTimeout(() => process.exit(0), 300);
 }
-
-// ---------- email alerts ----------
-// Kept as a thin wrapper so callers don't care where SMTP lives now.
-export { sendAlert as sendAlertEmail } from "./email.js";

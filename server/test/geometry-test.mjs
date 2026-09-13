@@ -1,4 +1,4 @@
-// The recording and the stream are supposed to be the same picture the
+// The recording is supposed to be the same picture the
 // people in the session were looking at. That only holds if the browser
 // and the compositors lay tiles out the same way, and they cannot share
 // code (the browser can't load anything from server/src), so this

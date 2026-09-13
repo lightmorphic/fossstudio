@@ -1,6 +1,5 @@
-// Stream overlays (subscribe + ad) and raise-hand, in one sitting.
+// In-session overlays (subscribe + ad) and raise-hand, in one sitting.
 import { chromium } from "playwright";
-import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -8,17 +7,17 @@ import { hostLogin, makeRoom, apiLogin, CAMS } from "./helpers.mjs";
 const B = process.argv[2] || "http://127.0.0.1:3999";
 // Own temp dir: this used to point at one machine's scratch directory
 const S = fs.mkdtempSync(path.join(os.tmpdir(), "fossstudio-overlay-test-"));
-const OUT = `${S}/overlay-out`;
-fs.mkdirSync(OUT, { recursive: true });
-// The test ad: a plain red banner, made here rather than kept on one machine
-execFileSync("ffmpeg", ["-loglevel", "quiet", "-f", "lavfi", "-i", "color=c=red:s=600x150",
-  "-frames:v", "1", "-y", `${S}/testad.png`]);
+// The test ad: a plain red PNG, written here rather than kept on one
+// machine or fetched from anywhere.
+const RED_PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+  "base64");
+fs.writeFileSync(`${S}/testad.png`, RED_PNG);
 let pass = true;
 const check = (l, ok) => { console.log(`${ok ? "OK  " : "FAIL"} ${l}`); pass &&= ok; };
 
-// stream to a file + upload the test ad as the host
+// upload the test ad as the host
 const hostCookie = await hostLogin(B, "testpass123");
-await fetch(`${B}/api/settings`, { method: "PUT", headers: { "Content-Type": "application/json", Cookie: hostCookie }, body: JSON.stringify({ streamUrl: `file:${OUT}`, streamKey: "live.flv" }) });
 await fetch(`${B}/api/adbanner`, { method: "POST", headers: { "Content-Type": "image/png", Cookie: hostCookie }, body: fs.readFileSync(`${S}/testad.png`) });
 const ROOM = await makeRoom(B, "testpass123");
 
@@ -78,39 +77,15 @@ check("unmuting a guest lowers their hand",
 // --- overlay without going live: everyone sees it in the session ---
 await host.click("#hpSubBtn");
 await new Promise((r) => setTimeout(r, 1500));
-check("subscribe overlay appears in the guest's session (no stream needed)",
-  await guest.$eval(".live-overlay.subscribe", (el) => el.classList.contains("in")).catch(() => false));
+check("subscribe overlay appears in the guest's session",
+  await guest.$eval(".show-overlay.subscribe", (el) => el.classList.contains("in")).catch(() => false));
 await new Promise((r) => setTimeout(r, 7000));
 check("subscribe overlay goes away on its own",
-  await guest.evaluate(() => !document.querySelector(".live-overlay")));
+  await guest.evaluate(() => !document.querySelector(".show-overlay")));
 await host.click("#hpAdBtn");
 await new Promise((r) => setTimeout(r, 1500));
 check("ad overlay appears in the session with the uploaded image",
-  await guest.$eval(".live-overlay.ad img", (el) => el.complete && el.naturalWidth > 0).catch(() => false));
-await guest.evaluate(() => document.querySelector(".live-overlay")?.remove());
-await host.click("#hpYtBtn");
-await new Promise((r) => setTimeout(r, 5000));
-await host.click("#hpSubBtn");
-await new Promise((r) => setTimeout(r, 19000)); // relaunch + startup + 7s window + clean tail
-await host.click("#hpYtBtn"); // end stream
-await new Promise((r) => setTimeout(r, 3000));
-const probe = (t) => {
-  // average colour of the bottom-centre region at time t, where the
-  // reminder pill sits (the screen's own placement, since the host's
-  // browser now draws the programme)
-  const raw = execFileSync("ffmpeg",
-    ["-v", "quiet", "-ss", String(t), "-i", `${OUT}/live.flv`, "-frames:v", "1",
-     "-vf", "crop=640:110:320:ih-130,scale=1:1", "-f", "rawvideo", "-pix_fmt", "rgb24", "-"]);
-  return [raw[0], raw[1], raw[2]];
-};
-const lastPts = Number(execFileSync("ffprobe",
-  ["-v", "quiet", "-select_streams", "v", "-show_entries", "packet=pts_time", "-of", "csv=p=0", `${OUT}/live.flv`]
-).toString().trim().split("\n").pop());
-const during = probe(3);
-const after = probe(Math.max(7.6, lastPts - 0.4));
-const dist = Math.hypot(during[0] - after[0], during[1] - after[1], during[2] - after[2]);
-check(`subscribe strip visibly changes the frame (Δ=${dist.toFixed(0)}, during=${during}, after=${after})`, dist > 25);
-
+  await guest.$eval(".show-overlay.ad img", (el) => el.complete && el.naturalWidth > 0).catch(() => false));
 console.log(pass ? "ALL PASS" : "SOME CHECKS FAILED");
 await browser.close();
 process.exit(pass ? 0 : 1);

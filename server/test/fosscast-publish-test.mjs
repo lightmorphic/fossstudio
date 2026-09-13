@@ -62,8 +62,7 @@ const server = spawn("node", ["src/index.js"], {
   env: {
     ...process.env,
     HTTP_PORT: String(PORT), DATA_DIR, HOST_PASSWORD: "testpass123",
-    SESSION_SECRET: "devsecret", TURN_SECRET: "devsecret",
-    ALLOW_FILE_STREAM: "1" // lets fosscastUrl be http://127.0.0.1 for the stub
+    SESSION_SECRET: "devsecret", TURN_SECRET: "devsecret"
   },
   stdio: "pipe"
 });
