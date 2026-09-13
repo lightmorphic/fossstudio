@@ -1,18 +1,14 @@
-// Full recording pipeline test: host + guest join, host records ~12s,
-// stops, then we wait for processing and sanity-check the output files.
-// Usage: node test/recording-test.mjs [url] [password] [mode]
+// Full recording test: host and guest join, the host records for about
+// twelve seconds and stops, and we check what comes back - a track per
+// person and one video of everyone, each playable, with the banners and
+// the title block in the picture.
+//   node test/recording-test.mjs [url] [password]
 import { chromium } from "playwright";
-import { execFileSync } from "node:child_process";
-import fs from "node:fs";
-import { makeRoom, setServerRecPermission } from "./helpers.mjs";
+import { makeRoom, probeMedia } from "./helpers.mjs";
 
 const B = process.argv[2] || "http://127.0.0.1:3999";
 const PW = process.argv[3] || "testpass123";
-const MODE = process.argv[4] || "browser";
-await setServerRecPermission(B, PW, MODE === "server");
 const ROOM = await makeRoom(B, PW);
-const OUT = "/tmp/claude-1000/-home-charlie-GitHub-fossstudio/30aef10b-264b-4404-9752-f5d84c9a6596/scratchpad/rec-out";
-fs.mkdirSync(OUT, { recursive: true });
 
 const browser = await chromium.launch({
   args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream", "--autoplay-policy=no-user-gesture-required"]
@@ -53,12 +49,6 @@ await host.click('#hpBannerColorsBtn');
 await host.click('.hp-swatch[aria-label="Banner colour #f34236"]');
 await new Promise((r) => setTimeout(r, 500));
 
-// Start recording (mode picked per session in the host panel)
-if (MODE === "server") {
-  const visible = await host.$eval("#hpServerRec", (el) => !el.disabled);
-  console.log(`${visible ? "OK  " : "FAIL"} recording-mode button available`);
-  await host.click("#hpServerRec");
-}
 await host.click("#hpRecordBtn");
 await new Promise((r) => setTimeout(r, 2500));
 check("host's recording light is on",
@@ -73,89 +63,58 @@ await new Promise((r) => setTimeout(r, 2000));
 check("guest's recording light back to grey",
   await guest.$eval("#recLight", (el) => !el.classList.contains("on")));
 
-// Wait for processing to finish
+// Wait for the last chunks to land and the take to be filed
 let rec = null;
 for (let i = 0; i < 60; i++) {
   const list = await dash.evaluate(() => fetch("/api/recordings").then((r) => r.json()));
   rec = list.find((r) => r.roomId === ROOM);
-  if (rec && ["ready", "failed"].includes(rec.status)) break;
+  if (rec && rec.status === "ready") break;
   await new Promise((r) => setTimeout(r, 2000));
 }
-check(`recording processed (status: ${rec?.status})`, rec?.status === "ready");
-const flacs = (rec?.files || []).filter((f) => f.endsWith(".flac"));
-const perPerson = flacs.filter((f) => f !== "combined.flac");
-check(`two per-person FLACs present (${perPerson.join(", ")})`, perPerson.length === 2);
-check("combined.mp4 present", (rec?.files || []).includes("combined.mp4"));
-check("combined.flac (lossless mixdown) present", flacs.includes("combined.flac"));
+check(`recording filed (status: ${rec?.status})`, rec?.status === "ready");
+const files = rec?.files || [];
+const audio = files.filter((f) => /-audio\.(webm|mp4)$/.test(f));
+const video = files.filter((f) => /-video\.(webm|mp4)$/.test(f));
+const everyone = files.find((f) => /^everyone\.(webm|mp4)$/.test(f));
+check(`an audio track per person (${audio.join(", ")})`, audio.length === 2);
+check(`a camera track per person (${video.join(", ")})`, video.length === 2);
+check(`one video of everyone (${everyone})`, !!everyone);
+check(`tracks are named after the people (${audio.join(", ")})`,
+  audio.some((f) => f.startsWith("Charlie Host")) && audio.some((f) => f.startsWith("Guest Greta")));
 check(`recording named after the episode (${rec?.title})`, rec?.title === "Automated test");
 
-// The host's browser should have uploaded a lower-third PNG per person
+// Nothing on the server touched any of it: no leftover working
+// directory, and no file the browsers did not send
 if (rec) {
-  const dataDir = process.env.DATA_DIR || "../data";
-  const banners = fs.readdirSync(`${dataDir}/recordings/${rec.id}/raw`)
-    .filter((f) => f.startsWith("banner-") && !f.includes("theme-logo")); // the baked logo is its own file
-  check(`banner PNGs uploaded for both peers (${banners.length})`, banners.length === 2);
+  const strays = files.filter((f) =>
+    !/-audio\.(webm|mp4)$/.test(f) && !/-video\.(webm|mp4)$/.test(f) && !/^everyone\.(webm|mp4)$/.test(f));
+  check(`nothing but the recorded tracks came back (${strays.join(", ") || "none"})`, strays.length === 0);
 }
 
-// Download and probe the outputs
+// Play each one back in the browser. That is the check that matters -
+// the host is handed the file the browser wrote, so what proves it is
+// good is that a browser opens it.
 if (rec?.status === "ready") {
+  const player = await hostCtx.newPage();
+  await player.goto(`${B}/host/`);
   for (const f of rec.files) {
-    const dl = await dash.evaluate(async ({ id, f }) => {
-      const r = await fetch(`/api/recordings/${encodeURIComponent(id)}/files/${encodeURIComponent(f)}`);
-      if (!r.ok) return { status: r.status };
-      const buf = new Uint8Array(await r.arrayBuffer());
-      let s = "";
-      for (let i = 0; i < buf.length; i += 0x8000) s += String.fromCharCode(...buf.subarray(i, i + 0x8000));
-      return { status: r.status, b64: btoa(s) };
-    }, { id: rec.id, f });
-    check(`download ${f} (${dl.status})`, dl.status === 200);
-    if (!dl.b64) continue;
-    fs.writeFileSync(`${OUT}/${f}`, Buffer.from(dl.b64, "base64"));
-    try {
-      const probe = JSON.parse(execFileSync("ffprobe",
-        ["-v", "quiet", "-print_format", "json", "-show_format", "-show_streams", `${OUT}/${f}`]));
-      const dur = Number(probe.format.duration || 0);
-      const codecs = probe.streams.map((s) => s.codec_name).join("+");
-      check(`${f}: ${codecs}, ${dur.toFixed(1)}s`, dur > 8);
-    } catch {
-      check(`${f}: probe failed`, false);
-    }
+    const url = `/api/recordings/${encodeURIComponent(rec.id)}/files/${encodeURIComponent(f)}`;
+    const probe = await probeMedia(player, url);
+    check(`${f} plays, ${probe.duration?.toFixed(1)}s${probe.width ? `, ${probe.width}x${probe.height}` : ""}`,
+      probe.ok && probe.duration > 8);
   }
 
-  // The episode-title chip is baked in top-centre: dark chip pixels
-  try {
-    const rgb = execFileSync("ffmpeg", [
-      "-loglevel", "error", "-ss", "5", "-i", `${OUT}/combined.mp4`,
-      "-vf", "crop=40:10:620:40", "-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "rgb24", "-"
-    ]);
-    let r = 0, g = 0, b = 0;
-    const n = rgb.length / 3;
-    for (let i = 0; i + 2 < rgb.length; i += 3) { r += rgb[i]; g += rgb[i + 1]; b += rgb[i + 2]; }
-    r /= n; g /= n; b /= n;
-    // The block (chip, text, maybe a logo) covers this area: anything
-    // but the raw green video behind it proves it was composited
-    check(`episode title baked top-centre (rgb ${r.toFixed(0)},${g.toFixed(0)},${b.toFixed(0)})`,
-      !(g > 100 && r < 60 && b < 60));
-  } catch (e) {
-    check(`title pixel probe failed: ${e.message}`, false);
-  }
-
-  // Lower-thirds are baked in: the bottom-left of the first tile
-  // (inside the compact banner) should be the red we picked, not video
-  try {
-    const rgb = execFileSync("ffmpeg", [
-      "-loglevel", "error", "-ss", "5", "-i", `${OUT}/combined.mp4`,
-      "-vf", "crop=30:8:40:505", "-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "rgb24", "-"
-    ]);
-    let r = 0, g = 0, b = 0;
-    for (let i = 0; i + 2 < rgb.length; i += 3) { r += rgb[i]; g += rgb[i + 1]; b += rgb[i + 2]; }
-    const n = rgb.length / 3;
-    r /= n; g /= n; b /= n;
-    check(`banner baked into combined.mp4 (rgb ${r.toFixed(0)},${g.toFixed(0)},${b.toFixed(0)})`,
-      r > 140 && r - g > 60 && r - b > 60);
-  } catch (e) {
-    check(`banner pixel probe failed: ${e.message}`, false);
-  }
+  // The episode title block sits top-centre of the combined picture, and
+  // the lower-third is the red we picked: both drawn by the host's
+  // browser, so finding them proves the mixer put them in the video.
+  const url = `/api/recordings/${encodeURIComponent(rec.id)}/files/${encodeURIComponent(everyone)}`;
+  const title = await probeMedia(player, url, { at: 5, crop: { x: 620, y: 40, w: 40, h: 10 } });
+  check(`episode title drawn top-centre (rgb ${title.rgb})`,
+    title.ok && !(title.rgb[1] > 100 && title.rgb[0] < 60 && title.rgb[2] < 60));
+  const banner = await probeMedia(player, url, { at: 5, crop: { x: 40, y: 505, w: 30, h: 8 } });
+  check(`name banner drawn into the video (rgb ${banner.rgb})`,
+    banner.ok && banner.rgb[0] > 140 && banner.rgb[0] - banner.rgb[1] > 60 && banner.rgb[0] - banner.rgb[2] > 60);
+  await player.close();
 }
 
 console.log(pass ? "ALL PASS" : "SOME CHECKS FAILED");

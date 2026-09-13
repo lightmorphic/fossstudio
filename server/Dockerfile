@@ -1,7 +1,7 @@
 # Two stages keep the runtime image minimal: python3/make/g++ exist only
 # in the build stage to compile the mediasoup media worker, and are never
-# shipped. The runtime carries just Node, ffmpeg (recording)
-# and zip (recording bundles) - no compilers, no npm.
+# shipped. The runtime carries just Node and zip (for the download
+# bundles) - no compilers, no npm, no media tools.
 
 FROM node:22-bookworm-slim AS build
 RUN apt-get update \
@@ -20,7 +20,7 @@ FROM node:22-bookworm-slim
 # package manager in a running container is pure attack surface.
 RUN apt-get update \
     && apt-get upgrade -y \
-    && apt-get install -y --no-install-recommends ffmpeg zip ca-certificates \
+    && apt-get install -y --no-install-recommends zip ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
         /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /opt/yarn*
@@ -47,7 +47,7 @@ ENV WEB_DIR=/app/web
 ENV DATA_DIR=/data
 # Cap the JS heap well above real usage (~80MB observed under load): a
 # leak degrades into a clean restart instead of eating the host's RAM.
-# Only the app's own heap - ffmpeg and mediasoup children are separate
-# processes and unaffected.
+# Only the app's own heap - the mediasoup workers are separate processes
+# and unaffected.
 ENV NODE_OPTIONS=--max-old-space-size=256
 CMD ["node", "src/index.js"]

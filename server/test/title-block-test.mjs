@@ -10,7 +10,7 @@
 //   node test/title-block-test.mjs <url> <password>
 import { chromium } from "playwright";
 import { makeRoom } from "./helpers.mjs";
-import { titleWidth, TITLE_WIDTH_FRACTION } from "../src/composite.js";
+import { titleWidth, TITLE_WIDTH_FRACTION } from "./layout.js";
 
 const B = process.argv[2] || "http://127.0.0.1:3993";
 const PASS = process.argv[3] || "testpass123";

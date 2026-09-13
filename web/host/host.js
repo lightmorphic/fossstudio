@@ -415,13 +415,13 @@
         <div class="files"></div>`;
       card.querySelector(".title").textContent = r.title || `Session ${r.roomId}`;
       card.querySelector(".meta").textContent =
-        `${when}${mins ? ` · ${mins} min` : ""} · ${r.mode === "server" ? "server-side" : "browser-side"}`;
+        `${when}${mins ? ` · ${mins} min` : ""} · ${(r.files || []).length} files`;
       setStatusBadge(card.querySelector(".badge"), r.status);
       const filesEl = card.querySelector(".files");
       for (const f of r.files || []) {
         const url = `/api/recordings/${encodeURIComponent(r.id)}/files/${encodeURIComponent(f)}`;
-        const isVideo = /\.(mp4|webm|mkv|mov)$/i.test(f);
-        const isAudio = /\.(flac|wav|mp3|ogg|m4a|aac)$/i.test(f);
+        const isVideo = !/-audio\.(webm|mp4)$/i.test(f) && /\.(mp4|webm)$/i.test(f);
+        const isAudio = /-audio\.(webm|mp4)$/i.test(f);
         const fileRow = document.createElement("div");
         fileRow.className = "rec-file";
         const fname = document.createElement("span");
@@ -442,11 +442,11 @@
       const actions = document.createElement("div");
       actions.className = "rec-actions";
       const zipBase = `/api/recordings/${encodeURIComponent(r.id)}/zip`;
-      const hasAudio = (r.files || []).some((f) => /\.(flac|wav|mp3|ogg|m4a|aac)$/i.test(f));
+      const hasAudio = (r.files || []).some((f) => /-audio\.(webm|mp4)$/i.test(f));
       if (hasAudio) {
         const dlAudio = downloadLink(`${zipBase}?audio=1`);
         dlAudio.innerHTML = ICO.downloadAudio;
-        dlAudio.dataset.tip = "Download all audio (the FLACs, zipped)";
+        dlAudio.dataset.tip = "Download everyone's audio tracks, zipped";
         dlAudio.setAttribute("aria-label", "Download all audio");
         actions.appendChild(dlAudio);
       }

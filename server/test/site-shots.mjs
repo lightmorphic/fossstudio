@@ -132,15 +132,28 @@ await sG1.page.screenshot({ path: `${OUT}/spotlight.png` });
 for (const b of [sHost, sG1, sG2]) await b.browser.close();
 
 
-// --- The site uses JPGs; the script made PNGs ---
+// --- The site uses JPGs; these were saved as PNGs ---
 // That gap is why five pictures aged a fortnight: the conversion was a
-// manual step somebody had to remember. It is part of the script now.
-import { execFileSync } from "node:child_process";
+// manual step somebody had to remember. The browser does it now, from
+// the PNG it just wrote, so the script needs nothing installed.
+const conv = await chromium.launch();
+const convPage = await (await conv.newContext()).newPage();
 for (const name of ["session", "spotlight", "host-panel", "preview"]) {
   const png = `${OUT}/${name}.png`;
   if (!fs.existsSync(png)) continue;
-  execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-i", png, "-vf", "scale=2000:-2", "-q:v", "4", `${OUT}/${name}.jpg`]);
+  const jpg = await convPage.evaluate(async (b64) => {
+    const img = new Image();
+    img.src = "data:image/png;base64," + b64;
+    await img.decode();
+    const w = 2000, h = Math.round(img.height * (w / img.width) / 2) * 2;
+    const c = document.createElement("canvas");
+    c.width = w; c.height = h;
+    c.getContext("2d").drawImage(img, 0, 0, w, h);
+    return c.toDataURL("image/jpeg", 0.86).split(",")[1];
+  }, fs.readFileSync(png).toString("base64"));
+  fs.writeFileSync(`${OUT}/${name}.jpg`, Buffer.from(jpg, "base64"));
   fs.unlinkSync(png);
 }
+await conv.close();
 
 console.log("shots saved:", fs.readdirSync(OUT).join(", "));

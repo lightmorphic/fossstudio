@@ -1,37 +1,24 @@
 // Recording orchestration. One active recording per room.
 //
-// Browser mode: each participant's browser records itself (PCM audio +
-// VP8 video) and uploads chunks; the server just appends to files.
-// Server mode (small sessions): the SFU pipes each participant's RTP
-// to ffmpeg locally, so browsers do nothing extra.
-//
-// Either way, processing afterwards produces out/combined.mp4 plus one
-// lossless FLAC per participant (and a combined.flac mixdown).
+// Every participant's browser records itself and uploads chunks; the
+// server appends them to a file and does nothing else to them. The
+// host's browser also records the programme - the finished picture and
+// mixed sound it drew for everyone - so the whole show arrives as one
+// file too, already encoded. Nothing here converts, mixes or re-encodes
+// anything: a track is served exactly as the browser wrote it.
 //
 // A JSON snapshot of the in-progress `rec` is written to disk on every
-// meaningful change and cleared once processing finishes (success or
-// failure). If the process dies mid-render - a deploy recreating the
-// container is exactly what did this once - the snapshot survives and
-// resumeOrphanedRecordings() (called at startup) picks it back up and
-// finishes the job, instead of the recording being stuck on
-// "processing" forever with no active render behind it.
+// meaningful change. If the process dies mid-take the snapshot and the
+// chunks already uploaded both survive, so nothing is lost beyond the
+// seconds nobody sent.
 import crypto from "node:crypto";
 import { activeBackdropPath } from "../rooms.js";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { config } from "../config.js";
 import { readJson, writeJson } from "../storage.js";
-import { startServerCapture, stopServerCapture } from "./serverRecorder.js";
-import { processRecording } from "./processor.js";
 
 const active = new Map(); // roomId -> rec
-let renderCount = 0; // how many finalize() calls are running right now
-
-// So a deploy can check "is anything rendering?" before it recreates
-// the container - see /api/ops/render-status and scripts/deploy.sh.
-export function activeRenderCount() {
-  return renderCount;
-}
 
 export function recDir(recId) {
   return path.join(config.dataDir, "recordings", recId);
@@ -56,18 +43,14 @@ function snapshotPath(recId) {
   return path.join(recDir(recId), "rec.json");
 }
 
-// Best-effort: a missed snapshot costs a little resume fidelity on the
-// rare crash, never a recording in progress. Never let it throw.
+// Best-effort: a missed snapshot costs a little fidelity on the rare
+// crash, never a recording in progress. Never let it throw.
 async function saveSnapshot(rec) {
   try {
     const snap = {
-      id: rec.id, roomId: rec.roomId, ownerId: rec.ownerId, mode: rec.mode,
-      title: rec.title, titlePos: rec.titlePos, titleScale: rec.titleScale,
-      layout: rec.layout, spotlightPeerId: rec.spotlightPeerId,
-      startedAt: rec.startedAt,
-      bg: rec.bg, wallpaper: rec.wallpaper, titleFile: rec.titleFile,
-      peers: Object.fromEntries(rec.peers),
-      overlays: rec.overlays
+      id: rec.id, roomId: rec.roomId, ownerId: rec.ownerId,
+      title: rec.title, startedAt: rec.startedAt,
+      peers: Object.fromEntries(rec.peers)
     };
     // writeJson: atomic (temp file + rename) and owner-only (0600), same
     // as every other file under the data directory.
@@ -79,20 +62,6 @@ async function saveSnapshot(rec) {
 
 async function clearSnapshot(recId) {
   await fs.unlink(snapshotPath(recId)).catch(() => {});
-}
-
-// A subscribe or ad overlay triggered mid-recording, so the processor
-// bakes it into the finished video at the moment it was fired.
-export async function logOverlay(rec, kind, adFile) {
-  const entry = { kind, offsetMs: Date.now() - rec.startedAt };
-  if (adFile) {
-    // Snapshot the ad image now, in case the host replaces it later
-    const name = `ad-ov-${rec.overlays.length}${path.extname(adFile)}`;
-    await fs.copyFile(adFile, path.join(recDir(rec.id), "raw", name));
-    entry.file = name;
-  }
-  rec.overlays.push(entry);
-  await saveSnapshot(rec);
 }
 
 export function uploadCreds(rec, peerId) {
@@ -110,91 +79,57 @@ export async function listRecordings() {
   return readJson("recordings.json", []);
 }
 
-export async function startRecording(room, mode) {
+export async function startRecording(room) {
   if (active.has(room.id)) throw new Error("already recording");
   const recId = `${room.id}-${new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19)}`;
   const rec = {
     id: recId,
     roomId: room.id,
     ownerId: room.ownerId || null,
-    mode,
     title: room.title || "",
-    titlePos: room.control?.titlePos || { x: 0.5, y: 0 },
-    titleScale: room.control?.titleScale || 1,
-    layout: room.control?.layout || "grid",
-    spotlightPeerId: room.control?.spotlightPeerId || null,
     startedAt: Date.now(),
-    peers: new Map(), // peerId -> {name, files:{}, clientStartOffsetMs, done}
-    overlays: [],     // {kind, offsetMs, file?} baked into combined.mp4
+    peers: new Map(), // peerId -> {name, files:{}, startOffsetMs, done}
     stopping: false
   };
-  // Background for the composite: the room's pinned theme, so the video
-  // matches what everyone saw even if settings changed mid-session
-  rec.bg = room.theme?.bg || null;
-  rec.wallpaper = activeBackdropPath(room) || null;
   await fs.mkdir(path.join(recDir(recId), "raw"), { recursive: true });
   active.set(room.id, rec);
 
   for (const peer of room.peers.values()) {
-    if (peer.role === "viewer") continue; // OBS clean feeds aren't in the show
+    if (peer.role === "viewer") continue; // view-only outputs aren't in the show
     addPeerToRecording(rec, peer);
   }
 
-  // Banners the host uploaded earlier in the session apply here too
-  const bdir = path.join(config.dataDir, "banners", room.id);
-  try {
-    for (const f of await fs.readdir(bdir)) {
-      if (!f.endsWith(".png")) continue;
-      if (f === "__title.png") {
-        await fs.copyFile(path.join(bdir, f), path.join(recDir(recId), "raw", "title.png"));
-        rec.titleFile = "title.png";
-        continue;
-      }
-      const pid = f.slice(0, -4);
-      const name = `banner-${pid}.png`;
-      await fs.copyFile(path.join(bdir, f), path.join(recDir(recId), "raw", name));
-      const rp = rec.peers.get(pid);
-      if (rp) rp.banner = name;
-    }
-  } catch { /* no banners yet */ }
-
-  if (mode === "server") await startServerCapture(rec, room);
-
   await saveSnapshot(rec);
-  await saveIndex({
-    id: recId, roomId: room.id, ownerId: rec.ownerId, mode, startedAt: rec.startedAt,
-    status: "recording", title: rec.title, files: []
-  });
   return rec;
 }
 
 export function addPeerToRecording(rec, peer) {
-  if (rec.peers.has(peer.id) || rec.stopping) return null;
+  if (rec.peers.has(peer.id)) return;
   rec.peers.set(peer.id, {
     name: peer.name,
     role: peer.role,
+    files: {},
     startOffsetMs: Date.now() - rec.startedAt,
-    done: rec.mode === "server", // server mode needs no client uploads
-    files: {}
+    done: false
   });
   saveSnapshot(rec).catch(() => {});
-  return {
-    recId: rec.id,
-    peerId: peer.id,
-    token: uploadToken(rec.id, peer.id)
-  };
 }
 
-export async function appendChunk(recId, peerId, kind, seq, buf) {
+// What a browser may send, and the extension each lands under. Anything
+// else is refused rather than written to disk under a guessed name.
+const KINDS = new Set(["audio", "video", "programme"]);
+const EXTS = new Set(["webm", "mp4"]);
+
+export async function appendChunk(recId, peerId, kind, ext, buf) {
   const rec = [...active.values()].find((r) => r.id === recId);
   if (!rec) throw new Error("no such recording");
   const p = rec.peers.get(peerId);
   if (!p) throw new Error("peer not in recording");
   // "programme" is the host's browser sending the finished picture and
-  // mixed sound, already drawn and encoded there, so the server has no
-  // grid to render afterwards.
-  if (!["audio", "video", "programme"].includes(kind)) throw new Error("bad kind");
-  const safe = `${peerId}-${kind}.webm`;
+  // mixed sound, already drawn and encoded there.
+  if (!KINDS.has(kind)) throw new Error("bad kind");
+  if (!EXTS.has(ext)) throw new Error("bad container");
+  const safe = `${peerId}-${kind}.${ext}`;
   p.files[kind] = safe;
   await fs.appendFile(path.join(recDir(recId), "raw", safe), buf);
   saveSnapshot(rec).catch(() => {});
@@ -213,12 +148,8 @@ export async function stopRecording(room) {
   const rec = active.get(room.id);
   if (!rec) return null;
   rec.stopping = true;
-  if (rec.mode === "server") {
-    await stopServerCapture(rec);
-    for (const p of rec.peers.values()) p.done = true;
-  }
-  // Browser mode: clients get the stop event and send their final
-  // chunks + done marker; finalize fires when all are in (or timeout).
+  // Clients get the stop event and send their final chunks and a done
+  // marker; finalize fires when all are in, or when the wait runs out.
   await saveSnapshot(rec);
   rec.stopTimeout = setTimeout(() => {
     for (const p of rec.peers.values()) p.done = true;
@@ -233,78 +164,49 @@ function maybeFinalize(rec) {
   if (![...rec.peers.values()].every((p) => p.done)) return;
   clearTimeout(rec.stopTimeout);
   active.delete(rec.roomId);
-  finalize(rec).catch(async (err) => {
-    console.error("recording processing failed:", err);
-    await saveIndex({
-      id: rec.id, roomId: rec.roomId, ownerId: rec.ownerId, mode: rec.mode, title: rec.title,
-      startedAt: rec.startedAt,
-      status: "failed", error: "Processing failed - the raw files are kept.", files: []
-    });
-    // A genuine ffmpeg failure isn't retried automatically on the next
-    // restart (that would just repeat the same failure forever) - the
-    // raw files are kept for a manual look, same as always.
-    await clearSnapshot(rec.id);
-  });
+  finalize(rec).catch((err) => console.error("filing the recording failed:", err));
 }
 
+// A person's name, made safe for a filename and unique within the take.
+function safeName(name, used) {
+  const base = String(name || "").replace(/[^\p{L}\p{N} _-]/gu, "").trim().slice(0, 30) || "guest";
+  let candidate = base, i = 2;
+  while (used.has(candidate)) candidate = `${base}-${i++}`;
+  used.add(candidate);
+  return candidate;
+}
+
+// No render, no conversion: give each uploaded file a name a person can
+// read and list what is there. A rename inside one directory, so a long
+// show costs the same as a short one.
 async function finalize(rec) {
-  renderCount++;
-  try {
-    await saveIndex({
-      id: rec.id, roomId: rec.roomId, ownerId: rec.ownerId, mode: rec.mode, title: rec.title,
-      startedAt: rec.startedAt,
-      endedAt: Date.now(), status: "processing", files: []
-    });
-    const files = await processRecording(rec);
-    await saveIndex({
-      id: rec.id, roomId: rec.roomId, ownerId: rec.ownerId, mode: rec.mode, title: rec.title,
-      startedAt: rec.startedAt,
-      endedAt: Date.now(), status: "ready", files
-    });
-    await clearSnapshot(rec.id);
-    const { notifyUser } = await import("../push.js");
-    notifyUser(rec.ownerId, "Recording ready", `Session ${rec.roomId} is processed - ${files.length} files to download.`)
-      .catch(() => {});
-  } finally {
-    renderCount--;
-  }
-}
+  const raw = path.join(recDir(rec.id), "raw");
+  const out = path.join(recDir(rec.id), "out");
+  await fs.mkdir(out, { recursive: true });
+  const files = [];
+  const used = new Set();
 
-// Called once at server startup. A snapshot on disk with the recording
-// still marked "processing" in the index means the process died before
-// finalize() finished (a deploy recreating the container mid-render is
-// exactly what happened once) - there is no active render behind it to
-// wait for, so pick the snapshot back up and finish the job now.
-// Returns how many were found, for a startup log line / alert.
-export async function resumeOrphanedRecordings() {
-  const dir = path.join(config.dataDir, "recordings");
-  const ids = await fs.readdir(dir).catch(() => []);
-  const index = await readJson("recordings.json", []);
-  let resumed = 0;
-  for (const id of ids) {
-    const snap = await readJson(path.join("recordings", id, "rec.json"), null);
-    if (!snap) continue;
-    const entry = index.find((r) => r.id === id);
-    if (entry?.status !== "processing") {
-      // Stale snapshot with no matching stuck entry (shouldn't normally
-      // happen) - clear it rather than leave dead weight behind.
-      await clearSnapshot(id);
-      continue;
+  for (const p of rec.peers.values()) {
+    const who = safeName(p.name, used);
+    for (const kind of ["audio", "video", "programme"]) {
+      const src = p.files[kind];
+      if (!src) continue;
+      const ext = path.extname(src);
+      const name = kind === "programme" ? `everyone${ext}` : `${who}-${kind}${ext}`;
+      await fs.rename(path.join(raw, src), path.join(out, name))
+        .then(() => files.push(name))
+        .catch((err) => console.error(`filing ${src} failed:`, err.message));
     }
-    const rec = { ...snap, peers: new Map(Object.entries(snap.peers || {})) };
-    console.log(`resuming orphaned recording ${id} (interrupted mid-render)`);
-    resumed++;
-    finalize(rec).catch(async (err) => {
-      console.error(`resume of ${id} failed:`, err.message);
-      await saveIndex({
-        id: rec.id, roomId: rec.roomId, ownerId: rec.ownerId, mode: rec.mode, title: rec.title,
-        startedAt: rec.startedAt,
-        status: "failed", error: "Processing failed - the raw files are kept.", files: []
-      });
-      await clearSnapshot(rec.id);
-    });
   }
-  return resumed;
+
+  await saveIndex({
+    id: rec.id, roomId: rec.roomId, ownerId: rec.ownerId, title: rec.title,
+    startedAt: rec.startedAt, endedAt: Date.now(), status: "ready", files
+  });
+  await clearSnapshot(rec.id);
+  const { notifyUser } = await import("../push.js");
+  notifyUser(rec.ownerId, "Recording ready",
+    `Session ${rec.roomId} is done - ${files.length} files to download.`).catch(() => {});
 }
 
 export async function deleteRecording(id) {
@@ -313,8 +215,8 @@ export async function deleteRecording(id) {
   await fs.rm(recDir(id), { recursive: true, force: true });
 }
 
-// Remove a single output file (one FLAC or the combined MP4) from a
-// recording, leaving the rest. Returns false if it wasn't one of its files.
+// Remove one file from a recording, leaving the rest. Returns false if
+// it wasn't one of its files.
 export async function deleteRecordingFile(id, file) {
   const safe = path.basename(file);
   const list = await readJson("recordings.json", []);

@@ -10,7 +10,7 @@
 //   node test/geometry-test.mjs <url> <password>
 import { chromium } from "playwright";
 import { makeRoom } from "./helpers.mjs";
-import { tileLayout, LAYOUT } from "../src/composite.js";
+import { tileLayout, LAYOUT } from "./layout.js";
 
 const B = process.argv[2] || "http://127.0.0.1:3993";
 const PASS = process.argv[3] || "testpass123";

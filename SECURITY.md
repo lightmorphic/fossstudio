@@ -77,8 +77,7 @@ For self-hosters assessing the project:
   publisher token: publishing runs server-side, so the token is never
   sent to any browser.
 - **Unauthenticated endpoints** are deliberately few: `/healthz` (up
-  or not), `/render-status` (a count of recordings currently
-  rendering), `/tls-allowed` (a yes/no answer Caddy consults before
+  or not), `/tls-allowed` (a yes/no answer Caddy consults before
   fetching a certificate on demand; it approves only the panel domains
   derived from `DOMAIN`, so a stranger pointing their name at the
   server can never mint a certificate), the session page at

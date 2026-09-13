@@ -120,10 +120,7 @@ api.get("/users", requireAdmin, async (req, res) => res.json(await listUsers()))
 
 api.post("/users", requireAdmin, async (req, res) => {
   try {
-    res.json(await createUser(
-      req.body.username, req.body.password, req.body.role,
-      !!req.body.allowServerRecording
-    ));
+    res.json(await createUser(req.body.username, req.body.password, req.body.role));
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -134,9 +131,7 @@ api.post("/users", requireAdmin, async (req, res) => {
 api.post("/users/invite", requireAdmin, async (req, res) => {
   try {
     const { createInvitedUser } = await import("./users.js");
-    const user = await createInvitedUser(
-      req.body.username, !!req.body.allowServerRecording
-    );
+    const user = await createInvitedUser(req.body.username);
     res.json({ ok: true, inviteUrl: `https://${config.domain}/host/invite.html?token=${user.inviteToken}` });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -156,15 +151,6 @@ api.post("/invite/accept", async (req, res) => {
   try {
     const { acceptInvite } = await import("./users.js");
     await acceptInvite(String(req.body.token || ""), String(req.body.password || ""));
-    res.json({ ok: true });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-api.post("/users/:id/permissions", requireAdmin, async (req, res) => {
-  try {
-    await updateUser(req.params.id, { allowServerRecording: !!req.body.allowServerRecording });
     res.json({ ok: true });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -422,7 +408,7 @@ api.post("/rec/chunk", chunkAuth,
     try {
       await appendChunk(
         String(req.query.rec), String(req.query.peer),
-        String(req.query.kind), Number(req.query.seq), req.body
+        String(req.query.kind), String(req.query.ext || "webm"), req.body
       );
       res.json({ ok: true });
     } catch (err) {
@@ -483,7 +469,7 @@ api.post("/recordings/:id/publish", requireAuth, async (req, res) => {
   if (!settings.fosscastUrl || !settings.fosscastToken) {
     return res.status(400).json({ error: "Add your FOSSCast address and publisher token in Settings → Publish first." });
   }
-  const file = path.basename(String(req.body.file || "combined.mp4"));
+  const file = path.basename(String(req.body.file || ""));
   if (!(rec.files || []).includes(file)) {
     return res.status(404).json({ error: "no such file in this recording" });
   }
@@ -523,7 +509,7 @@ api.post("/recordings/:id/publish", requireAuth, async (req, res) => {
   }
 });
 
-// One-click bundles: every file, or just the audio (the FLACs), zipped
+// One-click bundles: every file, or everyone's audio track, zipped
 // on the fly - nothing is written to disk
 api.get("/recordings/:id/zip", requireAuth, async (req, res) => {
   const id = path.basename(req.params.id);
@@ -532,7 +518,7 @@ api.get("/recordings/:id/zip", requireAuth, async (req, res) => {
   const audioOnly = req.query.audio === "1";
   const dir = path.join(recDir(id), "out");
   const files = (await fs.readdir(dir).catch(() => []))
-    .filter((f) => !audioOnly || /\.(flac|wav|mp3|ogg|m4a|aac)$/i.test(f));
+    .filter((f) => !audioOnly || /-audio\.(webm|mp4)$/i.test(f));
   if (files.length === 0) return res.status(404).json({ error: "no files" });
   const stem = (rec.title || `session-${rec.roomId}`)
     .replace(/[^a-zA-Z0-9 _-]/g, "").trim().replace(/\s+/g, "-").slice(0, 60) || id;
@@ -546,7 +532,7 @@ api.get("/recordings/:id/zip", requireAuth, async (req, res) => {
   req.on("close", () => zip.kill("SIGKILL"));
 });
 
-// Delete a single file within a recording (one FLAC or the MP4)
+// Delete a single file within a recording (one person's track, or the video of everyone)
 api.delete("/recordings/:id/files/:file", requireAuth, async (req, res) => {
   const id = path.basename(req.params.id);
   if (!await recAccess(req, id)) return res.status(404).json({ error: "not found" });

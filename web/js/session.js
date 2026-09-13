@@ -29,7 +29,6 @@
     dimBtn: $("dimBtn"), handBtn: $("handBtn"), hostPanel: $("hostPanel"),
     hpAutoGain: $("hpAutoGain"), hpGuests: $("hpGuests"),
     hpRecordBtn: $("hpRecordBtn"),
-    hpServerRec: $("hpServerRec"),
     hpMuteAllBtn: $("hpMuteAllBtn"), hpSubBtn: $("hpSubBtn"), hpAdBtn: $("hpAdBtn"),
     hpBannerSwatches: $("hpBannerSwatches"), hpBannerHex: $("hpBannerHex"),
     hpBannerMulti: $("hpBannerMulti"), hpBannerChoice: $("hpBannerChoice"),
@@ -503,7 +502,7 @@
     const logo = document.getElementById("bannerLogo");
     if (theme.logo) {
       logo.src = theme.logo;
-      logo.decode().then(() => scheduleBannerSnapshots()).catch(() => {});
+      logo.decode().then(() => scheduleBannerImages()).catch(() => {});
     } else {
       logo.removeAttribute("src");
     }
@@ -568,7 +567,7 @@
     tiles.set(peerId, { el, video, stream, name, gain: null, isHostPeer });
     applyLayout();
     if (isHost) renderHostGuests();
-    scheduleBannerSnapshots();
+    scheduleBannerImages();
     return tiles.get(peerId);
   }
 
@@ -622,7 +621,7 @@
     if (isHost) renderHostGuests();
   }
 
-  // Fractions of frame width, matching LAYOUT in server/src/composite.js.
+  // Fractions of frame width, matching LAYOUT in server/test/layout.js.
   // They cannot be imported from there (the browser can't load server
   // code), so test/geometry-test.mjs asserts the two stay in step.
   const PAD_FRACTION = 24 / 1280;
@@ -662,7 +661,7 @@
     }
     if (spot) {
       // One column per person in the strip, so they spread across it the
-      // way tileLayout() spreads them in the recording and the stream
+      // way tileLayout() spreads them in the recording
       els.grid.style.setProperty("--strip-cols", `repeat(${Math.max(1, tiles.size - 1)}, 1fr)`);
     }
     if (!spot) {
@@ -1041,7 +1040,7 @@
   function sendTitleBg(c) {
     control.titleBg = c; // optimistic
     applyTitleBg();
-    sendBannerSnapshots().catch(() => {});
+    refreshBannerImages().catch(() => {});
     request("hostControl", { action: "titleBg", color: c }).catch(() => {});
   }
   function renderTitleSwatches() {
@@ -1157,7 +1156,7 @@
       const allMuted = everyone.length > 0 && everyone.every((id) => control.muted?.[id]);
       els.hpMuteAllBtn.classList.toggle("active", allMuted);
       els.hpMuteAllBtn.textContent = allMuted ? "Unmute all" : "Mute all";
-      updateServerRecTip(); // the row dot's mute line follows
+      updateRowTip(); // the row dot's mute line follows
     }
     if (control.backdrop) {
       backdropMode = control.backdrop.mode === "wallpaper" ? "wallpaper" : "colour";
@@ -1169,23 +1168,22 @@
     applyTitleBg();
     applyTitleShow();
     if (isHost) renderHostGuests();
-    scheduleBannerSnapshots();
+    scheduleBannerImages();
   }
 
   // ---------- Banner snapshots ----------
-  // The recording compositor runs ffmpeg, which can't draw text, so the
-  // host's browser renders each lower-third to a PNG (same font, same
-  // colours as on screen) and the server overlays those.
+  // The mixer draws the show onto a canvas, and a canvas cannot lay out
+  // HTML - so each lower-third and the logo/title block are redrawn here
+  // as images, in the same font and colours as the ones on screen.
 
   let bannerSnapTimer = null;
-  function scheduleBannerSnapshots() {
+  function scheduleBannerImages() {
     if (!isHost || !recording) return;
     clearTimeout(bannerSnapTimer);
-    bannerSnapTimer = setTimeout(() => sendBannerSnapshots().catch(() => {}), 600);
+    bannerSnapTimer = setTimeout(() => refreshBannerImages().catch(() => {}), 600);
   }
 
-  let lastBannerPayload = "";
-  async function sendBannerSnapshots(force) {
+  async function refreshBannerImages(force) {
     if (!isHost || (!force && !recording)) return;
     await document.fonts.ready;
     const images = {};
@@ -1218,12 +1216,6 @@
     if (title) {
       if (titleImg?.src !== title) { titleImg = new Image(); titleImg.src = title; }
     } else titleImg = null;
-    // Only send when something actually changed - while live, the server
-    // relaunches the stream to pick banners up, which costs a short blip
-    const payload = JSON.stringify([images, title]);
-    if (payload === lastBannerPayload || !Object.keys(images).length) return;
-    lastBannerPayload = payload;
-    await request("bannerSnapshots", { images, title });
   }
 
   // The logo/title block for the composite, drawn at a 532px design
@@ -1330,7 +1322,7 @@
   // ---------- Block position: shared via control, dragged by the host ----------
 
   // The compositors draw this block at 286/1280 of the frame width (see
-  // server/src/composite.js). Sizing it here by the same fraction of the
+  // server/test/layout.js). Sizing it here by the same fraction of the
   // video area is what makes the recording look like the screen: it used
   // to be a viewport-relative CSS width, which drifted up to 38% away
   // from the video on wide screens and further again for the host, whose
@@ -1345,7 +1337,7 @@
     els.banner.style.setProperty("--title-w", `${gw * TITLE_WIDTH_FRACTION * scale}px`);
     // Width has to be applied before the block is measured
     const bw = els.banner.offsetWidth, bh = els.banner.offsetHeight;
-    // Same formula as the ffmpeg overlay, so the video matches the screen
+    // Same formula the mixer uses, so the video matches the screen
     els.banner.style.left = `${pos.x * (gw - bw)}px`;
     els.banner.style.top = `${pos.y * (gh - bh) + TITLE_TOP_INSET * gh * (1 - pos.y)}px`;
     els.banner.style.transform = "none";
@@ -1385,7 +1377,7 @@
       }
     }
     positionTitleBlock();
-    sendBannerSnapshots().catch(() => {});
+    refreshBannerImages().catch(() => {});
   }
   window.addEventListener("resize", () => positionTitleBlock());
 
@@ -1662,33 +1654,18 @@
       // The info dot beside the button carries the wording; the
       // button itself stays tooltip-free
       $("hpRecordInfo").dataset.tip = on
-        ? "Stop the recording. The files render and appear in the dashboard, ready to download."
-        : "Records the show: one combined video plus lossless audio per person, ready in the dashboard when you stop.";
+        ? "Stop the recording. The files appear in the dashboard, ready to download."
+        : "Records the show: everyone's own track, plus one video of the whole thing as it looks on screen.";
       els.hpRecordBtn.classList.toggle("rec-on", on);
-      updateServerRecLock();
-      if (on) scheduleBannerSnapshots();
+      if (on) scheduleBannerImages();
     }
   }
 
-  // The browser/server capture pipeline is picked when recording starts,
-  // so the switch has to lock while a take is running.
-  function updateServerRecLock() {
-    if (!isHost || !els.hpServerRec) return;
-    els.hpServerRec.disabled = recording;
-    updateServerRecTip();
-  }
-  function updateServerRecTip() {
-    // The row's info dot describes all three controls as bullets; the
-    // recording-mode and mute lines follow the current state
-    const server = els.hpServerRec.classList.contains("active");
-    const modeLine = recording
-      ? "Recording mode is locked while recording."
-      : server
-        ? "Recording mode: server - the server captures everyone (best for 2-3 guests). Click to switch to browser."
-        : "Recording mode: browser - each person captures their own track (best for bigger sessions). Click to switch to server.";
+  // The row's info dot describes both controls; the mute line follows
+  // the current state.
+  function updateRowTip() {
     const allMuted = els.hpMuteAllBtn.classList.contains("active");
     $("hpRowInfo").dataset.tip = [
-      modeLine,
       "Auto level: evens out quiet and loud voices for everyone.",
       allMuted ? "Unmute all: unmutes everyone at once." : "Mute all: mutes everyone at once, including you."
     ].join("\n");
@@ -1698,6 +1675,10 @@
     recUpload = upload;
     const base = `/api/rec/chunk?rec=${encodeURIComponent(upload.recId)}&peer=${encodeURIComponent(upload.peerId)}&token=${encodeURIComponent(upload.token)}`;
     recorders = [];
+
+    // The container the browser chose, so the server files it under the
+    // right extension instead of assuming
+    const extOf = (mime) => (mime.startsWith("video/mp4") || mime.startsWith("audio/mp4") ? "mp4" : "webm");
 
     const startOne = (track, kind, mime, bitrate) => {
       if (!track) return;
@@ -1714,7 +1695,7 @@
         const n = seq++;
         // Chunks must land in order - chain the uploads
         queue = queue.then(() =>
-          fetch(`${base}&kind=${kind}&seq=${n}`, { method: "POST", body: e.data })
+          fetch(`${base}&kind=${kind}&ext=${extOf(type)}&seq=${n}`, { method: "POST", body: e.data })
         ).catch(() => {});
       };
       recorder.start(5000);
@@ -1733,7 +1714,11 @@
         micBus.gain.value = micProducer.paused ? 0 : 1;
         ctx.createMediaStreamSource(new MediaStream([micProducer.track])).connect(micBus).connect(m.audioDest);
       }
-      const mimes = ["video/webm;codecs=h264,opus", "video/mp4;codecs=avc1,mp4a.40.2", "video/webm;codecs=avc1,opus"];
+      // H.264 first because it plays in more editors, then VP8, then
+      // whatever the browser offers - one of these always works, so the
+      // show always comes back as a single finished file
+      const mimes = ["video/webm;codecs=h264,opus", "video/mp4;codecs=avc1,mp4a.40.2",
+        "video/webm;codecs=avc1,opus", "video/webm;codecs=vp8,opus", "video/webm"];
       const type = mimes.find((t) => MediaRecorder.isTypeSupported(t));
       if (type) {
         const recorder = new MediaRecorder(stream, { mimeType: type, videoBitsPerSecond: 3_000_000 });
@@ -1743,17 +1728,17 @@
           if (!e.data.size) return;
           const n = seq++;
           queue = queue.then(() =>
-            fetch(`${base}&kind=programme&seq=${n}`, { method: "POST", body: e.data })
+            fetch(`${base}&kind=programme&ext=${extOf(type)}&seq=${n}`, { method: "POST", body: e.data })
           ).catch(() => {});
         };
         recorder.start(5000);
         recorders.push({ recorder, getQueue: () => queue, kind: "programme" });
       } else {
-        console.warn("this browser cannot record H.264; the server will render the combined file after the show");
+        console.warn("this browser records no video at all; only the per-person tracks will arrive");
       }
     }
 
-    // Audio: PCM when the browser can (true lossless), else opus
+    // Audio: uncompressed PCM when the browser can, else Opus
     startOne(micProducer?.track, "audio",
       ["audio/webm;codecs=pcm", "audio/webm;codecs=opus", "audio/webm"]);
     startOne(camProducer?.track, "video",
@@ -1849,17 +1834,8 @@
       enabled: !els.hpAutoGain.classList.contains("active")
     });
   els.hpRecordBtn.onclick = () =>
-    request("hostControl", {
-      action: "record",
-      start: !recording,
-      mode: els.hpServerRec.classList.contains("active") ? "server" : "browser"
-    }).catch((e) => console.error("record toggle failed:", e.message));
-
-  els.hpServerRec.onclick = () => {
-    if (els.hpServerRec.disabled) return;
-    els.hpServerRec.classList.toggle("active");
-    updateServerRecTip();
-  };
+    request("hostControl", { action: "record", start: !recording })
+      .catch((e) => console.error("record toggle failed:", e.message));
 
   // ---------- The programme: the mixer the recording is drawn from ----------
   function ensureMixer() {
@@ -2045,8 +2021,8 @@
           els.session.classList.remove("wallpapered");
         }
       };
-      eventHandlers.recordingStarted = ({ mode, upload }) => {
-        if (mode === "browser" && upload) startSelfRecording(upload);
+      eventHandlers.recordingStarted = ({ upload }) => {
+        if (upload) startSelfRecording(upload);
         else setRecIndicator(true);
       };
       eventHandlers.recordingStopped = () => {

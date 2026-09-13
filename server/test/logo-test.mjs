@@ -1,11 +1,10 @@
 // Theme logo: upload in Settings -> Themes, shows above the episode
 // title on the video, removable, and the host can drag the block.
 import { chromium } from "playwright";
-import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { hostLogin, makeRoom } from "./helpers.mjs";
+import { hostLogin, makeRoom, solidPng } from "./helpers.mjs";
 
 const B = process.argv[2] || "http://127.0.0.1:3999";
 const PW = process.argv[3] || "testpass123";
@@ -13,8 +12,7 @@ let pass = true;
 const check = (label, ok) => { console.log(`${ok ? "OK  " : "FAIL"} ${label}`); pass &&= ok; };
 
 const logoPng = path.join(os.tmpdir(), "fossstudio-testlogo.png");
-execFileSync("ffmpeg", ["-y", "-loglevel", "error",
-  "-f", "lavfi", "-i", "color=c=0xfbc711:size=360x100", "-frames:v", "1", logoPng]);
+fs.writeFileSync(logoPng, solidPng("fbc711"));
 
 const cookie = await hostLogin(B, PW);
 const up = await fetch(`${B}/api/logo`, {

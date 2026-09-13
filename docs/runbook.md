@@ -64,15 +64,15 @@ and keep them somewhere safe.
 
 - **app** - the studio itself (Node.js). Its data lives in `/opt/fossstudio/data`.
 - **caddy** - handles the domain and HTTPS certificate. Renews itself.
+  (Only there if you uncommented it; some installs put their own proxy
+  in front instead.)
 - **coturn** - helps guests behind strict firewalls connect.
 - Deploys land in `/opt/fossstudio/releases/<timestamp>`; the newest 5 are
   kept, and `current` points at the live one. Rollback just points
   `current` at the previous release.
-- A deploy waits for any recording that's actively rendering to finish
-  before restarting the app (up to 3 minutes), and if a render does get
-  interrupted anyway, the server picks it back up and finishes it
-  automatically the next time it starts - so a recording can't be lost
-  to deploy timing.
+- A restart during a take costs only the seconds nobody had uploaded
+  yet. The server does no work on a recording after the fact, so there
+  is never anything in flight for a deploy to interrupt.
 
 ## Uptime check
 

@@ -554,8 +554,8 @@ body.is-guest.rec-dim .controls:hover { opacity: 1; }
   border-top: 1px solid var(--lm-line);
   margin: 0.55rem 0;
 }
-/* Record / Go live / YouTube: stacked full width, fixed height, so the
-   elapsed clocks always have room and nothing ever shifts */
+/* The record button sits full width at a fixed height, so its elapsed
+   clock always has room and nothing shifts when the numbers change */
 .hp-stack { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.45rem; }
 .hp-stack .hp-btn {
   width: 100%;

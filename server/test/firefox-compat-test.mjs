@@ -7,9 +7,8 @@
 //
 // Usage: node test/firefox-compat-test.mjs <url> <password>
 import { firefox } from "playwright";
-import { execFileSync } from "node:child_process";
 import fs from "node:fs";
-import { hostLogin, makeRoom, TEST_HOST } from "./helpers.mjs";
+import { hostLogin, makeRoom, TEST_HOST, probeMedia } from "./helpers.mjs";
 
 const B = process.argv[2] || "http://127.0.0.1:3999";
 const PW = process.argv[3] || "testpass123";
@@ -154,6 +153,8 @@ const browser = await firefox.launch({ firefoxUserPrefs: FF_PREFS });
     video: ["video/webm;codecs=vp8", "video/webm"]
       .find((m) => MediaRecorder.isTypeSupported(m)) || "NONE SUPPORTED"
   }));
+  // Which one it picks is the whole point: Firefox has no PCM recorder,
+  // so its guests are recorded in Opus and that is what they get.
   console.log(`    Firefox MediaRecorder picks: audio=${mediaRecorderChoice.audio} video=${mediaRecorderChoice.video}`);
   check("Firefox supports at least one recordable audio format", mediaRecorderChoice.audio !== "NONE SUPPORTED");
   check("Firefox supports at least one recordable video format", mediaRecorderChoice.video !== "NONE SUPPORTED");
@@ -171,22 +172,18 @@ const browser = await firefox.launch({ firefoxUserPrefs: FF_PREFS });
     await new Promise((r) => setTimeout(r, 1000));
   }
   check(`Firefox-recorded session processed to ready (status: ${rec?.status})`, rec?.status === "ready");
-  check(`combined.mp4 present (${(rec?.files || []).join(", ")})`, (rec?.files || []).includes("combined.mp4"));
-  check("combined.flac present", (rec?.files || []).includes("combined.flac"));
-  check("per-person FLAC present", (rec?.files || []).some((f) => f.endsWith(".flac") && f !== "combined.flac"));
+  const everyone = (rec?.files || []).find((f) => /^everyone\./.test(f));
+  const mine = (rec?.files || []).filter((f) => /-audio\./.test(f));
+  check("a video of everyone came back", !!everyone);
+  check(`a track per person came back (${mine.length})`, mine.length >= 1);
 
-  if (rec?.status === "ready") {
-    const url = `${B}/api/recordings/${rec.id}/files/combined.mp4`;
-    const buf = Buffer.from(await fetch(url, { headers: { Cookie: cookie } }).then((r) => r.arrayBuffer()));
-    fs.writeFileSync(`${OUT}/combined.mp4`, buf);
-    try {
-      const probe = JSON.parse(execFileSync("ffprobe",
-        ["-v", "quiet", "-print_format", "json", "-show_format", "-show_streams", `${OUT}/combined.mp4`]));
-      const dur = Number(probe.format.duration || 0);
-      check(`combined.mp4 from Firefox source is valid and full-length (${dur.toFixed(1)}s)`, dur > 6);
-    } catch (e) {
-      check(`combined.mp4 probe failed: ${e.message}`, false);
-    }
+  if (rec?.status === "ready" && everyone) {
+    // Played in Chromium rather than probed with a media tool: what
+    // matters is that a file recorded in Firefox opens somewhere else.
+    const probe = await probeMedia(host.page,
+      `${B}/api/recordings/${rec.id}/files/${encodeURIComponent(everyone)}`);
+    check(`${everyone} from a Firefox source plays and is full length (${probe.duration?.toFixed(1)}s)`,
+      probe.ok && probe.duration > 6);
   }
 
   await host.ctx.close();

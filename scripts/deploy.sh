@@ -11,12 +11,11 @@
 #
 # Usage: scripts/deploy.sh            (uses $FOSSSTUDIO_HOST, e.g. root@1.2.3.4)
 #        FOSSSTUDIO_URL=https://app.fossstudio.org (default) - the live
-#        site, checked before restarting so an in-flight recording
-#        render isn't killed mid-flight (see /render-status). This is a
-#        courtesy wait, not a hard guarantee: if the server is stuck
-#        rendering past the cap, or unreachable, the deploy proceeds -
-#        the server auto-resumes any recording interrupted mid-render
-#        the moment it comes back up, so nothing is silently lost.
+#        site, health-checked after the restart.
+#
+# A restart during a take costs the seconds nobody had uploaded yet and
+# nothing else: the server does no work on a recording afterwards, so
+# there is never a render in flight to interrupt.
 set -euo pipefail
 
 HOST="${FOSSSTUDIO_HOST:?Set FOSSSTUDIO_HOST, e.g. root@1.2.3.4}"
@@ -37,22 +36,6 @@ rsync -az --delete -e "ssh -i $SSH_KEY -o IdentitiesOnly=yes" \
 
 echo "== Switching current -> $RELEASE =="
 run "activate-release $RELEASE"
-
-echo "== Waiting for any in-flight recording render (up to 3 min) =="
-WAITED=0
-while [ "$WAITED" -lt 180 ]; do
-  RENDERING="$(curl -fsS -m 5 "$SITE_URL/render-status" 2>/dev/null | grep -o '"rendering":[0-9]*' | grep -o '[0-9]*$' || echo "")"
-  if [ -z "$RENDERING" ] || [ "$RENDERING" = "0" ]; then
-    [ "$WAITED" -gt 0 ] && echo "  clear after ${WAITED}s"
-    break
-  fi
-  [ "$WAITED" -eq 0 ] && echo "  a recording is rendering - waiting for it to finish..."
-  sleep 5
-  WAITED=$((WAITED + 5))
-done
-if [ "$WAITED" -ge 180 ]; then
-  echo "  still rendering after 3 minutes - proceeding anyway (it will auto-resume after restart)"
-fi
 
 echo "== Starting stack =="
 run "start-release $RELEASE"

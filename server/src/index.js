@@ -9,7 +9,6 @@ import { api } from "./api.js";
 import { isAuthedRequest } from "./auth.js";
 import { scheduleDailyBackups } from "./ops.js";
 import { initPush } from "./push.js";
-import { resumeOrphanedRecordings, activeRenderCount } from "./recording/manager.js";
 import { findById } from "./users.js";
 import { redeemLink } from "./loginlinks.js";
 import { setAuthCookie } from "./auth.js";
@@ -111,15 +110,6 @@ app.get("/version", (req, res) => {
   res.json({ name: "fossstudio", version: VERSION });
 });
 
-// A deploy checks this before recreating the container: recreating it
-// mid-render kills the ffmpeg process (that cost a real show its
-// combined video once) - the deploy script waits a bit if this is
-// nonzero. No details beyond a count; same posture as /healthz, and
-// kept at top level (not under /api) for the same reason.
-app.get("/render-status", (req, res) => {
-  res.json({ rendering: activeRenderCount() });
-});
-
 // The root goes to the dashboard: on the dedicated panel domains
 // (admin.example.com / host.example.com, when configured) straight to
 // that panel; anywhere else to the host side. Each shows its login when
@@ -172,16 +162,6 @@ server.on("upgrade", (req, socket, head) => {
 await startMediasoup();
 await initPush();
 scheduleDailyBackups();
-
-// A recording can be left mid-render if the process dies before it
-// finishes (a deploy recreating the container is exactly what did this
-// once) - pick any of those back up now, rather than leaving them
-// stuck on "processing" forever with no active render behind them.
-resumeOrphanedRecordings().then((n) => {
-  if (n > 0) {
-    console.log(`resumed ${n} orphaned recording(s) from a previous run - worth checking they came out correctly`);
-  }
-}).catch((err) => console.error("resumeOrphanedRecordings failed:", err.message));
 
 process.on("uncaughtException", (err) => {
   console.error("uncaught exception:", err.stack || err.message);

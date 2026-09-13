@@ -2,25 +2,26 @@
  *
  * Everything the audience will see is already in the host's browser -
  * every face, the lower thirds, the title block, an overlay. So rather
- * than describing that picture to the server and having it draw a second
- * copy with ffmpeg, this browser paints the show onto a 1280x720 canvas
+ * than describing that picture to the server and asking it to draw a
+ * second copy, this browser paints the show onto a 1280x720 canvas
  * thirty times a second, mixes every voice into one track, and encodes
- * the result once. The server stores what it is handed, which is what
- * lets a recording cost it almost nothing.
+ * the result once. The server stores what it is handed and never opens
+ * it, which is what lets a recording cost it almost nothing.
  *
  * The geometry is the recording's geometry, not the screen's: a host's
  * window is whatever shape their laptop is, but the programme is always
- * the same 16:9 frame the server's compositor draws, laid out by the same
- * fractions (LAYOUT in server/src/composite.js; geometry-test.mjs keeps
- * the two in step). What the DOM contributes is the facts - who is in
- * the room, in what order, which layout is on, which banner is theirs.
+ * the same 16:9 frame whatever shape the window is, laid out by the same
+ * fractions the page itself uses (LAYOUT in server/test/layout.js;
+ * geometry-test.mjs keeps them in step). What the DOM contributes is the
+ * facts - who is in the room, in what order, which layout is on, which
+ * banner is theirs.
  */
 (() => {
   "use strict";
 
   const W = 1280, H = 720, FPS = 30;
 
-  // Fractions of frame width, as in server/src/composite.js
+  // Fractions of frame width, as in server/test/layout.js
   const PAD = Math.round(W * (24 / 1280));
   const GAP = Math.round(W * (20 / 1280));
   const RAD = Math.round(W * (16 / 1280));

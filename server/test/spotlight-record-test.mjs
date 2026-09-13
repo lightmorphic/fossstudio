@@ -1,23 +1,14 @@
-// Spotlight used to exist on screen only: the compositors ignored it, so
-// a spotlit session recorded as a plain even grid. This records a real
-// spotlit take and checks the rendered frame is actually a spotlight.
-//
-// It is also the only cover for the mixed-tile-size ffmpeg graph, where
-// the featured tile and the strip tiles need different corner masks.
+// Spotlight used to exist on screen only, so a spotlit session came back
+// as a plain even grid. This records a real spotlit take and checks the
+// picture in the file is actually a spotlight: one tile across the top,
+// the other in a strip beneath it, with a gap between them.
 //   node test/spotlight-record-test.mjs <url> <password>
 import { chromium } from "playwright";
-import { makeRoom } from "./helpers.mjs";
-import fs from "node:fs";
-import os from "node:os";
-import path from "node:path";
-import { execFileSync } from "node:child_process";
-import { tileLayout } from "../src/composite.js";
+import { makeRoom, probeMedia } from "./helpers.mjs";
+import { tileLayout } from "./layout.js";
 
 const B = process.argv[2] || "http://127.0.0.1:3993";
 const PASS = process.argv[3] || "testpass123";
-const FFMPEG = "ffmpeg";
-const DATA = process.env.DATA_DIR || "../data";
-const OUT = fs.mkdtempSync(path.join(os.tmpdir(), "fossstudio-spot-test-"));
 
 let pass = true;
 function check(label, ok, extra = "") {
@@ -25,15 +16,14 @@ function check(label, ok, extra = "") {
   pass &&= ok;
 }
 
-// Mean colour of a box in the rendered frame
-function sample(file, w, h, x, y) {
-  const rgb = execFileSync(FFMPEG, ["-loglevel", "error", "-ss", "5", "-i", file,
-    "-vf", `crop=${w}:${h}:${x}:${y}`, "-frames:v", "1",
-    "-f", "rawvideo", "-pix_fmt", "rgb24", "-"]);
-  let r = 0, g = 0, b = 0;
-  for (let i = 0; i + 2 < rgb.length; i += 3) { r += rgb[i]; g += rgb[i + 1]; b += rgb[i + 2]; }
-  const n = rgb.length / 3;
-  return [r / n, g / n, b / n];
+// Mean colour of a box in the recorded picture, read by playing the file
+// in the browser and drawing a frame onto a canvas.
+let player = null;
+let mediaUrl = null;
+async function sample(w, h, x, y) {
+  const probe = await probeMedia(player, mediaUrl, { at: 5, crop: { x, y, w, h } });
+  if (!probe.ok) throw new Error(probe.error);
+  return probe.rgb;
 }
 // The session background is #14161a; anything much brighter is a tile
 const isBackground = ([r, g, b]) => r < 45 && g < 45 && b < 45;
@@ -81,17 +71,17 @@ try {
   for (let i = 0; i < 60; i++) {
     const list = await login.evaluate(() => fetch("/api/recordings").then((r) => r.json()));
     rec = list.find((r) => r.roomId === roomId);
-    if (rec && ["ready", "failed"].includes(rec.status)) break;
+    if (rec && rec.status === "ready") break;
     await host.waitForTimeout(2000);
   }
-  // A broken filter graph shows up here: the render fails outright
-  check(`recording processed (status: ${rec?.status})`, rec?.status === "ready");
+  check(`recording filed (status: ${rec?.status})`, rec?.status === "ready");
   if (rec?.status !== "ready") throw new Error("nothing to inspect");
 
-  // Read the render off disk: the test runs on the same machine, and
-  // base64-ing a whole video through the page blows the stack
-  const file = path.join(DATA, "recordings", rec.id, "out", "combined.mp4");
-  check("combined.mp4 rendered", fs.existsSync(file), file);
+  const everyone = (rec.files || []).find((f) => /^everyone\./.test(f));
+  check("a video of everyone came back", !!everyone, (rec.files || []).join(", "));
+  if (!everyone) throw new Error("nothing to inspect");
+  player = login;
+  mediaUrl = `/api/recordings/${encodeURIComponent(rec.id)}/files/${encodeURIComponent(everyone)}`;
 
   // Two people spotlit: the featured tile spans the frame at the top,
   // the other sits in the strip below. In an even grid the two tiles
@@ -99,29 +89,28 @@ try {
   // centre column is what tells the two layouts apart.
   const boxes = tileLayout(2, 0);
   const featured = boxes[0], strip = boxes[1];
-  const mid = sample(file, 30, 30, 625, Math.round(featured.y + featured.h / 2));
+  const mid = await sample(30, 30, 625, Math.round(featured.y + featured.h / 2));
   check("centre of the frame is video, not the gap of an even grid",
     !isBackground(mid), `rgb ${mid.map((v) => v.toFixed(0)).join(",")}`);
 
-  const inStrip = sample(file, 30, 20, Math.round(strip.x + strip.w / 2), Math.round(strip.y + strip.h / 2));
+  const inStrip = await sample(30, 20, Math.round(strip.x + strip.w / 2), Math.round(strip.y + strip.h / 2));
   check("the strip below carries the other person",
     !isBackground(inStrip), `rgb ${inStrip.map((v) => v.toFixed(0)).join(",")}`);
 
   // Between the featured tile and the strip there is a real gap
   const gapY = featured.y + featured.h + 4;
-  const between = sample(file, 30, 8, 625, Math.round(gapY));
+  const between = await sample(30, 8, 625, Math.round(gapY));
   check("a gap separates the featured tile from the strip",
     isBackground(between), `rgb ${between.map((v) => v.toFixed(0)).join(",")}`);
 
   // And the very bottom edge is background, not tile
-  const below = sample(file, 30, 8, 625, 715);
+  const below = await sample(30, 8, 625, 715);
   check("padding below the strip", isBackground(below),
     `rgb ${below.map((v) => v.toFixed(0)).join(",")}`);
 } catch (err) {
   check(`test run: ${err.message}`, false);
 } finally {
   await browser.close();
-  fs.rmSync(OUT, { recursive: true, force: true });
 }
 
 console.log(pass ? "ALL PASS" : "FAILURES");

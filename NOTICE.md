@@ -112,15 +112,14 @@ it.
 |---|---|---|
 | Node.js (`node:22-bookworm-slim` base image) | OpenJS Foundation | MIT |
 | Debian bookworm (base image) | Debian | mixed, mostly GPL/MIT/BSD |
-| ffmpeg (turning a recording into its finished files) | FFmpeg project | LGPL-2.1-or-later as packaged by Debian |
 | zip (recording bundles) | Info-ZIP | Info-ZIP licence, BSD-like |
 | Caddy (the reverse proxy in the example compose files) | Light Code Labs | Apache-2.0 |
 
 ## Artwork and media
 
-* `server/assets/subscribe.mp4` is the subscribe overlay. It was
-  rendered for FOSSStudio; the encoder was x264, which does not make
-  its output a derivative work.
+* `server/assets/subscribe.mp4` is the subscribe overlay. It was made
+  for FOSSStudio; the encoder used was x264, which does not make its
+  output a derivative work.
 * `web/icons/icon-192.png`, `web/icons/icon-512.png` and
   `docs/icon.png` are FOSSStudio's own icon.
 * The screenshots under `docs/shots/` are of FOSSStudio itself.

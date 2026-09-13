@@ -17,9 +17,8 @@ import { isSessionBlocked, addSessionBlock } from "./blocklist.js";
 import { notifyUser } from "./push.js";
 import {
   startRecording, stopRecording, activeRecording,
-  addPeerToRecording, uploadCreds, markPeerDone, logOverlay, recDir
+  addPeerToRecording, uploadCreds, markPeerDone
 } from "./recording/manager.js";
-import { capturePeer } from "./recording/serverRecorder.js";
 
 const ROOM_ID_RE = /^[a-zA-Z0-9_-]{4,32}$/;
 // Mirrors BANNER_COLOURS in web/js/session.js: guests' own picks are
@@ -145,13 +144,11 @@ export function attachSignaling() {
             }
             // Someone joining mid-recording starts recording too
             const rec = activeRecording(room.id);
-            if (rec && addPeerToRecording(rec, peer)) {
+            if (rec) {
+              addPeerToRecording(rec, peer);
               socket.send(JSON.stringify({
                 event: "recordingStarted",
-                data: {
-                  mode: rec.mode,
-                  upload: rec.mode === "browser" ? uploadCreds(rec, peer.id) : null
-                }
+                data: { upload: uploadCreds(rec, peer.id) }
               }));
             }
             break;
@@ -164,43 +161,6 @@ export function attachSignaling() {
             room.control.bannerColors[peer.id] = data.color;
             reply({});
             broadcast(room, null, { event: "control", data: room.control });
-            break;
-          }
-
-          case "bannerSnapshots": {
-            // The host's browser renders each on-screen lower-third to a
-            // PNG; the recording compositor overlays these so the
-            // published video matches the screen.
-            if (!peer || peer.role !== "host") return fail("host only");
-            const entries = Object.entries(data.images || {}).slice(0, 30);
-            const dir = path.join(config.dataDir, "banners", room.id);
-            await fs.mkdir(dir, { recursive: true });
-            const rec = activeRecording(room.id);
-            const PREFIX = "data:image/png;base64,";
-            for (const [pid, dataUrl] of entries) {
-              if (!room.peers.has(pid)) continue; // also blocks path tricks
-              if (typeof dataUrl !== "string" || !dataUrl.startsWith(PREFIX)) continue;
-              if (dataUrl.length > 400_000) continue;
-              const buf = Buffer.from(dataUrl.slice(PREFIX.length), "base64");
-              await fs.writeFile(path.join(dir, `${pid}.png`), buf);
-              if (rec) {
-                const name = `banner-${pid}.png`;
-                await fs.writeFile(path.join(recDir(rec.id), "raw", name), buf);
-                const rp = rec.peers.get(pid);
-                if (rp) rp.banner = name;
-              }
-            }
-            // Episode-title chip, composited top-centre of the video
-            if (typeof data.title === "string" && data.title.startsWith(PREFIX) &&
-                data.title.length <= 400_000) {
-              const buf = Buffer.from(data.title.slice(PREFIX.length), "base64");
-              await fs.writeFile(path.join(dir, "__title.png"), buf);
-              if (rec) {
-                await fs.writeFile(path.join(recDir(rec.id), "raw", "title.png"), buf);
-                rec.titleFile = "title.png";
-              }
-            }
-            reply({});
             break;
           }
 
@@ -232,15 +192,6 @@ export function attachSignaling() {
               case "layout": {
                 c.layout = data.layout === "spotlight" ? "spotlight" : "grid";
                 c.spotlightPeerId = c.layout === "spotlight" ? String(data.peerId || "") : null;
-                // The compositor lays tiles out the same way, so the
-                // recording shows the spotlight too. A recording renders
-                // once, at the end, so a mid-take change applies to the
-                // whole take (as titlePos does).
-                const recLayout = activeRecording(room.id);
-                if (recLayout) {
-                  recLayout.layout = c.layout;
-                  recLayout.spotlightPeerId = c.spotlightPeerId;
-                }
                 break;
               }
               case "volume": {
@@ -320,18 +271,10 @@ export function attachSignaling() {
                 const prev = c.titlePos || { x: 0.5, y: 0 };
                 if (next.x === prev.x && next.y === prev.y) break;
                 c.titlePos = next;
-                const recPos = activeRecording(room.id);
-                if (recPos) recPos.titlePos = c.titlePos;
                 break;
               }
               case "titleScale": {
-                // Host resized the block. The compositor scales the
-                // uploaded PNG by the same factor, so screen and video
-                // stay the same size relative to the frame.
-                const s = Math.min(2, Math.max(0.5, Number(data.scale) || 1));
-                c.titleScale = s;
-                const recScale = activeRecording(room.id);
-                if (recScale) recScale.titleScale = s;
+                c.titleScale = Math.min(2, Math.max(0.5, Number(data.scale) || 1));
                 break;
               }
               case "backdrop": {
@@ -415,42 +358,35 @@ export function attachSignaling() {
               }
               case "overlay": {
                 if (!["subscribe", "ad"].includes(data.kind)) return fail("unknown overlay");
-                let adFile = null;
                 let url = null;
                 if (data.kind === "ad") {
                   const settings2 = await getSettings(room.ownerId);
                   if (!settings2.adBanner) {
                     return fail("Upload an advertising banner in Settings → Ad Banner first.");
                   }
-                  adFile = path.join(config.dataDir, "uploads", path.basename(settings2.adBanner));
                   url = `/api/adbanner/${room.ownerId}`;
                 }
                 const duration = data.kind === "subscribe" ? 7 : 18;
                 // Everyone sees it in the session immediately
                 broadcast(room, null, { event: "overlay", data: { kind: data.kind, duration, url } });
-                // Recording? bake it into the final video at this moment
-                const recNow2 = activeRecording(room.id);
-                if (recNow2) await logOverlay(recNow2, data.kind, adFile);
                 return reply({});
               }
               case "record": {
                 if (data.start) {
-                  // The host picks browser or server mode per session
-                  const mode = data.mode === "server" ? "server" : "browser";
-                  const rec = await startRecording(room, mode);
+                  const rec = await startRecording(room);
                   for (const p of room.peers.values()) {
                     if (p.socket.readyState === 1) {
                       p.socket.send(JSON.stringify({
                         event: "recordingStarted",
                         data: {
-                          mode: rec.mode,
-                          upload: rec.mode === "browser" ? uploadCreds(rec, p.id) : null
+                          upload: uploadCreds(rec, p.id)
                         }
                       }));
                     }
                   }
                 } else {
-                  // Tell everyone first; ffmpeg teardown can take seconds
+                  // Tell everyone first: their recorders need a moment to
+                  // flush the last chunk
                   broadcast(room, null, { event: "recordingStopped", data: {} });
                   await stopRecording(room);
                 }
@@ -510,15 +446,6 @@ export function attachSignaling() {
                 source: producer.appData?.source || producer.kind
               }
             });
-            // Server-mode recording: start piping this peer once their
-            // mic + camera are both up
-            const recNow = activeRecording(room.id);
-            if (recNow?.mode === "server" &&
-                peer.producers.size >= 2 &&
-                !(recNow.captures || []).some((c) => c.peerId === peer.id)) {
-              capturePeer(recNow, room, peer).catch((e) =>
-                console.error("mid-session capture failed:", e.message));
-            }
             break;
           }
 

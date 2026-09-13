@@ -1,5 +1,5 @@
 // User accounts: one admin plus any number of sub-admins. Each user
-// carries their own settings (theme, recording mode), so several shows
+// carries their own settings (theme, branding), so several shows
 // can share the server without sharing anything else.
 import crypto from "node:crypto";
 import { readJson, writeJson } from "./storage.js";
@@ -78,12 +78,11 @@ export async function listUsers() {
   return users.map((u) => ({
     id: u.id, username: u.username, role: u.role,
     totpEnabled: u.totpEnabled,
-    allowServerRecording: !!u.allowServerRecording,
     invited: !u.passwordHash
   }));
 }
 
-export async function createUser(username, password, role = "subadmin", allowServerRecording = false) {
+export async function createUser(username, password, role = "subadmin") {
   const users = await load();
   const name = String(username).trim().toLowerCase();
   if (!/^[a-z0-9_-]{2,24}$/.test(name)) {
@@ -99,7 +98,6 @@ export async function createUser(username, password, role = "subadmin", allowSer
     id: crypto.randomUUID(),
     username: name,
     role: role === "admin" ? "admin" : "subadmin",
-    allowServerRecording: !!allowServerRecording,
     passwordHash: hashPassword(password),
     totpEnabled: false,
     totpSecret: null,
@@ -114,7 +112,7 @@ export async function createUser(username, password, role = "subadmin", allowSer
 // The admin enters a username and gets a link back; the new host opens
 // it and picks their own password. No password ever changes hands.
 
-export async function createInvitedUser(username, allowServerRecording) {
+export async function createInvitedUser(username) {
   const users = await load();
   const name = String(username).trim().toLowerCase();
   if (!/^[a-z0-9_-]{2,24}$/.test(name)) {
@@ -127,7 +125,6 @@ export async function createInvitedUser(username, allowServerRecording) {
     id: crypto.randomUUID(),
     username: name,
     role: "subadmin",
-    allowServerRecording: !!allowServerRecording,
     passwordHash: null, // can't log in until the invite is accepted
     inviteToken: crypto.randomBytes(24).toString("base64url"),
     inviteExpires: Date.now() + 7 * 24 * 3600 * 1000,

@@ -26,19 +26,27 @@ segments; put a subscribe reminder or your own advertising banner on
 screen. Everything the host does is what the recording shows, at the
 moment it was done.
 
-Recording is the point of it. A take can be captured in each person's
-own browser (lossless PCM, which is what to use for a full room) or by
-the server (fewer people, nothing asked of their machines). Either
-way, what comes out is one combined MP4 that plays anywhere, a
-lossless FLAC mixdown of everyone, and a lossless FLAC per person, all
-named after the episode and all downloadable from the dashboard, file
-by file or zipped. While a take is running, the host's own browser
-draws and encodes the finished picture, so the server has a video to
-copy rather than one to render.
+Recording is the point of it, and the whole of it happens in the
+browsers taking part. Each person is recorded on their own track, on
+their own machine - uncompressed where the browser can do that, which
+Chromium-based browsers such as Chrome, Brave and Edge can, and in Opus
+where it cannot - and that file is
+what you are given, exactly as it was recorded. Alongside the separate
+tracks comes one video of the whole show: while a take runs, the host's
+browser paints the programme onto a 1280x720 canvas, mixes every voice
+and encodes it, so a finished file arrives rather than a job for the
+server. Everything is in the dashboard when you stop, file by file or
+as a zip.
 
-The video is the picture people were on. Tile sizes, spacing and
-corners come from one set of frame-relative fractions that the browser
-and the server compositor share, and a test holds the two in step. The
+Nothing on the server opens a recording. There is no media tool
+installed in the image, no conversion step in the browser code either,
+and no long-running child process anywhere in the product. The bill for
+that honesty is disk: uncompressed audio runs to about 1.4 GB per
+person per hour, so a long show with a full room wants room to land.
+
+The video of everyone is the picture people were on. Tile sizes,
+spacing and corners come from one set of frame-relative fractions that
+the page and the mixer share, and a test holds the two in step. The
 lower-third name banners, the podcast logo and the episode title block
 are in it too - the host drags that block anywhere, resizes it, and
 right-clicks it for the rest. The theme is pinned the moment the first

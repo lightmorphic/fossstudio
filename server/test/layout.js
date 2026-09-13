@@ -1,7 +1,11 @@
-// Geometry for compositing a session into video. The recording
-// processor and the host's browser draw the same picture, so anything
-// that decides how big something lands in the frame belongs here rather
-// than being written out twice.
+// The reference geometry of a session, in fractions of the frame.
+//
+// Nothing at runtime reads this: the browser lays the grid out and the
+// mixer draws the recording, each with its own copy of these numbers.
+// This is the third copy, and the one the tests measure the other two
+// against - so a change to either that nobody meant shows up as a
+// failure rather than as a recording that no longer looks like the
+// screen people were on.
 
 // The episode logo/title block, as a fraction of frame width. The
 // browser sizes the on-screen block by the same fraction of the video
@@ -9,8 +13,8 @@
 // recording looking like the screen people were actually on.
 export const TITLE_WIDTH_FRACTION = 286 / 1280;
 
-// Host-resizable between half and double size; ffmpeg needs an even
-// width for yuv420p, so round to one.
+// Host-resizable between half and double size, rounded to an even width
+// because video encoders want one.
 export function titleWidth(scale, frameWidth = 1280) {
   const s = Math.min(2, Math.max(0.5, Number(scale) || 1));
   return Math.round(frameWidth * TITLE_WIDTH_FRACTION * s / 2) * 2;
@@ -19,8 +23,8 @@ export function titleWidth(scale, frameWidth = 1280) {
 // Tile grid geometry, as fractions of frame width. session.js lays the
 // on-screen grid out with the same fractions of its video area, so the
 // recording is the same picture instead of a tighter, more zoomed-in
-// one. Kept in step by test/geometry-test.mjs rather than by a shared
-// import, since the browser cannot load anything from server/src.
+// one. Kept in step by geometry-test.mjs rather than by a shared import,
+// since the browser cannot load anything from the server.
 export const LAYOUT = {
   pad: 24 / 1280,
   gap: 20 / 1280,

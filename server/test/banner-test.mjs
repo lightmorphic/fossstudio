@@ -3,22 +3,16 @@ import { makeRoom } from "./helpers.mjs";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
 const B = process.argv[2] || "http://127.0.0.1:3999";
-// Fake cameras are generated here on the fly: this used to point at one
-// machine's scratch directory, so the test only ran for whoever made it
-const CAMS = fs.mkdtempSync(path.join(os.tmpdir(), "fossstudio-banner-test-"));
-for (const cam of ["vcam1.y4m", "vcam2.y4m"]) {
-  execFileSync("ffmpeg", ["-loglevel", "error", "-f", "lavfi", "-i",
-    "testsrc=size=640x480:rate=15:duration=30", "-pix_fmt", "yuv420p",
-    "-y", path.join(CAMS, cam)]);
-}
+const OUT = fs.mkdtempSync(path.join(os.tmpdir(), "fossstudio-banner-test-"));
+// Chromium's own fake camera is enough here: this test reads the name
+// banners out of the DOM, and never looks at what the camera shows.
 const ROOM = await makeRoom(B, "testpass123");
 let pass = true;
 const check = (l, ok) => { console.log(`${ok ? "OK  " : "FAIL"} ${l}`); pass &&= ok; };
 
-async function join(cam, name, tagline, asHost) {
-  const browser = await chromium.launch({ args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream", `--use-file-for-fake-video-capture=${CAMS}/${cam}`, "--autoplay-policy=no-user-gesture-required"] });
+async function join(name, tagline, asHost) {
+  const browser = await chromium.launch({ args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream", "--autoplay-policy=no-user-gesture-required"] });
   const ctx = await browser.newContext({ permissions: ["camera", "microphone"], viewport: { width: 1400, height: 900 }, deviceScaleFactor: 2 });
   if (asHost) {
     const login = await ctx.newPage();
@@ -39,8 +33,8 @@ async function join(cam, name, tagline, asHost) {
   return { browser, page };
 }
 
-const host = await join("vcam1.y4m", "Anna", "Host - awesomepodcast.org", true);
-const guest = await join("vcam2.y4m", "Dev", "Kernel maintainer", false);
+const host = await join("Anna", "Host - awesomepodcast.org", true);
+const guest = await join("Dev", "Kernel maintainer", false);
 await new Promise((r) => setTimeout(r, 3000));
 
 check("banner overlays the bottom-left of the video, compact width",
@@ -104,7 +98,7 @@ check("layout: grid and panel share the row (no overlap)",
     return g.right <= p.left + 1;
   }));
 
-await host.page.screenshot({ path: `${CAMS}/banner-under.png` });
+await host.page.screenshot({ path: `${OUT}/banner-under.png` });
 console.log(pass ? "ALL PASS" : "SOME CHECKS FAILED");
 await host.browser.close(); await guest.browser.close();
 process.exit(pass ? 0 : 1);
