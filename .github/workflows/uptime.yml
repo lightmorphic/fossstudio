@@ -1,6 +1,12 @@
-# Uptime check from outside the VPS: every 15 minutes GitHub's runners
-# hit the health endpoint; on failure Charlie gets an email via SMTP.
-# Needs repo secrets: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, ALERT_EMAIL
+# Uptime check for the project's own demo instance: every 15 minutes
+# GitHub's runners hit its health endpoint and email the maintainer if it
+# does not answer. Needs repo secrets SMTP_HOST, SMTP_PORT, SMTP_USER,
+# SMTP_PASS and ALERT_EMAIL, so it only runs on the upstream repository.
+# A fork inherits the file but not the job.
+#
+# This watches our instance, not yours. If you want the same thing for
+# your own studio, fork it, change the URL and the repository check, and
+# set your own secrets.
 name: uptime
 on:
   schedule:
@@ -9,6 +15,7 @@ on:
 
 jobs:
   check:
+    if: github.repository == 'lightmorphic/fossstudio'
     runs-on: ubuntu-latest
     steps:
       - name: Check health endpoint
@@ -33,10 +40,7 @@ jobs:
           body: |
             The uptime check couldn't reach https://app.fossstudio.org/healthz just now.
 
-            What to try (from the runbook):
-            1. Wait 5 minutes — it may be restarting.
-            2. SSH to the VPS and run: cd /opt/fossstudio/current && docker compose -p fossstudio restart
-            3. If a deploy just happened, roll back: scripts/rollback.sh
+            See docs/runbook.md, "If the site is down".
       - name: Fail the run if down (so it shows red)
         if: steps.health.outputs.up == 'no'
         run: exit 1

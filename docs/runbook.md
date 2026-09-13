@@ -1,5 +1,10 @@
 # FOSSStudio Runbook
 
+> **This project is in public beta.** It is not ready to be relied on;
+> data loss and breaking changes are possible. Please do not put a real
+> show on it yet. This document describes the beta as it stands and will
+> change with it.
+
 Plain-language guide for keeping FOSSStudio running. **Almost everything
 lives in the dashboard** - https://YOUR-DOMAIN/admin/ for the admin panel, https://YOUR-DOMAIN/host/ for hosts →
 System tab. This file is for when the dashboard itself is unreachable.
@@ -23,7 +28,7 @@ You'll get an email from the uptime check when this happens.
 1. **Wait 5 minutes.** It may just be restarting itself.
 2. SSH to the VPS:
    ```
-   ssh root@77.74.199.121
+   ssh root@YOUR-SERVER
    ```
 3. Restart everything:
    ```
@@ -36,7 +41,7 @@ You'll get an email from the uptime check when this happens.
 5. If it broke right after a deploy, roll back to the previous version
    (from the dev machine, in the project folder):
    ```
-   FOSSSTUDIO_HOST=root@77.74.199.121 ./scripts/rollback.sh
+   FOSSSTUDIO_HOST=root@YOUR-SERVER ./scripts/rollback.sh
    ```
 
 ## Restore a backup when the dashboard is down
@@ -44,7 +49,7 @@ You'll get an email from the uptime check when this happens.
 Backups are on the VPS at `/opt/fossstudio/data/backups/`.
 
 ```
-ssh root@77.74.199.121
+ssh root@YOUR-SERVER
 cd /opt/fossstudio/data
 tar -xzf backups/backup-<pick-the-date-you-want>.tar.gz -C .
 cd /opt/fossstudio/current && docker compose -p fossstudio restart app

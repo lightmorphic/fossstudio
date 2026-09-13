@@ -20,7 +20,9 @@
 set -euo pipefail
 
 HOST="${FOSSSTUDIO_HOST:?Set FOSSSTUDIO_HOST, e.g. root@1.2.3.4}"
-SSH_KEY="${FOSSSTUDIO_SSH_KEY:-/home/charlie/9-Claude/ssh/lightmorphic-fossstudio-vps-deploy}"
+# Path to the private key that may run the server-side wrapper. There is
+# no sensible default, so set it: FOSSSTUDIO_SSH_KEY=~/.ssh/your-deploy-key
+SSH_KEY="${FOSSSTUDIO_SSH_KEY:?Set FOSSSTUDIO_SSH_KEY to the path of the deploy key}"
 SITE_URL="${FOSSSTUDIO_URL:-https://app.fossstudio.org}"
 RELEASE="$(date +%Y%m%d-%H%M%S)"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"

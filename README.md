@@ -1,10 +1,44 @@
+> ## Public beta. Not ready to be relied on.
+>
+> **This is a public beta. It is not ready to be relied on. Data loss
+> and breaking changes are possible. Please do not put a real show on
+> it yet.**
+>
+> We want people to install it, break it and tell us what happened.
+> That is what a beta is for. What we are not ready for is being the
+> only thing standing between you and a recording you cannot make
+> again. Record a test show first, and keep a second recording running
+> for anything that matters.
+>
+> Releases are marked as pre-release on GitHub. The current version is
+> `1.0.0-beta.1`.
+
 # FOSSStudio
 
 Self-hosted video podcast studio, a StreamYard replacement for everyone.
 Guests join by link with no account; the host runs everything from a web
 dashboard.
 
+## Free, and staying free
+
+FOSSStudio is free software under the GPL, and it always will be. Put
+the compose file on a machine you control and it is yours: no account,
+no key, no tier, no per-guest charge, no watermark, nothing phoning
+home. Everything in this repository is everything there is.
+
+A studio needs a server with open UDP ports and enough bandwidth for
+everyone's video, which is more to think about than most web apps. If
+you would rather not, the people who write FOSSStudio also host it:
+**[Castmorphic](https://castmorphic.com)** runs this same software for
+you, with more built on top of it, and paying for that is what funds
+the work here. It is an alternative to self-hosting, not a better
+version of it. You will not find an advert for it inside the software,
+and you never will.
+
 ## What it does
+
+<!-- Every claim below is something the current code does. If you find
+     one that isn't, that is a bug report we want. -->
 
 - **Guest flow:** open link → preview screen (camera/mic/speaker pick,
   speaker test sound, mic meter, **camera zoom** (real lens zoom where
@@ -135,9 +169,51 @@ dashboard.
 - **Email:** SMTP configured in the dashboard; all outgoing mail uses a
   branded HTML template with a plain-text fallback.
 
-See [CHANGELOG.md](CHANGELOG.md) for release history and
-[SECURITY.md](SECURITY.md) for the security policy. FOSSStudio is free
-software under the [GNU GPL v3](LICENSE).
+## What it does not do
+
+FOSSStudio records and broadcasts a show. It does not publish one.
+
+- **No podcast hosting.** No RSS feed, no episode website, no download
+  statistics, no directory submission. That is
+  [FOSSCast](https://github.com/lightmorphic/fosscast), a separate app.
+  One click sends a finished recording from here to there; neither
+  needs the other to run.
+- **No editing.** You get the recording, the per-person lossless files
+  and the combined video. Trimming, cutting and mixing happen in
+  whatever editor you already use.
+- **No transcription and no captions.**
+- **No audience accounts, memberships or payments.** The watch page is
+  public, or it is not there.
+- **No telephone dial-in and no SIP.** Guests join in a browser.
+- **No cloud anything.** There is no service behind this: no relay we
+  run, no account with us, no limit we could lift. If your server
+  cannot do it, it does not happen.
+
+## Reporting a problem
+
+- **Something broken, something confusing, something missing:** open an
+  issue on GitHub. During the beta this is the most useful thing you
+  can do. Tell us what you did, what you expected and what happened.
+  If it is a media problem (people join but see a black screen), run
+  the setup check described below and paste what it says.
+- **A security problem:** please report it privately first.
+  [SECURITY.md](SECURITY.md) says how.
+- **Code:** we are not merging pull requests during the beta.
+  [CONTRIBUTING.md](CONTRIBUTING.md) explains why in full, and says what
+  changes after the beta.
+
+## Licence
+
+Free software under the [GNU GPL v3](LICENSE).
+
+[NOTICE.md](NOTICE.md) records who wrote what. FOSSStudio is
+Lightmorphic's own work throughout; the third-party material is hls.js
+(Apache-2.0), mediasoup-client (ISC), RNNoise via `@jitsi/rnnoise-wasm`
+(Apache-2.0 over BSD-3-Clause), the Manrope typeface (SIL OFL 1.1) and
+the brand outlines in the off-air game (CC0). Four runtime npm
+dependencies, listed there with their licences.
+
+See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ## Stack
 

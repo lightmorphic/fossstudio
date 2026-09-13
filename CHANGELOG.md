@@ -2,6 +2,55 @@
 
 All notable changes to FOSSStudio are documented here.
 
+## 1.0.0-beta.1 - 2026-09-13
+
+The first release published openly, and the number says what it is: a
+beta. Nothing in the studio changed for it. What changed is that the
+project now states plainly what it is, who owns it, what it will never
+grow into, and that it is not yet ready to carry a show you cannot
+record again.
+
+**This is a public beta. It is not ready to be relied on. Data loss and
+breaking changes are possible. Please do not put a real show on it
+yet.** The README says so above everything else, and releases are
+marked as pre-release on GitHub.
+
+The number goes backwards from 1.6.0 on purpose. Those were private
+releases nobody outside could follow, and numbering a first public beta
+as 1.6 would imply a history strangers could look up. Everything the
+1.x line built is still here; it is all listed below this entry.
+
+- `NOTICE.md`, so the ownership claim can be checked rather than taken
+  on trust. Every line of FOSSStudio is Lightmorphic's own work. The
+  third-party material is set out file by file: hls.js (Apache-2.0),
+  mediasoup-client (ISC), RNNoise through `@jitsi/rnnoise-wasm`
+  (Apache-2.0 over Xiph's BSD-3-Clause, with Emscripten's MIT glue), the
+  Manrope typeface (SIL OFL 1.1) and the Simple Icons outlines the
+  off-air game shoots at (CC0). Four runtime npm dependencies, all
+  permissive but `web-push`, which is MPL-2.0 and used unchanged.
+
+- `CONTRIBUTING.md`, which the project did not have. Bug reports and
+  discussion are wanted; code is not merged, because one person owning
+  all of it is what makes the hosted edition possible, and a patch from
+  a stranger would end that for the patch. It says what happens after
+  the beta: either a contributor agreement, or contributions under the
+  GPL with the relicensing right given up. That has not been decided.
+
+- The README says what FOSSStudio does *not* do, and means it as a
+  boundary rather than a queue: no podcast hosting, no editing, no
+  transcription, no audience accounts, no dial-in, and nothing in the
+  cloud, because there is no service behind it. It also says where to
+  report a problem, and that the people who write it will host it for
+  you if you would rather not open UDP ports.
+
+- Operational details that belonged to the maintainer rather than the
+  project are out of the tree: a server address repeated through
+  `docs/runbook.md`, a record of one afternoon's website pass, and a
+  path to a private key file that the deploy scripts defaulted to. The
+  scripts take `FOSSSTUDIO_SSH_KEY` and say so. The uptime workflow now
+  runs only on the origin repository, so a fork does not inherit a job
+  that emails somebody else.
+
 ## Unreleased
 
 - **Sign-in links, and a first host.** `node admin-login-link.js
