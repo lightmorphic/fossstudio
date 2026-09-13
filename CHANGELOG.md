@@ -43,7 +43,7 @@ entry.
   all of it is what makes the hosted edition possible, and a patch from
   a stranger would end that for the patch. It says what happens after
   the beta: either a contributor agreement, or contributions under the
-  GPL with the relicensing right given up. That has not been decided.
+  AGPL with the relicensing right given up. That has not been decided.
 
 - The README says what FOSSStudio does *not* do, and means it as a
   boundary rather than a queue: no podcast hosting, no editing, no
