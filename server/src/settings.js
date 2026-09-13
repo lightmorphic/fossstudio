@@ -1,15 +1,32 @@
-// Per-user settings (validated patches) and the session registry.
+// The studio's settings (validated patches) and its sessions. There is
+// one studio, so nothing here asks whose.
 import crypto from "node:crypto";
-import fs from "node:fs/promises";
-import path from "node:path";
 import { readJson, writeJson } from "./storage.js";
-import { getUserSettings, updateUserSettings } from "./users.js";
+import { legacyAccountSettings } from "./account.js";
 
-export async function getSettings(uid) {
-  return getUserSettings(uid);
+const FILE = "settings.json";
+
+export const SETTINGS_DEFAULTS = {
+  wallpaper: null,
+  bg: null,
+  logo: null
+};
+
+// Installs from the days when the look was carried on an account bring
+// it across the first time the settings are read, and never again.
+export async function migrateSettings() {
+  if (await readJson(FILE)) return;
+  const old = await legacyAccountSettings();
+  if (!old) return;
+  await writeJson(FILE, { ...SETTINGS_DEFAULTS, ...old });
+  console.log("moved the studio's look out of the account file into settings.json");
 }
 
-export async function updateSettings(uid, patch) {
+export async function getSettings() {
+  return { ...SETTINGS_DEFAULTS, ...(await readJson(FILE, {})) };
+}
+
+export async function updateSettings(patch) {
   const clean = {};
   if (patch.wallpaper === null || typeof patch.wallpaper === "string") {
     clean.wallpaper = patch.wallpaper;
@@ -35,16 +52,18 @@ export async function updateSettings(uid, patch) {
   if (typeof patch.fosscastToken === "string") {
     clean.fosscastToken = patch.fosscastToken.trim().slice(0, 300);
   }
-  return updateUserSettings(uid, clean);
+  const next = { ...(await getSettings()), ...clean };
+  await writeJson(FILE, next);
+  return next;
 }
 
-// ---------- sessions (each belongs to a user) ----------
+// ---------- sessions ----------
+// A stored session from an install that had several accounts still
+// carries the ownerId it was created with. Nothing reads it any more;
+// it is left alone rather than rewritten.
 
-export async function listSessions(user) {
-  const sessions = await readJson("sessions.json", []);
-  return user.role === "admin"
-    ? sessions
-    : sessions.filter((s) => s.ownerId === user.uid);
+export async function listSessions() {
+  return readJson("sessions.json", []);
 }
 
 export async function findSession(id) {
@@ -52,11 +71,10 @@ export async function findSession(id) {
   return sessions.find((s) => s.id === id) || null;
 }
 
-export async function createSession(user, title) {
+export async function createSession(title) {
   const sessions = await readJson("sessions.json", []);
   const session = {
     id: crypto.randomBytes(4).toString("hex"),
-    ownerId: user.uid,
     title: String(title || "").trim().slice(0, 80) || "Untitled session",
     createdAt: new Date().toISOString()
   };
@@ -65,25 +83,16 @@ export async function createSession(user, title) {
   return session;
 }
 
-
-export async function renameSession(user, id, title) {
+export async function renameSession(id, title) {
   const sessions = await readJson("sessions.json", []);
-  const session = sessions.find((s) =>
-    s.id === id && (s.ownerId === user.uid || user.role === "admin"));
+  const session = sessions.find((s) => s.id === id);
   if (!session) return null;
   session.title = String(title || "").trim().slice(0, 80) || "Untitled session";
   await writeJson("sessions.json", sessions);
   return session;
 }
 
-export async function deleteSession(user, id) {
+export async function deleteSession(id) {
   const sessions = await readJson("sessions.json", []);
-  await writeJson("sessions.json", sessions.filter((s) =>
-    s.id !== id || (s.ownerId !== user.uid && user.role !== "admin")));
-}
-
-// Remove every session belonging to a user (used when the account is deleted)
-export async function deleteSessionsByOwner(uid) {
-  const sessions = await readJson("sessions.json", []);
-  await writeJson("sessions.json", sessions.filter((s) => s.ownerId !== uid));
+  await writeJson("sessions.json", sessions.filter((s) => s.id !== id));
 }

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>FOSSStudio - Host</title>
+<title>FOSSStudio - Dashboard</title>
 <link rel="stylesheet" href="/host/host.css?v=20260823f">
 <link rel="stylesheet" href="/css/tip.css?v=20260823f">
 <link rel="manifest" href="/manifest.json">
@@ -114,7 +114,7 @@
         <div class="panel">
           <h2>Your account</h2>
           <p style="margin-bottom:0.3rem"><strong id="accountName"></strong></p>
-          <p class="hint" id="accountRole"></p>
+          <p class="hint">The studio's one login. Your sessions, recordings and settings are all under it.</p>
         </div>
         <div class="panel">
           <h2>Account name</h2>
@@ -166,32 +166,7 @@
         </div>
       </section>
 
-      <!-- Users (admin) -->
-      <section id="pane-users" class="stack" hidden>
-        <div class="panel">
-          <h2>Invite a host</h2>
-          <p class="hint" style="margin-bottom:0.8rem">Hosts run shows: they get their own sessions, recordings and theme. Create the account and the invite link is copied for you - send it to them however you like, and they choose their own password.</p>
-          <form id="newUserForm" style="display:flex; gap:0.75rem; flex-wrap:wrap; align-items:center">
-            <input type="text" id="newUserName" placeholder="username" autocomplete="off" style="flex:1; min-width:8rem">
-            <button class="btn primary" type="submit">Create invite link</button>
-          </form>
-          <p class="msg" id="userMsg" hidden></p>
-          <details style="margin-top:0.8rem">
-            <summary class="hint" style="cursor:pointer">Or add a host with a password instead</summary>
-            <form id="newUserPwForm" style="display:flex; gap:0.75rem; flex-wrap:wrap; margin-top:0.7rem">
-              <input type="text" id="pwUserName" placeholder="username" autocomplete="off" style="flex:1; min-width:8rem">
-              <input type="password" id="pwUserPass" placeholder="password (10+ chars)" autocomplete="new-password" style="flex:1; min-width:10rem">
-              <button class="btn" type="submit">Add host</button>
-            </form>
-          </details>
-        </div>
-        <div class="panel">
-          <h2>Hosts</h2>
-          <div id="userList"><p class="hint">Loading…</p></div>
-        </div>
-      </section>
-
-      <!-- System (admin) -->
+      <!-- System -->
       <section id="pane-service" class="stack" hidden>
         <div class="panel">
           <h2>Service</h2>

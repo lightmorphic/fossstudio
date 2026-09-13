@@ -1,5 +1,5 @@
-// Web push, per user: "guest joined" and "recording ready" nudges go
-// to whoever owns the session. VAPID keys live in the data dir.
+// Web push: "guest joined" and "recording ready" nudges go to whatever
+// the host has subscribed. VAPID keys live in the data dir.
 import webpush from "web-push";
 import { readJson, writeJson } from "./storage.js";
 import { config } from "./config.js";
@@ -19,26 +19,18 @@ export function publicKey() {
   return keys?.publicKey;
 }
 
-export async function addSubscription(uid, sub) {
+export async function addSubscription(sub) {
   const subs = await readJson("push-subs.json", []);
   if (!subs.some((s) => s.endpoint === sub.endpoint)) {
-    subs.push({ uid, ...sub });
+    subs.push(sub);
     await writeJson("push-subs.json", subs);
   }
 }
 
-// Drop a user's push subscriptions when their account is deleted
-export async function removeUserSubscriptions(uid) {
-  const subs = await readJson("push-subs.json", []);
-  const kept = subs.filter((s) => s.uid !== uid);
-  if (kept.length !== subs.length) await writeJson("push-subs.json", kept);
-}
-
-export async function notifyUser(uid, title, body) {
+export async function notify(title, body) {
   const subs = await readJson("push-subs.json", []);
   const alive = [];
   for (const sub of subs) {
-    if (uid && sub.uid && sub.uid !== uid) { alive.push(sub); continue; }
     try {
       await webpush.sendNotification(sub, JSON.stringify({ title, body }));
       alive.push(sub);

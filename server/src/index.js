@@ -9,7 +9,8 @@ import { api } from "./api.js";
 import { isAuthedRequest } from "./auth.js";
 import { scheduleDailyBackups } from "./ops.js";
 import { initPush } from "./push.js";
-import { findById } from "./users.js";
+import { migrateSettings } from "./settings.js";
+import { ensureAccount, findById } from "./account.js";
 import { redeemLink } from "./loginlinks.js";
 import { setAuthCookie } from "./auth.js";
 
@@ -61,23 +62,17 @@ app.use((req, res, next) => {
 
 app.use("/api", api);
 
-// The two panels are separate sessions with separate cookies, so the
-// admin (fleet) panel and a host dashboard can be open side by side.
-// Same shell, gated by the matching cookie; everything inside is
+// The dashboard: one page behind one login, and everything inside it is
 // API-gated too.
 app.get(["/host", "/host/"], (req, res) => {
-  if (!isAuthedRequest(req, "host")) return res.redirect("/host/login.html");
-  res.sendFile(path.join(config.webDir, "host", "index.html"));
-});
-app.get(["/admin", "/admin/"], (req, res) => {
-  if (!isAuthedRequest(req, "admin")) return res.redirect("/host/login.html");
+  if (!isAuthedRequest(req)) return res.redirect("/host/login.html");
   res.sendFile(path.join(config.webDir, "host", "index.html"));
 });
 
-// A one-time sign-in link from admin-login-link.js: redeemed here, it
-// becomes an ordinary session for that account and sends them to the
-// panel their role lives in. Used up on the first visit; a second
-// visit, or a stale one, lands on the login page like anyone else.
+// A one-time sign-in link from login-link.js: redeemed here, it becomes
+// an ordinary session and sends them to the dashboard. Used up on the
+// first visit; a second visit, or a stale one, lands on the login page
+// like anyone else.
 app.get("/link/:token([A-Za-z0-9_-]{16,200})", async (req, res) => {
   const uid = await redeemLink(req.params.token).catch(() => null);
   const user = uid ? await findById(uid).catch(() => null) : null;
@@ -89,7 +84,7 @@ app.get("/link/:token([A-Za-z0-9_-]{16,200})", async (req, res) => {
   if (req.query.embed === "1") {
     res.append("Set-Cookie", "fs_embed=1; Path=/; Secure; SameSite=Lax; Max-Age=43200");
   }
-  res.redirect(user.role === "admin" ? "/admin/" : "/host/");
+  res.redirect("/host/");
 });
 
 app.get("/healthz", (req, res) => {
@@ -110,26 +105,20 @@ app.get("/version", (req, res) => {
   res.json({ name: "fossstudio", version: VERSION });
 });
 
-// The root goes to the dashboard: on the dedicated panel domains
-// (admin.example.com / host.example.com, when configured) straight to
-// that panel; anywhere else to the host side. Each shows its login when
-// signed out. Guests never visit the root - they arrive on /s/<id>
-// links - so nothing is lost by forwarding it.
+// The root goes to the dashboard, which shows its login when signed
+// out. Guests never visit the root - they arrive on /s/<id> links - so
+// nothing is lost by forwarding it.
 app.get("/", (req, res) => {
-  const name = (req.hostname || "").toLowerCase();
-  const target = panelDomains("admin").has(name) ? "/admin/" : "/host/";
-  res.redirect(target);
+  res.redirect("/host/");
 });
 
 // Caddy asks here before fetching a certificate on demand: only the
-// panel domains derived from DOMAIN (plus explicit ADMIN_DOMAIN /
-// HOST_DOMAIN) are approved, so pointing a random name at this server
-// can never mint a certificate. Same public posture as /healthz - the
-// answer reveals nothing beyond names any visitor already sees.
+// dashboard domain derived from DOMAIN (plus an explicit HOST_DOMAIN)
+// is approved, so pointing a random name at this server can never mint
+// a certificate. Same public posture as /healthz - the answer reveals
+// nothing beyond names any visitor already sees.
 app.get("/tls-allowed", (req, res) => {
-  const d = String(req.query.domain || "").toLowerCase();
-  const ok = panelDomains("admin").has(d) || panelDomains("host").has(d);
-  res.status(ok ? 200 : 404).end();
+  res.status(panelDomains().has(String(req.query.domain || "").toLowerCase()) ? 200 : 404).end();
 });
 
 // Session links guests receive: https://<domain>/s/<room-id>
@@ -159,6 +148,11 @@ server.on("upgrade", (req, socket, head) => {
   wssSignal.handleUpgrade(req, socket, head, (ws) => wssSignal.emit("connection", ws, req));
 });
 
+// The account and the studio's settings are put right before anything
+// can be served: the password in the settings file is true on every
+// start, not only the first.
+await ensureAccount();
+await migrateSettings();
 await startMediasoup();
 await initPush();
 scheduleDailyBackups();

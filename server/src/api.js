@@ -1,5 +1,5 @@
-// Host + public HTTP API. Admins see everything; sub-admins see only
-// what they own (sessions, recordings, their own settings).
+// The studio's HTTP API. One account is signed in or nobody is; there
+// is nothing to divide up and nobody to hide anything from.
 import express from "express";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -11,11 +11,9 @@ import {
 } from "./auth.js";
 import {
   getSettings, updateSettings, listSessions, createSession, deleteSession, findSession,
-  renameSession,
-  deleteSessionsByOwner,
+  renameSession
 } from "./settings.js";
-import { listUsers, createUser, deleteUser, findById, updateUser, findByUsername } from "./users.js";
-import { hashPassword } from "./auth.js";
+import { getAccount, updateAccount } from "./account.js";
 import { getRoom } from "./rooms.js";
 import {
   verifyUploadToken, appendChunk, markPeerDone,
@@ -32,26 +30,8 @@ import { listSessionBlocked, unblockSession } from "./blocklist.js";
 export const api = express.Router();
 api.use(express.json({ limit: "64kb" }));
 
-// Each panel names itself (X-Panel: admin|host) so account-level calls
-// like /me resolve the right one of the two coexisting sessions; calls
-// without the header accept either, host first.
-function panelPrefer(req) {
-  const p = req.headers["x-panel"];
-  return p === "admin" || p === "host" ? p : "any";
-}
-
 function requireAuth(req, res, next) {
-  const user = isAuthedRequest(req, panelPrefer(req));
-  if (!user) return res.status(401).json({ error: "not logged in" });
-  req.user = user;
-  next();
-}
-
-function requireAdmin(req, res, next) {
-  const user = isAuthedRequest(req, "admin");
-  if (!user) return res.status(401).json({ error: "not logged in" });
-  if (user.role !== "admin") return res.status(403).json({ error: "admin only" });
-  req.user = user;
+  if (!isAuthedRequest(req)) return res.status(401).json({ error: "not logged in" });
   next();
 }
 
@@ -62,35 +42,28 @@ api.post("/login", async (req, res) => {
   const result = await tryLogin(ip, req.body.username, req.body.password, req.body.totp);
   if (!result.ok) return res.status(401).json({ error: result.error });
   setAuthCookie(res, result.user);
-  // The login page sends admins to /admin/ and hosts to /host/
-  res.json({ ok: true, role: result.user.role });
+  res.json({ ok: true });
 });
 
 api.post("/logout", (req, res) => {
-  // Only this panel's session ends; the other panel's tab stays in
-  clearAuthCookie(res, panelPrefer(req) === "any" ? "both" : panelPrefer(req));
+  clearAuthCookie(res);
   res.json({ ok: true });
 });
 
 api.get("/me", async (req, res) => {
-  const payload = isAuthedRequest(req, panelPrefer(req));
-  if (!payload) return res.json({ authed: false });
-  const user = await findById(payload.uid);
-  res.json({ authed: !!user, uid: user?.id, role: user?.role, username: user?.username });
+  if (!isAuthedRequest(req)) return res.json({ authed: false });
+  const acc = await getAccount();
+  res.json({ authed: true, username: acc.username });
 });
 
-// Rename your own account (the login name). The session cookie is keyed on
-// the user id, not the name, so a rename never logs you out.
+// Rename the account (the login name). The session cookie is keyed on
+// the account id, not the name, so a rename never logs you out.
 api.post("/username", requireAuth, async (req, res) => {
   const name = String(req.body.username || "").trim().toLowerCase();
   if (!/^[a-z0-9_-]{2,24}$/.test(name)) {
     return res.status(400).json({ error: "Names are 2-24 characters: lowercase letters, numbers, - or _." });
   }
-  const existing = await findByUsername(name);
-  if (existing && existing.id !== req.user.uid) {
-    return res.status(400).json({ error: "That name is taken." });
-  }
-  await updateUser(req.user.uid, { username: name });
+  await updateAccount({ username: name });
   res.json({ ok: true, username: name });
 });
 
@@ -99,125 +72,33 @@ api.post("/password", requireAuth, async (req, res) => {
   if (pw.length < 10) {
     return res.status(400).json({ error: "Password needs at least 10 characters." });
   }
-  await changePassword(req.user.uid, pw);
+  await changePassword(pw);
   res.json({ ok: true });
 });
 
-api.get("/2fa", requireAuth, async (req, res) => res.json(await get2faState(req.user.uid)));
-api.post("/2fa/setup", requireAuth, async (req, res) => res.json(await setup2fa(req.user.uid)));
+api.get("/2fa", requireAuth, async (req, res) => res.json(await get2faState()));
+api.post("/2fa/setup", requireAuth, async (req, res) => res.json(await setup2fa()));
 api.post("/2fa/enable", requireAuth, async (req, res) => {
-  const ok = await confirm2fa(req.user.uid, req.body.code);
+  const ok = await confirm2fa(req.body.code);
   ok ? res.json({ ok: true }) : res.status(400).json({ error: "That code isn't right - check your authenticator app." });
 });
 api.post("/2fa/disable", requireAuth, async (req, res) => {
-  const ok = await disable2fa(req.user.uid, req.body.code);
+  const ok = await disable2fa(req.body.code);
   ok ? res.json({ ok: true }) : res.status(400).json({ error: "That code isn't right - check your authenticator app." });
-});
-
-// ---------- users (admin only) ----------
-
-api.get("/users", requireAdmin, async (req, res) => res.json(await listUsers()));
-
-api.post("/users", requireAdmin, async (req, res) => {
-  try {
-    res.json(await createUser(req.body.username, req.body.password, req.body.role));
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-// Invite a host: the reply carries the link they use to choose their
-// own password. The admin passes it on however they like.
-api.post("/users/invite", requireAdmin, async (req, res) => {
-  try {
-    const { createInvitedUser } = await import("./users.js");
-    const user = await createInvitedUser(req.body.username);
-    res.json({ ok: true, inviteUrl: `https://${config.domain}/host/invite.html?token=${user.inviteToken}` });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-// Public: accepting an invite (token is the credential)
-api.get("/invite/:token", async (req, res) => {
-  const { findByInviteToken } = await import("./users.js");
-  const user = await findByInviteToken(req.params.token);
-  user
-    ? res.json({ username: user.username })
-    : res.status(404).json({ error: "This invite link has expired or was already used." });
-});
-
-api.post("/invite/accept", async (req, res) => {
-  try {
-    const { acceptInvite } = await import("./users.js");
-    await acceptInvite(String(req.body.token || ""), String(req.body.password || ""));
-    res.json({ ok: true });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-api.delete("/users/:id", requireAdmin, async (req, res) => {
-  try {
-    const uid = String(req.params.id);
-    // deleteUser enforces the "can't delete the only admin" rule and
-    // removes the account first; if it throws, nothing below runs.
-    await deleteUser(uid);
-    // Complete deletion for privacy: purge everything the user owned -
-    // recordings (and their files), sessions, uploaded media, push subs.
-    for (const rec of (await listRecordings()).filter((r) => r.ownerId === uid)) {
-      await deleteRecording(rec.id);
-    }
-    await deleteSessionsByOwner(uid);
-    const udir = path.join(config.dataDir, "uploads");
-    try {
-      for (const f of await fs.readdir(udir)) {
-        // wallpaper-/logo-/ad- files all embed the owner uid
-        if (f.includes(uid)) await fs.unlink(path.join(udir, f)).catch(() => {});
-      }
-    } catch { /* no uploads dir */ }
-    const { removeUserSubscriptions } = await import("./push.js");
-    await removeUserSubscriptions(uid);
-    res.json({ ok: true });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-api.post("/users/:id/password", requireAdmin, async (req, res) => {
-  const pw = String(req.body.password || "");
-  if (pw.length < 10) {
-    return res.status(400).json({ error: "Password needs at least 10 characters." });
-  }
-  try {
-    await updateUser(req.params.id, { passwordHash: hashPassword(pw) });
-    res.json({ ok: true });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
 });
 
 // ---------- settings & theme ----------
 
-api.get("/settings", requireAuth, async (req, res) => res.json(await getSettings(req.user.uid)));
+api.get("/settings", requireAuth, async (req, res) => res.json(await getSettings()));
 api.put("/settings", requireAuth, async (req, res) => {
   try {
-    res.json(await updateSettings(req.user.uid, req.body));
+    res.json(await updateSettings(req.body));
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
-// Public: what a guest's session page needs, resolved via the room owner
-api.get("/theme", async (req, res) => {
-  const session = req.query.room ? await findSession(String(req.query.room)) : null;
-  const s = await getSettings(session?.ownerId);
-  res.json({
-    wallpaper: s.wallpaper && session ? `/api/wallpaper/${session.ownerId}` : null
-  });
-});
-
-// Wallpaper: per-user file, capped size
+// Wallpaper: one file, capped size
 api.post("/wallpaper", requireAuth,
   express.raw({ type: ["image/jpeg", "image/png", "image/webp"], limit: "8mb" }),
   async (req, res) => {
@@ -225,14 +106,14 @@ api.post("/wallpaper", requireAuth,
       return res.status(400).json({ error: "Send a JPEG, PNG, or WebP image." });
     }
     const ext = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" }[req.headers["content-type"]];
-    const name = `wallpaper-${req.user.uid}.${ext}`;
+    const name = `wallpaper.${ext}`;
     const dir = path.join(config.dataDir, "uploads");
     await fs.mkdir(dir, { recursive: true });
     for (const f of await fs.readdir(dir)) {
-      if (f.startsWith(`wallpaper-${req.user.uid}.`)) await fs.unlink(path.join(dir, f));
+      if (f.startsWith("wallpaper.")) await fs.unlink(path.join(dir, f));
     }
     await fs.writeFile(path.join(dir, name), req.body);
-    await updateSettings(req.user.uid, { wallpaper: name });
+    await updateSettings({ wallpaper: name });
     res.json({ ok: true });
   });
 
@@ -240,22 +121,15 @@ api.delete("/wallpaper", requireAuth, async (req, res) => {
   const dir = path.join(config.dataDir, "uploads");
   try {
     for (const f of await fs.readdir(dir)) {
-      if (f.startsWith(`wallpaper-${req.user.uid}.`)) await fs.unlink(path.join(dir, f));
+      if (f.startsWith("wallpaper.")) await fs.unlink(path.join(dir, f));
     }
   } catch { /* nothing uploaded yet */ }
-  await updateSettings(req.user.uid, { wallpaper: null });
+  await updateSettings({ wallpaper: null });
   res.json({ ok: true });
 });
 
-api.get("/wallpaper/:uid", async (req, res) => {
-  const s = await getSettings(path.basename(req.params.uid));
-  if (!s.wallpaper) return res.status(404).end();
-  res.sendFile(path.join(config.dataDir, "uploads", path.basename(s.wallpaper)));
-});
-
-// The dashboard preview uses the logged-in user's own wallpaper
 api.get("/wallpaper", requireAuth, async (req, res) => {
-  const s = await getSettings(req.user.uid);
+  const s = await getSettings();
   if (!s.wallpaper) return res.status(404).end();
   res.sendFile(path.join(config.dataDir, "uploads", path.basename(s.wallpaper)));
 });
@@ -268,14 +142,14 @@ api.post("/adbanner", requireAuth,
       return res.status(400).json({ error: "Send a JPEG, PNG, or WebP image." });
     }
     const ext = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" }[req.headers["content-type"]];
-    const name = `ad-${req.user.uid}.${ext}`;
+    const name = `ad.${ext}`;
     const dir = path.join(config.dataDir, "uploads");
     await fs.mkdir(dir, { recursive: true });
     for (const f of await fs.readdir(dir)) {
-      if (f.startsWith(`ad-${req.user.uid}.`)) await fs.unlink(path.join(dir, f));
+      if (f.startsWith("ad.")) await fs.unlink(path.join(dir, f));
     }
     await fs.writeFile(path.join(dir, name), req.body);
-    await updateSettings(req.user.uid, { adBanner: name });
+    await updateSettings({ adBanner: name });
     res.json({ ok: true });
   });
 
@@ -283,21 +157,17 @@ api.delete("/adbanner", requireAuth, async (req, res) => {
   const dir = path.join(config.dataDir, "uploads");
   try {
     for (const f of await fs.readdir(dir)) {
-      if (f.startsWith(`ad-${req.user.uid}.`)) await fs.unlink(path.join(dir, f));
+      if (f.startsWith("ad.")) await fs.unlink(path.join(dir, f));
     }
   } catch { /* nothing uploaded yet */ }
-  await updateSettings(req.user.uid, { adBanner: null });
+  await updateSettings({ adBanner: null });
   res.json({ ok: true });
 });
 
-api.get("/adbanner/:uid", async (req, res) => {
-  const s = await getSettings(path.basename(req.params.uid));
-  if (!s.adBanner) return res.status(404).end();
-  res.sendFile(path.join(config.dataDir, "uploads", path.basename(s.adBanner)));
-});
-
-api.get("/adbanner", requireAuth, async (req, res) => {
-  const s = await getSettings(req.user.uid);
+// The banner is drawn into everyone's session view when the host puts
+// it up, so it is readable without a login - like the room theme.
+api.get("/adbanner", async (req, res) => {
+  const s = await getSettings();
   if (!s.adBanner) return res.status(404).end();
   res.sendFile(path.join(config.dataDir, "uploads", path.basename(s.adBanner)));
 });
@@ -305,7 +175,7 @@ api.get("/adbanner", requireAuth, async (req, res) => {
 // ---------- sessions ----------
 
 api.get("/sessions", requireAuth, async (req, res) => {
-  const sessions = await listSessions(req.user);
+  const sessions = await listSessions();
   res.json(sessions.map((s) => ({
     ...s,
     active: !!getRoom(s.id),
@@ -314,12 +184,9 @@ api.get("/sessions", requireAuth, async (req, res) => {
 });
 
 api.post("/sessions", requireAuth, async (req, res) => {
-  if (req.user.role === "admin") {
-    return res.status(403).json({ error: "Admins manage hosts; sessions belong to host accounts." });
-  }
   const title = String(req.body.title || "").trim();
   if (!title) return res.status(400).json({ error: "Give the episode a title - it names the session and its recordings." });
-  res.json(await createSession(req.user, title));
+  res.json(await createSession(title));
 });
 
 // Rename a session (the episode title). A room with people in it keeps
@@ -328,13 +195,13 @@ api.post("/sessions", requireAuth, async (req, res) => {
 api.post("/sessions/:id/title", requireAuth, async (req, res) => {
   const title = String(req.body.title || "").trim();
   if (!title) return res.status(400).json({ error: "Give the episode a title - it names the session and its recordings." });
-  const session = await renameSession(req.user, req.params.id, title);
+  const session = await renameSession(req.params.id, title);
   if (!session) return res.status(404).json({ error: "No such session." });
   res.json(session);
 });
 
 api.delete("/sessions/:id", requireAuth, async (req, res) => {
-  await deleteSession(req.user, req.params.id);
+  await deleteSession(req.params.id);
   res.json({ ok: true });
 });
 
@@ -356,14 +223,14 @@ api.post("/logo", requireAuth,
       return res.status(400).json({ error: "Send a JPEG, PNG, or WebP image." });
     }
     const ext = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" }[req.headers["content-type"]];
-    const name = `logo-${req.user.uid}.${ext}`;
+    const name = `logo.${ext}`;
     const dir = path.join(config.dataDir, "uploads");
     await fs.mkdir(dir, { recursive: true });
     for (const f of await fs.readdir(dir)) {
-      if (f.startsWith(`logo-${req.user.uid}.`)) await fs.unlink(path.join(dir, f));
+      if (f.startsWith("logo.")) await fs.unlink(path.join(dir, f));
     }
     await fs.writeFile(path.join(dir, name), req.body);
-    await updateSettings(req.user.uid, { logo: name });
+    await updateSettings({ logo: name });
     res.json({ ok: true });
   });
 
@@ -371,23 +238,15 @@ api.delete("/logo", requireAuth, async (req, res) => {
   const dir = path.join(config.dataDir, "uploads");
   try {
     for (const f of await fs.readdir(dir)) {
-      if (f.startsWith(`logo-${req.user.uid}.`)) await fs.unlink(path.join(dir, f));
+      if (f.startsWith("logo.")) await fs.unlink(path.join(dir, f));
     }
   } catch { /* nothing uploaded yet */ }
-  await updateSettings(req.user.uid, { logo: null });
+  await updateSettings({ logo: null });
   res.json({ ok: true });
 });
 
-// Public: guests need the logo inside the session view
-api.get("/logo/:uid", async (req, res) => {
-  const s = await getSettings(path.basename(req.params.uid));
-  if (!s.logo) return res.status(404).end();
-  res.sendFile(path.join(config.dataDir, "uploads", path.basename(s.logo)));
-});
-
-// The dashboard preview uses the logged-in user's own logo
 api.get("/logo", requireAuth, async (req, res) => {
-  const s = await getSettings(req.user.uid);
+  const s = await getSettings();
   if (!s.logo) return res.status(404).end();
   res.sendFile(path.join(config.dataDir, "uploads", path.basename(s.logo)));
 });
@@ -421,24 +280,19 @@ api.post("/rec/done", chunkAuth, (req, res) => {
   res.json({ ok: true });
 });
 
-async function recAccess(req, id) {
-  const recs = await listRecordings();
-  const rec = recs.find((r) => r.id === id);
-  if (!rec) return null;
-  if (req.user.role !== "admin" && rec.ownerId !== req.user.uid) return null;
-  return rec;
+// Every recording on the box belongs to the studio - including any made
+// before this was a one-account program, which are all still here.
+async function findRecording(id) {
+  return (await listRecordings()).find((r) => r.id === id) || null;
 }
 
 api.get("/recordings", requireAuth, async (req, res) => {
-  const recs = await listRecordings();
-  res.json(req.user.role === "admin"
-    ? recs
-    : recs.filter((r) => r.ownerId === req.user.uid));
+  res.json(await listRecordings());
 });
 
 api.get("/recordings/:id/files/:file", requireAuth, async (req, res) => {
   const id = path.basename(req.params.id);
-  if (!await recAccess(req, id)) return res.status(404).json({ error: "not found" });
+  if (!await findRecording(id)) return res.status(404).json({ error: "not found" });
   const file = path.basename(req.params.file);
   res.download(path.join(recDir(id), "out", file), file, (err) => {
     if (err && !res.headersSent) res.status(404).json({ error: "file not found" });
@@ -446,12 +300,12 @@ api.get("/recordings/:id/files/:file", requireAuth, async (req, res) => {
 });
 
 // Session moderation: the reversible list of guests blocked from
-// joining sessions. Any host can manage it, instant either direction.
+// joining sessions. Reversible from the dashboard, instant either way.
 api.get("/session/blocked", requireAuth, async (req, res) => {
   res.json(await listSessionBlocked());
 });
 api.delete("/session/blocked/:id", requireAuth, async (req, res) => {
-  const ok = await unblockSession(path.basename(req.params.id), req.user.uid);
+  const ok = await unblockSession(path.basename(req.params.id));
   if (!ok) return res.status(404).json({ error: "not found" });
   res.json({ ok: true });
 });
@@ -463,9 +317,9 @@ api.delete("/session/blocked/:id", requireAuth, async (req, res) => {
 // public. Server-side so the publisher token never reaches a browser.
 api.post("/recordings/:id/publish", requireAuth, async (req, res) => {
   const id = path.basename(req.params.id);
-  const rec = await recAccess(req, id);
+  const rec = await findRecording(id);
   if (!rec) return res.status(404).json({ error: "not found" });
-  const settings = await getSettings(req.user.uid);
+  const settings = await getSettings();
   if (!settings.fosscastUrl || !settings.fosscastToken) {
     return res.status(400).json({ error: "Add your FOSSCast address and publisher token in Settings → Publish first." });
   }
@@ -513,7 +367,7 @@ api.post("/recordings/:id/publish", requireAuth, async (req, res) => {
 // on the fly - nothing is written to disk
 api.get("/recordings/:id/zip", requireAuth, async (req, res) => {
   const id = path.basename(req.params.id);
-  const rec = await recAccess(req, id);
+  const rec = await findRecording(id);
   if (!rec) return res.status(404).json({ error: "not found" });
   const audioOnly = req.query.audio === "1";
   const dir = path.join(recDir(id), "out");
@@ -535,28 +389,28 @@ api.get("/recordings/:id/zip", requireAuth, async (req, res) => {
 // Delete a single file within a recording (one person's track, or the video of everyone)
 api.delete("/recordings/:id/files/:file", requireAuth, async (req, res) => {
   const id = path.basename(req.params.id);
-  if (!await recAccess(req, id)) return res.status(404).json({ error: "not found" });
+  if (!await findRecording(id)) return res.status(404).json({ error: "not found" });
   await deleteRecordingFile(id, path.basename(req.params.file));
   res.json({ ok: true });
 });
 
 api.delete("/recordings/:id", requireAuth, async (req, res) => {
   const id = path.basename(req.params.id);
-  if (!await recAccess(req, id)) return res.status(404).json({ error: "not found" });
+  if (!await findRecording(id)) return res.status(404).json({ error: "not found" });
   await deleteRecording(id);
   res.json({ ok: true });
 });
 
-// ---------- ops: admin only ----------
+// ---------- ops ----------
 
-api.get("/ops/logs", requireAdmin, (req, res) => {
+api.get("/ops/logs", requireAuth, (req, res) => {
   res.json({ lines: recentLogs() });
 });
 
-api.get("/ops/backup-keep", requireAdmin, async (req, res) => {
+api.get("/ops/backup-keep", requireAuth, async (req, res) => {
   res.json({ keep: await getBackupKeep() });
 });
-api.put("/ops/backup-keep", requireAdmin, async (req, res) => {
+api.put("/ops/backup-keep", requireAuth, async (req, res) => {
   try {
     res.json({ keep: await setBackupKeep(req.body.keep) });
   } catch (err) {
@@ -564,22 +418,22 @@ api.put("/ops/backup-keep", requireAdmin, async (req, res) => {
   }
 });
 
-api.post("/ops/backup", requireAdmin, async (req, res) => {
+api.post("/ops/backup", requireAuth, async (req, res) => {
   res.json({ name: await makeBackup() });
 });
 
-api.get("/ops/backups", requireAdmin, async (req, res) => {
+api.get("/ops/backups", requireAuth, async (req, res) => {
   res.json(await listBackups());
 });
 
-api.get("/ops/backups/:name", requireAdmin, (req, res) => {
+api.get("/ops/backups/:name", requireAuth, (req, res) => {
   const name = path.basename(req.params.name);
   res.download(backupPath(name), name, (err) => {
     if (err && !res.headersSent) res.status(404).json({ error: "backup not found" });
   });
 });
 
-api.post("/ops/restore", requireAdmin, async (req, res) => {
+api.post("/ops/restore", requireAuth, async (req, res) => {
   try {
     await restoreBackup(String(req.body.name || ""));
     res.json({ ok: true });
@@ -588,16 +442,16 @@ api.post("/ops/restore", requireAdmin, async (req, res) => {
   }
 });
 
-api.post("/ops/restart", requireAdmin, (req, res) => {
+api.post("/ops/restart", requireAuth, (req, res) => {
   res.json({ ok: true });
   restartApp();
 });
 
-api.get("/ops/export", requireAdmin, (req, res) => {
+api.get("/ops/export", requireAuth, (req, res) => {
   sendFullExport(res);
 });
 
-// ---------- push notifications (per user) ----------
+// ---------- push notifications ----------
 
 api.get("/push/key", requireAuth, (req, res) => {
   res.json({ key: publicKey() });
@@ -606,6 +460,6 @@ api.get("/push/key", requireAuth, (req, res) => {
 api.post("/push/subscribe", requireAuth, async (req, res) => {
   const sub = req.body;
   if (!sub?.endpoint || !sub?.keys) return res.status(400).json({ error: "bad subscription" });
-  await addSubscription(req.user.uid, sub);
+  await addSubscription(sub);
   res.json({ ok: true });
 });

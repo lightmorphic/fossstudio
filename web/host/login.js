@@ -13,10 +13,7 @@ form.onsubmit = async (e) => {
     })
   });
   if (res.ok) {
-    // Admins run the fleet at /admin/, hosts run shows at /host/ -
-    // separate sessions, so both can be open at once
-    const { role } = await res.json();
-    location.href = role === "admin" ? "/admin/" : "/host/";
+    location.href = "/host/";
     return;
   }
   const { error } = await res.json();

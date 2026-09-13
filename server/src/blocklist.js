@@ -11,7 +11,7 @@ import { config } from "./config.js";
 import { readJson, writeJson } from "./storage.js";
 
 const BLOCKLIST_FILE = "session-blocklist.json";
-let blocklist = null; // [{id, name, ip, marker, by, blockedAt}]
+let blocklist = null; // [{id, name, ip, marker, blockedAt}]
 
 // Append-only moderation log (data/session-modlog.jsonl): every block
 // and unblock with the moment, the name and the address. Not served by
@@ -36,26 +36,26 @@ async function load() {
 export async function listSessionBlocked() {
   // Names and timestamps only ever reach the dashboard; the stored
   // address and marker stay server-side even for hosts
-  return (await load()).map(({ id, name, by, blockedAt }) => ({ id, name, by, blockedAt }));
+  return (await load()).map(({ id, name, blockedAt }) => ({ id, name, blockedAt }));
 }
 
-export async function addSessionBlock({ name, ip, marker, by }) {
+export async function addSessionBlock({ name, ip, marker }) {
   const list = await load();
   list.unshift({
     id: crypto.randomBytes(6).toString("hex"),
-    name, ip: ip || null, marker: marker || null, by, blockedAt: Date.now()
+    name, ip: ip || null, marker: marker || null, blockedAt: Date.now()
   });
   await writeJson(BLOCKLIST_FILE, list);
-  await modlog({ action: "block", name, ip: ip || null, marker: marker || null, by });
+  await modlog({ action: "block", name, ip: ip || null, marker: marker || null });
 }
 
-export async function unblockSession(id, by) {
+export async function unblockSession(id) {
   const list = await load();
   const i = list.findIndex((b) => b.id === id);
   if (i === -1) return false;
   const [gone] = list.splice(i, 1);
   await writeJson(BLOCKLIST_FILE, list);
-  await modlog({ action: "unblock", name: gone.name, ip: gone.ip, by: by || null });
+  await modlog({ action: "unblock", name: gone.name, ip: gone.ip });
   return true;
 }
 

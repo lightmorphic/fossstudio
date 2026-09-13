@@ -44,21 +44,20 @@ function checkPublicIp(value) {
 
 const domain = process.env.DOMAIN || "localhost";
 
-// The dedicated panel domains work out of the box: for each of
-// admin/host, the sibling of DOMAIN (app.example.com -> admin.example.com)
-// and the child (admin.<DOMAIN>) are both accepted, plus any explicit
-// ADMIN_DOMAIN/HOST_DOMAIN. Point their DNS at this server and Caddy
-// fetches their certificates on demand - nothing to configure.
-export function panelDomains(kind) {
+// A dedicated domain for the dashboard works out of the box: the
+// sibling of DOMAIN (app.example.com -> host.example.com) and the child
+// (host.<DOMAIN>) are both accepted, plus any explicit HOST_DOMAIN.
+// Point its DNS at this server and Caddy fetches the certificate on
+// demand - nothing to configure.
+export function panelDomains() {
   const out = new Set();
-  const explicit = kind === "admin" ? process.env.ADMIN_DOMAIN : process.env.HOST_DOMAIN;
-  if (explicit) out.add(explicit.toLowerCase());
+  if (process.env.HOST_DOMAIN) out.add(process.env.HOST_DOMAIN.toLowerCase());
   if (domain && domain !== "localhost") {
+    // Sibling: replace the first label (app.example.com -> host.example.com)
     const labels = domain.split(".");
-    // Sibling: replace the first label (app.example.com -> admin.example.com)
-    if (labels.length >= 3) out.add([kind, ...labels.slice(1)].join(".").toLowerCase());
-    // Child: prefix the whole domain (example.com -> admin.example.com)
-    out.add(`${kind}.${domain}`.toLowerCase());
+    if (labels.length >= 3) out.add(["host", ...labels.slice(1)].join(".").toLowerCase());
+    // Child: prefix the whole domain (example.com -> host.example.com)
+    out.add(`host.${domain}`.toLowerCase());
   }
   return out;
 }
@@ -68,9 +67,8 @@ export const config = {
   publicIp: checkPublicIp(process.env.PUBLIC_IP),
   httpPort: Number(process.env.HTTP_PORT || 3000),
   bindHost: process.env.BIND_HOST || "127.0.0.1",
-  // Optional explicit panel domains; the derived defaults below cover
-  // the common case with no configuration at all
-  adminDomain: process.env.ADMIN_DOMAIN || "",
+  // An optional dedicated dashboard domain; the derived defaults in
+  // panelDomains cover the common case with no configuration at all
   hostDomain: process.env.HOST_DOMAIN || "",
   turnHost: process.env.TURN_HOST || domain,
   // The public media range: open it in the firewall, and the compose

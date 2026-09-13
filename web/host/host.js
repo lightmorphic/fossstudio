@@ -3,11 +3,6 @@
   "use strict";
   const $ = (id) => document.getElementById(id);
 
-  // Which of the two separate sessions this page runs as: the fleet
-  // panel lives at /admin/, host dashboards at /host/. Every API call
-  // names its panel so the server answers with the right identity even
-  // when both sessions are open in one browser.
-  const PANEL = location.pathname.startsWith("/admin") ? "admin" : "host";
   // Framed inside another application's shell (a hosting panel, a
   // portal): that shell has the wordmark and the way out, so ours are
   // hidden. Set by the sign-in link that brought us here.
@@ -17,7 +12,6 @@
     const res = await fetch(url, {
       ...opts,
       headers: {
-        "X-Panel": PANEL,
         ...(opts.body && !(opts.body instanceof Blob) ? { "Content-Type": "application/json" } : {}),
         ...(opts.headers || {})
       }
@@ -30,41 +24,37 @@
 
   // ---------- navigation ----------
 
-  // Admins manage hosts and the system; hosts run shows.
   const MENUS = [
-    { id: "sessions", label: "Sessions", hostOnly: true, subs: [{ id: "sessions", label: "Your sessions" }] },
-    { id: "recordings", label: "Recordings", hostOnly: true, subs: [
+    { id: "sessions", label: "Sessions", subs: [{ id: "sessions", label: "Your sessions" }] },
+    { id: "recordings", label: "Recordings", subs: [
       { id: "library", label: "Library" }
     ] },
-    { id: "users", label: "Hosts", adminOnly: true, subs: [{ id: "users", label: "Manage hosts" }] },
     { id: "settings", label: "Settings", subs: [
-      { id: "themes", label: "Themes", hostOnly: true },
-      { id: "banner", label: "Ad Banner", hostOnly: true },
-      { id: "publish", label: "Publish", hostOnly: true },
-      { id: "blocked", label: "Blocked", hostOnly: true },
+      { id: "themes", label: "Themes" },
+      { id: "banner", label: "Ad Banner" },
+      { id: "publish", label: "Publish" },
+      { id: "blocked", label: "Blocked" },
       { id: "account", label: "Account" },
       { id: "twofactor", label: "Two-factor" }
     ] },
-    { id: "system", label: "System", adminOnly: true, subs: [
+    { id: "system", label: "System", subs: [
       { id: "service", label: "Service" },
       { id: "backups", label: "Backups" },
       { id: "logs", label: "Logs" }
     ] }
   ];
 
-  let me = { role: "subadmin", username: "" };
+  let me = { username: "" };
   // Whether publishing recordings to FOSSCast is configured
   let canPublish = false;
   let currentMenu = null;
 
   function visibleMenus() {
-    return MENUS.filter((m) =>
-      !(m.adminOnly && me.role !== "admin") &&
-      !(m.hostOnly && me.role === "admin"));
+    return MENUS;
   }
 
   function visibleSubs(menu) {
-    return menu.subs.filter((s) => !(s.hostOnly && me.role === "admin"));
+    return menu.subs;
   }
 
   function renderMainMenu() {
@@ -255,105 +245,6 @@
     });
     $("newSessionTitle").value = "";
     loadSessions();
-  };
-
-  // ---------- users (admin) ----------
-
-  async function loadUsers() {
-    if (me.role !== "admin") return;
-    const list = $("userList");
-    const users = await apiFetch("/api/users");
-    list.innerHTML = "";
-    for (const u of users) {
-      const row = document.createElement("div");
-      row.className = "session-row";
-      row.innerHTML = `
-        <div>
-          <div class="title"></div>
-          <div class="meta">${u.role === "admin" ? "admin" : "host"}${u.totpEnabled ? " · 2FA on" : ""}${u.invited ? " · ⏳ invite pending" : ""}</div>
-        </div>
-        <span class="spacer"></span>`;
-      row.querySelector(".title").textContent = u.username;
-      // Set a new password inline in the row: no browser pop-up
-      const reset = iconBtn("key", "Set a new password for this user", () => {
-        if (row.querySelector(".pw-inline")) return;
-        const wrap = document.createElement("span");
-        wrap.className = "pw-inline";
-        const input = document.createElement("input");
-        input.type = "password";
-        input.placeholder = "New password (10+ characters)";
-        input.autocomplete = "new-password";
-        const done = () => wrap.remove();
-        const save = async () => {
-          if (!input.value) return done();
-          try {
-            await apiFetch(`/api/users/${u.id}/password`, {
-              method: "POST", body: JSON.stringify({ password: input.value })
-            });
-            done();
-            reset.classList.add("done");
-            reset.innerHTML = ICONS.tick;
-            setTimeout(() => { reset.classList.remove("done"); reset.innerHTML = ICONS.key; }, 1500);
-          } catch (err) { showUserMsg(err.message); input.focus(); }
-        };
-        const ok = iconBtn("tick", "Save the new password", save);
-        input.onkeydown = (e) => {
-          if (e.key === "Enter") save();
-          if (e.key === "Escape") done();
-        };
-        wrap.append(input, ok);
-        row.insertBefore(wrap, reset);
-        input.focus();
-      });
-      row.appendChild(reset);
-      if (u.username !== me.username) {
-        row.appendChild(confirmBtn("del", "Delete user", async () => {
-          try {
-            await apiFetch(`/api/users/${u.id}`, { method: "DELETE" });
-            loadUsers();
-          } catch (err) { showUserMsg(err.message); }
-        }));
-      }
-      list.appendChild(row);
-    }
-  }
-
-  function showUserMsg(text, ok = false) {
-    const m = $("userMsg");
-    m.className = `msg ${ok ? "ok" : "err"}`;
-    m.textContent = text;
-    m.hidden = false;
-    setTimeout(() => { m.hidden = true; }, 6000);
-  }
-
-  $("newUserForm").onsubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const r = await apiFetch("/api/users/invite", {
-        method: "POST",
-        body: JSON.stringify({ username: $("newUserName").value })
-      });
-      $("newUserName").value = "";
-      await navigator.clipboard.writeText(r.inviteUrl).catch(() => {});
-      showUserMsg("✓ Invite link copied - send it to them however you like. It works for 7 days, once.", true);
-      loadUsers();
-    } catch (err) { showUserMsg(err.message); }
-  };
-
-  $("newUserPwForm").onsubmit = async (e) => {
-    e.preventDefault();
-    try {
-      await apiFetch("/api/users", {
-        method: "POST",
-        body: JSON.stringify({
-          username: $("pwUserName").value,
-          password: $("pwUserPass").value
-        })
-      });
-      $("pwUserName").value = "";
-      $("pwUserPass").value = "";
-      loadUsers();
-    } catch (err) { showUserMsg(err.message); }
   };
 
   // Settings save themselves when a field changes - no Save buttons.
@@ -750,7 +641,7 @@
       me.username = res.username;
       $("accountUsername").value = res.username;
       $("accountName").textContent = res.username;
-      $("whoami").textContent = `${me.username} (${me.role === "admin" ? "admin" : "host"})`;
+      $("whoami").textContent = me.username;
       ok.hidden = false;
     } catch (e) {
       err.textContent = e.message; err.hidden = false;
@@ -793,7 +684,7 @@
     } catch (err) { msg.textContent = err.message; msg.hidden = false; }
   };
 
-  // ---------- system (admin) ----------
+  // ---------- system ----------
 
   const sysMsg = (text, ok = true) => {
     const m = $("systemMsg");
@@ -815,7 +706,6 @@
   };
 
   async function loadBackups() {
-    if (me.role !== "admin") return;
     const list = $("backupList");
     const backups = await apiFetch("/api/ops/backups");
     list.innerHTML = backups.length ? "" : '<p class="hint">No backups yet.</p>';
@@ -838,7 +728,6 @@
 
   $("refreshLogsBtn").onclick = loadLogs;
   async function loadLogs() {
-    if (me.role !== "admin") return;
     const { lines } = await apiFetch("/api/ops/logs");
     $("logBox").textContent = lines.slice(-200).join("\n") || "No log lines yet.";
     $("logBox").scrollTop = $("logBox").scrollHeight;
@@ -847,7 +736,6 @@
   // ---------- backup retention ----------
 
   async function loadBackupKeep() {
-    if (me.role !== "admin") return;
     const { keep } = await apiFetch("/api/ops/backup-keep");
     $("backupKeep").value = keep;
   }
@@ -914,33 +802,26 @@
   (async () => {
     me = await apiFetch("/api/me");
     if (!me.authed) { location.href = "/host/login.html"; return; }
-    $("whoami").textContent = `${me.username} (${me.role === "admin" ? "admin" : "host"})`;
+    $("whoami").textContent = me.username;
     $("accountName").textContent = me.username;
     $("accountUsername").value = me.username;
-    $("accountRole").textContent = me.role === "admin"
-      ? "Admin - creates and manages hosts, and looks after the system. Hosting shows is what host accounts are for."
-      : "Host - your own sessions, recordings and settings.";
     if (!applyHash()) {
       currentMenu = visibleMenus()[0];
       renderMainMenu();
       showSub(visibleSubs(currentMenu)[0].id);
     }
     load2fa();
-    if (me.role === "admin") {
-      loadUsers();
-      loadBackups();
-      loadBackupKeep();
-      loadLogs();
-    } else {
-      // Settings first: the recording cards read the FOSSCast fields
-      // (the publish button) as they render
-      loadSettings().then(() => {
-        loadSessions();
-        loadRecordings();
-      });
-      loadSessionBlocked();
-      setInterval(loadSessions, 10000);   // keep the participant counts fresh
-      setInterval(loadRecordings, 15000); // pick up processing -> ready
-    }
+    loadBackups();
+    loadBackupKeep();
+    loadLogs();
+    // Settings first: the recording cards read the FOSSCast fields
+    // (the publish button) as they render
+    loadSettings().then(() => {
+      loadSessions();
+      loadRecordings();
+    });
+    loadSessionBlocked();
+    setInterval(loadSessions, 10000);   // keep the participant counts fresh
+    setInterval(loadRecordings, 15000); // pick up processing -> ready
   })();
 })();

@@ -14,7 +14,7 @@ import { iceServers } from "./turn.js";
 import { isAuthedRequest } from "./auth.js";
 import { getSettings, updateSettings, findSession } from "./settings.js";
 import { isSessionBlocked, addSessionBlock } from "./blocklist.js";
-import { notifyUser } from "./push.js";
+import { notify } from "./push.js";
 import {
   startRecording, stopRecording, activeRecording,
   addPeerToRecording, uploadCreds, markPeerDone, notePeerMicLoss
@@ -65,16 +65,15 @@ export function attachSignaling() {
             const session = await findSession(roomId);
             if (!session) return fail("This session link doesn't exist.");
             room = await getOrCreateRoom(roomId);
-            room.ownerId = session.ownerId;
             // First join pins the theme for the room's whole life
-            if (!room.theme) await pinTheme(room, session, await getSettings(room.ownerId));
+            if (!room.theme) await pinTheme(room, session, await getSettings());
             const name = String(data.name || "").trim().slice(0, NAME_MAX) || "Guest";
             const tagline = String(data.tagline || "").trim().slice(0, 32);
-            // Host role needs a dashboard login AND ownership of this
-            // session - never client-claimed. Admins manage the system;
-            // they don't host shows.
+            // Host role needs a dashboard login - never client-claimed.
+            // There is one account, so being signed in is the whole of
+            // the question.
             const auth = isAuthedRequest(req);
-            const canHost = auth && auth.uid === session.ownerId;
+            const canHost = !!auth;
             // "viewer" is the OBS clean-feed connection: receive-only,
             // invisible to everyone else. Anyone with the session link
             // may open one (same trust level as joining as a guest).
@@ -97,13 +96,12 @@ export function attachSignaling() {
             // Everyone arrives muted - host included, even alone; you
             // unmute yourself when you're ready to talk
             room.control.muted[peer.id] = true;
-            const settings = await getSettings(room.ownerId);
+            const settings = await getSettings();
             const canServerRecord = role === "host";
             reply({
               peerId: peer.id,
               role,
               canServerRecord,
-              ownerId: role === "host" ? room.ownerId : undefined,
               routerRtpCapabilities: room.router.rtpCapabilities,
               iceServers: iceServers(),
               control: room.control,
@@ -140,7 +138,7 @@ export function attachSignaling() {
             broadcast(room, peer.id, { event: "control", data: room.control });
             const people = [...room.peers.values()].filter((p) => p.role !== "viewer");
             if (role === "guest" && people.length === 1) {
-              notifyUser(room.ownerId, "Guest waiting", `${name} just joined session ${room.id}.`).catch(() => {});
+              notify("Guest waiting", `${name} just joined session ${room.id}.`).catch(() => {});
             }
             // Someone joining mid-recording starts recording too
             const rec = activeRecording(room.id);
@@ -278,7 +276,7 @@ export function attachSignaling() {
                 if (target.role === "host") return fail("Hosts can't be blocked.");
                 await addSessionBlock({
                   name: target.name, ip: target.ip || null,
-                  marker: target.marker || null, by: peer.uid
+                  marker: target.marker || null
                 });
                 // The close handler does the cleanup and the peerLeft
                 target.socket.close(4403, "blocked");
@@ -314,7 +312,7 @@ export function attachSignaling() {
                   t.bg = String(data.colour).toLowerCase();
                   // The in-show pick is the colour setting now - it
                   // persists as the next session's starting colour
-                  updateSettings(room.ownerId, { bg: t.bg }).catch(() => {});
+                  updateSettings({ bg: t.bg }).catch(() => {});
                 }
                 if (mode === "generated") {
                   const PREFIX = "data:image/png;base64,";
@@ -381,11 +379,11 @@ export function attachSignaling() {
                 if (!["subscribe", "ad"].includes(data.kind)) return fail("unknown overlay");
                 let url = null;
                 if (data.kind === "ad") {
-                  const settings2 = await getSettings(room.ownerId);
+                  const settings2 = await getSettings();
                   if (!settings2.adBanner) {
                     return fail("Upload an advertising banner in Settings → Ad Banner first.");
                   }
-                  url = `/api/adbanner/${room.ownerId}`;
+                  url = "/api/adbanner";
                 }
                 const duration = data.kind === "subscribe" ? 7 : 18;
                 // Everyone sees it in the session immediately

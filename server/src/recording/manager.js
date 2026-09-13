@@ -48,7 +48,7 @@ function snapshotPath(recId) {
 async function saveSnapshot(rec) {
   try {
     const snap = {
-      id: rec.id, roomId: rec.roomId, ownerId: rec.ownerId,
+      id: rec.id, roomId: rec.roomId,
       title: rec.title, startedAt: rec.startedAt,
       peers: Object.fromEntries(rec.peers)
     };
@@ -85,7 +85,6 @@ export async function startRecording(room) {
   const rec = {
     id: recId,
     roomId: room.id,
-    ownerId: room.ownerId || null,
     title: room.title || "",
     startedAt: Date.now(),
     peers: new Map(), // peerId -> {name, files:{}, startOffsetMs, done}
@@ -231,12 +230,12 @@ async function finalize(rec) {
   }
 
   await saveIndex({
-    id: rec.id, roomId: rec.roomId, ownerId: rec.ownerId, title: rec.title,
+    id: rec.id, roomId: rec.roomId, title: rec.title,
     startedAt: rec.startedAt, endedAt: Date.now(), status: "ready", files, notes
   });
   await clearSnapshot(rec.id);
-  const { notifyUser } = await import("../push.js");
-  notifyUser(rec.ownerId, "Recording ready",
+  const { notify } = await import("../push.js");
+  notify("Recording ready",
     `Session ${rec.roomId} is done - ${files.length} files to download.`).catch(() => {});
 }
 
