@@ -73,7 +73,7 @@ for (let i = 0; i < 60; i++) {
 }
 check(`recording filed (status: ${rec?.status})`, rec?.status === "ready");
 const files = rec?.files || [];
-const audio = files.filter((f) => /-audio\.(webm|mp4)$/.test(f));
+const audio = files.filter((f) => /-audio\.(wav|opus|webm|mp4)$/.test(f));
 const video = files.filter((f) => /-video\.(webm|mp4)$/.test(f));
 const everyone = files.find((f) => /^everyone\.(webm|mp4)$/.test(f));
 check(`an audio track per person (${audio.join(", ")})`, audio.length === 2);
@@ -87,7 +87,7 @@ check(`recording named after the episode (${rec?.title})`, rec?.title === "Autom
 // directory, and no file the browsers did not send
 if (rec) {
   const strays = files.filter((f) =>
-    !/-audio\.(webm|mp4)$/.test(f) && !/-video\.(webm|mp4)$/.test(f) && !/^everyone\.(webm|mp4)$/.test(f));
+    !/-audio\.(wav|opus|webm|mp4)$/.test(f) && !/-video\.(webm|mp4)$/.test(f) && !/^everyone\.(webm|mp4)$/.test(f));
   check(`nothing but the recorded tracks came back (${strays.join(", ") || "none"})`, strays.length === 0);
 }
 

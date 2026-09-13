@@ -316,7 +316,7 @@ check(`recording filed (status: ${rec?.status})`, rec?.status === "ready");
 const secondsOf = (file) => secondsOfBuffer(fs.readFileSync(file));
 
 const dir = path.join(DATA, "recordings", rec?.id || "", "out");
-const audio = (rec?.files || []).find((f) => /^Eric.*-audio\.(webm|mp4)$/.test(f));
+const audio = (rec?.files || []).find((f) => /^Eric.*-audio\.(wav|opus|webm|mp4)$/.test(f));
 check(`Eric's track came back (${audio})`, !!audio);
 
 if (audio) {

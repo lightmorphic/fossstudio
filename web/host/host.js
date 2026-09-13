@@ -311,8 +311,8 @@
       const filesEl = card.querySelector(".files");
       for (const f of r.files || []) {
         const url = `/api/recordings/${encodeURIComponent(r.id)}/files/${encodeURIComponent(f)}`;
-        const isVideo = !/-audio\.(webm|mp4)$/i.test(f) && /\.(mp4|webm)$/i.test(f);
-        const isAudio = /-audio\.(webm|mp4)$/i.test(f);
+        const isVideo = !/-audio\.(wav|opus|webm|mp4)$/i.test(f) && /\.(mp4|webm)$/i.test(f);
+        const isAudio = /-audio\.(wav|opus|webm|mp4)$/i.test(f);
         const fileRow = document.createElement("div");
         fileRow.className = "rec-file";
         const fname = document.createElement("span");
@@ -342,7 +342,7 @@
       const actions = document.createElement("div");
       actions.className = "rec-actions";
       const zipBase = `/api/recordings/${encodeURIComponent(r.id)}/zip`;
-      const hasAudio = (r.files || []).some((f) => /-audio\.(webm|mp4)$/i.test(f));
+      const hasAudio = (r.files || []).some((f) => /-audio\.(wav|opus|webm|mp4)$/i.test(f));
       if (hasAudio) {
         const dlAudio = downloadLink(`${zipBase}?audio=1`);
         dlAudio.innerHTML = ICO.downloadAudio;

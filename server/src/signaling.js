@@ -17,7 +17,8 @@ import { isSessionBlocked, addSessionBlock } from "./blocklist.js";
 import { notify } from "./push.js";
 import {
   startRecording, stopRecording, activeRecording,
-  addPeerToRecording, uploadCreds, markPeerDone, notePeerMicLoss
+  addPeerToRecording, uploadCreds, notePeerMicLoss,
+  notePartStart, notePeerGone, personOf
 } from "./recording/manager.js";
 
 const ROOM_ID_RE = /^[a-zA-Z0-9_-]{4,32}$/;
@@ -84,6 +85,14 @@ export function attachSignaling() {
             // are never blocked - their login is the gate.
             const marker = /^[a-zA-Z0-9-]{8,64}$/.test(String(data.marker || ""))
               ? data.marker : null;
+            // Who this is, as far as a recording is concerned. The
+            // browser keeps one of these per session link, so the same
+            // browser coming back after a drop continues the same track
+            // instead of arriving as a stranger with a second file. It
+            // is never taken from the link itself: links get shared, and
+            // two people on one link have to stay two people.
+            const personId = /^[a-zA-Z0-9-]{8,64}$/.test(String(data.person || ""))
+              ? String(data.person) : null;
             if (role !== "host" &&
                 await isSessionBlocked({ ip: clientIp, marker })) {
               return fail("You have been blocked from this studio's sessions.");
@@ -91,6 +100,7 @@ export function attachSignaling() {
             peer = addPeer(room, { name, tagline, role, socket });
             peer.ip = clientIp;
             peer.marker = marker;
+            peer.personId = personId;
             peer.uid = auth?.uid || null;
             room.control.noise[peer.id] = !!data.noiseOn;
             // Everyone arrives muted - host included, even alone; you
@@ -146,7 +156,7 @@ export function attachSignaling() {
               addPeerToRecording(rec, peer);
               socket.send(JSON.stringify({
                 event: "recordingStarted",
-                data: { upload: uploadCreds(rec, peer.id) }
+                data: { upload: uploadCreds(rec, peer) }
               }));
             }
             break;
@@ -170,7 +180,7 @@ export function attachSignaling() {
             if (!peer) return fail("not joined");
             const rec = activeRecording(room.id);
             const lostMs = Math.min(24 * 3600 * 1000, Math.max(0, Number(data.lostMs) || 0));
-            if (rec) notePeerMicLoss(rec, peer.id, lostMs);
+            if (rec) notePeerMicLoss(rec, personOf(peer), lostMs);
             reply({});
             for (const p of room.peers.values()) {
               if (p.role === "host" && p.socket.readyState === 1) {
@@ -180,6 +190,19 @@ export function attachSignaling() {
                 }));
               }
             }
+            break;
+          }
+
+          // The browser's recorder has just started. It is a better
+          // mark of where this person's stretch begins than the moment
+          // they joined: a slow machine can take a few hundred
+          // milliseconds to get going, and those are genuinely missing
+          // from the front of what it recorded.
+          case "recStarted": {
+            if (!peer) return fail("not joined");
+            const rec = activeRecording(room.id);
+            if (rec) notePartStart(rec, peer);
+            reply({});
             break;
           }
 
@@ -398,7 +421,7 @@ export function attachSignaling() {
                       p.socket.send(JSON.stringify({
                         event: "recordingStarted",
                         data: {
-                          upload: uploadCreds(rec, p.id)
+                          upload: uploadCreds(rec, p)
                         }
                       }));
                     }
@@ -542,7 +565,10 @@ export function attachSignaling() {
         return;
       }
       const rec = activeRecording(room.id);
-      if (rec) markPeerDone(rec.id, peer.id);
+      // Nothing more is coming from this connection. If it was the
+      // person's last one they may still be back before the take ends,
+      // and their next stretch goes into the same track.
+      if (rec) notePeerGone(rec, peer);
       removePeer(room, peer.id);
       broadcast(room, null, { event: "peerLeft", data: { peerId: peer.id } });
       // Last one out stops the tape (lingering viewers don't count)

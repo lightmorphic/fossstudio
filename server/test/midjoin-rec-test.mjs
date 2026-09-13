@@ -1,11 +1,11 @@
 // Regression test for the Charlie bug: a guest who joins while the
 // recording is already running must still upload their chunks.
 import { chromium } from "playwright";
-import { makeRoom, REPO, CAMS } from "./helpers.mjs";
-import fs from "node:fs";
+import { makeRoom, studioLogin, CAMS } from "./helpers.mjs";
 
 const B = "http://127.0.0.1:3999";
 const ROOM = await makeRoom(B, "testpass123");
+const cookie = await studioLogin(B, "testpass123");
 
 async function join(cam, name, asHost) {
   const browser = await chromium.launch({ args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream", `--use-file-for-fake-video-capture=${CAMS}/${cam}`, "--autoplay-policy=no-user-gesture-required"] });
@@ -38,12 +38,13 @@ await late.page.waitForTimeout(12000);           // long enough for 5s chunk upl
 await host.page.click("#hpRecordBtn");           // stop
 await host.page.waitForTimeout(4000);
 
-const recDir = fs.readdirSync(`${REPO}data/recordings`).find((d) => d.includes(ROOM));
-const raw = `${REPO}data/recordings/${recDir}/raw`;
-const files = fs.readdirSync(raw).filter((f) => f.endsWith(".webm"));
-const peers = new Set(files.map((f) => f.split("-audio")[0].split("-video")[0]));
-console.log("raw webm files:", files.length, "distinct peers:", peers.size);
-const ok = peers.size === 2;
+// The filed recording is what the host is handed, so that is what this
+// looks at: one audio track each, named after the person.
+const list = await fetch(`${B}/api/recordings`, { headers: { Cookie: cookie } }).then((r) => r.json());
+const rec = list.find((r) => r.roomId === ROOM);
+const audio = (rec?.files || []).filter((f) => /-audio\.(wav|opus|webm|mp4)$/i.test(f));
+console.log("filed:", (rec?.files || []).join(", ") || "nothing");
+const ok = audio.length === 2 && audio.some((f) => /^Latecomer/.test(f));
 console.log(ok ? "PASS  mid-recording joiner uploaded their track" : "FAIL  latecomer's track missing");
 await host.browser.close();
 await late.browser.close();

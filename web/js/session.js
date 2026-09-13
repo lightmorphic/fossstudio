@@ -1831,6 +1831,16 @@
 
   function startSelfRecording(upload) {
     recUpload = upload;
+    // Where this stretch of recording begins. The server stamps it the
+    // instant the first recorder here reports it is running, and pads
+    // the front of the track with that much silence, so a late joiner's
+    // file still starts at zero alongside everybody else's.
+    let toldServer = false;
+    const sayStarted = () => {
+      if (toldServer) return;
+      toldServer = true;
+      request("recStarted", {}).catch(() => {});
+    };
     const base = `/api/rec/chunk?rec=${encodeURIComponent(upload.recId)}&peer=${encodeURIComponent(upload.peerId)}&token=${encodeURIComponent(upload.token)}`;
     recorders = [];
 
@@ -1856,6 +1866,7 @@
           fetch(`${base}&kind=${kind}&ext=${extOf(type)}&seq=${n}`, { method: "POST", body: e.data })
         ).catch(() => {});
       };
+      recorder.onstart = sayStarted;
       recorder.start(5000);
       recorders.push({ recorder, getQueue: () => queue, kind });
     };
@@ -2068,6 +2079,27 @@
     } catch { return null; }
   }
 
+  // Who this browser is, for this session. Kept per room so two rooms
+  // never share an identity, and kept in this browser so somebody who
+  // drops out and comes back continues the track they were already
+  // recording rather than starting a second one.
+  //
+  // It is deliberately not derived from the session link. Links get
+  // passed around, and two people who join on the same link have to stay
+  // two people. A different browser, or one whose site data was cleared,
+  // is honestly somebody new and the dashboard says so.
+  function personMarker() {
+    const key = `fossstudio-person-${roomId}`;
+    try {
+      let m = localStorage.getItem(key);
+      if (!m || !/^[a-zA-Z0-9-]{8,64}$/.test(m)) {
+        m = crypto.randomUUID();
+        localStorage.setItem(key, m);
+      }
+      return m;
+    } catch { return null; }
+  }
+
   async function join() {
     if (!els.nameInput.value.trim()) {
       showError("Add a banner title first - that's the big text under your video.");
@@ -2085,7 +2117,8 @@
         tagline: els.taglineInput.value.trim(),
         noiseOn: noisePref === "rnnoise",
         role: wantHost ? "host" : "guest",
-        marker: deviceMarker()
+        marker: deviceMarker(),
+        person: personMarker()
       });
       selfId = info.peerId;
       isHost = info.role === "host";

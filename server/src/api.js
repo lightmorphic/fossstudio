@@ -375,7 +375,7 @@ api.get("/recordings/:id/zip", requireAuth, async (req, res) => {
   const audioOnly = req.query.audio === "1";
   const dir = path.join(recDir(id), "out");
   const files = (await fs.readdir(dir).catch(() => []))
-    .filter((f) => !audioOnly || /-audio\.(webm|mp4)$/i.test(f));
+    .filter((f) => !audioOnly || /-audio\.(wav|opus|webm|mp4)$/i.test(f));
   if (files.length === 0) return res.status(404).json({ error: "no files" });
   const stem = (rec.title || `session-${rec.roomId}`)
     .replace(/[^a-zA-Z0-9 _-]/g, "").trim().replace(/\s+/g, "-").slice(0, 60) || id;
