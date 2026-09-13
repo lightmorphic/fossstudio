@@ -31,7 +31,7 @@
   "license": "https://www.gnu.org/licenses/agpl-3.0.html",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "GBP" },
   "creator": { "@type": "Organization", "name": "Lightmorphic", "url": "https://lightmorphic.com" },
-  "dateModified": "2026-08-31"
+  "dateModified": "2026-09-13"
 }
 </script>
 <script type="application/ld+json">
@@ -51,7 +51,7 @@
   "url": "https://fossstudio.org/",
   "name": "FOSSStudio: self-hosted video podcast studio",
   "inLanguage": "en-GB",
-  "dateModified": "2026-09-07",
+  "dateModified": "2026-09-13",
   "isPartOf": { "@type": "WebSite", "url": "https://fossstudio.org" }
 }
 </script>
@@ -743,6 +743,11 @@
   }
   .subfoot p { margin: 0 0 0.7rem; }
   .subfoot a { color: inherit; }
+  /* One quiet line saying who keeps this going. Same size and colour as
+     the company number beside it on purpose: a fact in the footer, not
+     an advert. */
+  .made-by { margin: 0 0 0.7rem; }
+  .made-by a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
   .subfoot nav { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem; }
   .subfoot nav a { font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
   .foot a { color: var(--muted); }
@@ -980,6 +985,16 @@
           nginx block, full recipe in the README</a>.</p>
         </div>
         <div class="aside">
+          <h3>Would rather not run a server?</h3>
+          <p>A studio wants open UDP ports and bandwidth for everyone's
+          video, which is more to think about than most web apps. If that
+          is not an evening you fancy, the people who write FOSSStudio
+          will host it for you:
+          <a href="https://castmorphic.com">Castmorphic</a> runs this same
+          software, and paying for it is what funds the work here. It is
+          an alternative to self-hosting, not a better version of it.</p>
+        </div>
+        <div class="aside">
           <h3>Updating</h3>
           <p><code>docker compose build app &amp;&amp; docker compose up -d</code> -
           the build fetches the newest code from GitHub; your data lives in a
@@ -1123,7 +1138,9 @@
     Registered office: 82A James Carter Road, Mildenhall, IP28 7DE.
     <!-- The date this page last changed. GitHub Pages has no build step,
        so it is typed: change it whenever you change the page above. -->
-    <span style="display:block">Page last updated <time datetime="2026-09-07">7 September 2026</time>.</span></p>
+    <span style="display:block">Page last updated <time datetime="2026-09-13">13 September 2026</time>.</span></p>
+    <p class="made-by">Created and supported by
+    <a href="https://castmorphic.com">Castmorphic</a>.</p>
     <nav aria-label="Legal"><a href="privacy.html">Privacy</a> <a href="cookies.html">Cookies</a> <a href="terms.html">Terms</a> <a href="accessibility.html">Accessibility</a> <a href="complaints.html">Complaints</a></nav>
   </div>
 </footer>

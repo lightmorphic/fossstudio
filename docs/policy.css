@@ -43,6 +43,11 @@ main a:hover { text-decoration: underline; }
 footer { border-top: 1px solid var(--line-soft); background: var(--bg2); }
 .subfoot { max-width: 72rem; margin: 0 auto; padding: 1.5rem 1.4rem 2rem; font-size: 0.8rem; color: var(--muted); }
 .subfoot p { margin: 0 0 0.7rem; }
+/* One quiet line saying who keeps this going. Same size and colour as the
+   company number beside it on purpose: a fact in the footer, not an
+   advert. */
+.made-by { margin: 0 0 0.7rem; }
+.made-by a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .subfoot nav { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem; }
 .subfoot nav a { color: inherit; font-weight: 600; }
 
