@@ -52,6 +52,15 @@ entry.
   report a problem, and that the people who write it will host it for
   you if you would rather not open UDP ports.
 
+- Screen sharing is gone from the open edition. The button, the host's
+  per-guest permission, the big-left-pane layout and the code that
+  carried the shared picture into the live stream have all been taken
+  out rather than switched off. FOSSStudio records people talking to
+  each other; sharing a screen is part of the hosted service, and
+  drawing the line here keeps the free edition about the one job it is
+  good at. Nobody's recordings or settings are affected - the studio
+  recording never carried the shared screen anyway.
+
 - Operational details that belonged to the maintainer rather than the
   project are out of the tree: a server address repeated through
   `docs/runbook.md`, a record of one afternoon's website pass, and a

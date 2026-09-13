@@ -1,9 +1,9 @@
 /* The programme mixer: the host's browser draws the show.
  *
  * Everything the audience will see is already in the host's browser -
- * every face, a shared screen, the lower thirds, the title block, an
- * intro, an overlay. So rather than describing that picture to the
- * server and having it draw a second copy with ffmpeg, this browser
+ * every face, the lower thirds, the title block, an intro, an overlay.
+ * So rather than describing that picture to the server and having it
+ * draw a second copy with ffmpeg, this browser
  * paints the show onto a 1280x720 canvas thirty times a second, mixes
  * every voice into one track, and encodes the result once. The server
  * passes it on to YouTube and the watch page without touching a pixel,
@@ -27,7 +27,6 @@
   const GAP = Math.round(W * (20 / 1280));
   const RAD = Math.round(W * (16 / 1280));
   const STRIP = 0.16;
-  const SHARE = 0.72;
   const TITLE_W = 286 / 1280;
   const TITLE_TOP_INSET = 14;
 
@@ -79,25 +78,6 @@
     let s = 1;
     for (let i = 0; i < n; i++) if (i !== spotIndex) out[i] = boxes[s++];
     return out;
-  }
-
-  function shareLayout(nOthers) {
-    const availH = H - 2 * PAD;
-    const screenW = even(W * SHARE);
-    const screen = { x: PAD, y: PAD, w: screenW, h: even(availH) };
-    const colX = PAD + screenW + GAP;
-    const colW = W - PAD - colX;
-    const tiles = [];
-    if (nOthers > 0) {
-      const idealH = even(colW * 9 / 16);
-      const tileH = even(Math.min(idealH, (availH - (nOthers - 1) * GAP) / nOthers));
-      const tileW = even(tileH * 16 / 9);
-      const blockH = nOthers * tileH + (nOthers - 1) * GAP;
-      const y0 = Math.round(PAD + Math.max(0, (availH - blockH) / 2));
-      const x0 = Math.round(colX + (colW - tileW) / 2);
-      for (let i = 0; i < nOthers; i++) tiles.push({ x: x0, y: y0 + i * (tileH + GAP), w: tileW, h: tileH });
-    }
-    return { screen, tiles };
   }
 
   function clipRound(x, b) {
@@ -188,7 +168,7 @@
 
   function create(opts) {
     const {
-      grid, tiles, control, shareVideo, introOverlay, introVideo,
+      grid, tiles, control, introOverlay, introVideo,
       audioContext, bannerImage, titleImage, tickWorkerUrl
     } = opts;
 
@@ -267,19 +247,8 @@
       if (wallpaper.img) drawFit(x, wallpaper.img, wallpaper.img.naturalWidth, wallpaper.img.naturalHeight, { x: 0, y: 0, w: W, h: H }, "crop");
 
       const list = people();
-      const sharing = !!c.sharePeerId && ready(shareVideo);
-      let boxes;
-      if (sharing) {
-        const sl = shareLayout(list.length);
-        x.save();
-        clipRound(x, sl.screen);
-        drawFit(x, shareVideo, shareVideo.videoWidth, shareVideo.videoHeight, sl.screen, "pad");
-        x.restore();
-        boxes = sl.tiles;
-      } else {
-        const spot = c.layout === "spotlight" ? list.findIndex((p) => p.id === c.spotlightPeerId) : -1;
-        boxes = tileLayout(list.length, spot);
-      }
+      const spot = c.layout === "spotlight" ? list.findIndex((p) => p.id === c.spotlightPeerId) : -1;
+      const boxes = tileLayout(list.length, spot);
 
       list.forEach(({ id, tile }, i) => {
         const b = boxes[i];
@@ -362,5 +331,5 @@
     return mixer;
   }
 
-  window.FSMixer = { create, W, H, FPS, tileLayout, shareLayout };
+  window.FSMixer = { create, W, H, FPS, tileLayout };
 })();

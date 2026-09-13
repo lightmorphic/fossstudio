@@ -102,13 +102,6 @@ and you never will.
   While live, the chat docks into the host's session view so the host
   reads and answers the room under their banner name without leaving
   the studio.
-- **Screen sharing:** the host flips a per-guest switch and that
-  guest's share button comes alive (hosts can always share). The
-  screen fills a big left pane, everyone's camera stacks small on the
-  right, and the stream and watch page show the same picture. The
-  presenter or the host ends it with one click. Works in any modern
-  browser on Windows, macOS and Linux - X11 and Wayland both, via the
-  browser's own capture picker.
 - **Live chat:** beside the video on the watch page - it appears when
   the show does. Off air, the page is a little waiting room instead:
   Vendor Lock - an Asteroids where the rocks are Big Tech logos and
@@ -185,6 +178,9 @@ FOSSStudio records and broadcasts a show. It does not publish one.
 - **No audience accounts, memberships or payments.** The watch page is
   public, or it is not there.
 - **No telephone dial-in and no SIP.** Guests join in a browser.
+- **No screen sharing.** FOSSStudio records people talking to each
+  other. Sharing a screen belongs to the hosted edition; it is not
+  coming back here.
 - **No cloud anything.** There is no service behind this: no relay we
   run, no account with us, no limit we could lift. If your server
   cannot do it, it does not happen.
