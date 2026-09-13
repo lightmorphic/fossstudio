@@ -2,7 +2,7 @@
 
 All notable changes to FOSSStudio are documented here.
 
-## 1.0.0-beta.1 - 2026-09-13
+## 0.1.0 - 2026-09-13
 
 The first release published openly, and the number says what it is: a
 beta. Nothing in the studio changed for it. What changed is that the
@@ -15,10 +15,19 @@ breaking changes are possible. Please do not put a real show on it
 yet.** The README says so above everything else, and releases are
 marked as pre-release on GitHub.
 
-The number goes backwards from 1.6.0 on purpose. Those were private
-releases nobody outside could follow, and numbering a first public beta
-as 1.6 would imply a history strangers could look up. Everything the
-1.x line built is still here; it is all listed below this entry.
+- The licence is the GNU AGPL v3, where it had been the GPL v3. The
+  difference is one clause: the GPL asks for changes to be shared only
+  when the software is handed to someone; the AGPL asks for them when
+  the software is run for someone over a network as well. This project
+  is the free edition of a hosted service, so that is the case that
+  matters. Nothing changes for anyone who runs it for themselves.
+  `TRADEMARKS.md` is new beside it: the code is free, the names are not.
+
+The number goes back from 1.6.0 on purpose. Those were private releases
+nobody outside could follow, and a nought at the front says beta before
+anybody has read a word; 1.0 is for the day it can be relied on.
+Everything the 1.x line built is still here; it is all listed below this
+entry.
 
 - `NOTICE.md`, so the ownership claim can be checked rather than taken
   on trust. Every line of FOSSStudio is Lightmorphic's own work. The

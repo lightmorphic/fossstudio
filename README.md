@@ -21,7 +21,7 @@ dashboard.
 
 ## Free, and staying free
 
-FOSSStudio is free software under the GPL, and it always will be. Put
+FOSSStudio is free software under the AGPL, and it always will be. Put
 the compose file on a machine you control and it is yours: no account,
 no key, no tier, no per-guest charge, no watermark, nothing phoning
 home. Everything in this repository is everything there is.
@@ -204,7 +204,7 @@ FOSSStudio records and broadcasts a show. It does not publish one.
 
 ## Licence
 
-Free software under the [GNU GPL v3](LICENSE).
+Free software under the [GNU AGPL v3](LICENSE).
 
 [NOTICE.md](NOTICE.md) records who wrote what. FOSSStudio is
 Lightmorphic's own work throughout; the third-party material is hls.js

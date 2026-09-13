@@ -27,7 +27,7 @@ is not about quality. Please do not spend an evening on a pull request
 for this project: pull requests will be closed with a link to this
 file.
 
-If you want to change FOSSStudio for your own use, fork it. The GPL gives
+If you want to change FOSSStudio for your own use, fork it. The AGPL gives
 you that right and you do not need our permission.
 
 ## After the beta
@@ -38,9 +38,9 @@ two things will happen here, and this file will say which:
 1. **A contributor agreement.** A short document you sign once, saying
    the code is yours to give and that Lightmorphic may use it under any
    licence. Pull requests open after that, from anyone who has signed.
-2. **Contributions under the GPL alone, with no relicensing.** Pull
+2. **Contributions under the AGPL alone, with no relicensing.** Pull
    requests open to everybody with nothing to sign, and Lightmorphic
-   gives up the right to put merged code into anything but the GPL
+   gives up the right to put merged code into anything but the AGPL
    edition.
 
 The first keeps the hosted service possible. The second keeps the

@@ -13,7 +13,7 @@ Licence v3 (`LICENSE`). Because Lightmorphic owns the copyright in the
 whole of it, Lightmorphic can also release the same code under other
 terms, and does: the hosted service at
 [castmorphic.com](https://castmorphic.com) runs it. That is the owner's
-right over its own work. It takes nothing away from the GPL grant you
+right over its own work. It takes nothing away from the AGPL grant you
 have here, which is permanent and cannot be withdrawn.
 
 This file exists so that anyone can check that claim rather than take
@@ -102,7 +102,7 @@ call a third party.
 CC0 settles copyright and nothing else. The marks themselves are their
 owners' trademarks, drawn here as the target of a joke about lock-in.
 If you fork FOSSStudio, that is your judgement to make, not a right the
-GPL or CC0 gives you.
+AGPL or CC0 gives you.
 
 ## Runtime dependencies
 
@@ -155,5 +155,5 @@ it.
   `docs/icon.png` are FOSSStudio's own icon.
 * The screenshots under `docs/shots/` are of FOSSStudio itself.
 * The Lightmorphic logo (`docs/lightmorphic-dark-tb-250x50-sq.webp`) is
-  Lightmorphic's trademark. The GPL covers the code, not the brand:
+  Lightmorphic's trademark. The AGPL covers the code, not the brand:
   remove it if you fork this and publish it as your own thing.
