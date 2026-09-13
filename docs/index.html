@@ -908,22 +908,29 @@
 <span class="c">    # multiplexes every connection over them; the relay range belongs to</span>
 <span class="c">    # coturn below.</span>
     <span class="k">ports:</span>
-      - "3000:3000"                          # the studio (put Caddy in front)
+      - "3000:3000"                          # the studio, behind your HTTPS of choice
       - "40000-40003:40000-40003/udp"        # media
       - "40000-40003:40000-40003/tcp"        # media, for networks that block UDP
     <span class="k">volumes:</span>
       - fossstudio_data:/data
 
 <span class="c">  # ---------------------------------------------------------------------</span>
-<span class="c">  # HTTPS. Most people want this. To switch it on, delete the "# " from</span>
-<span class="c">  # the caddy: block below, and at the foot of the file from the two</span>
-<span class="c">  # caddy volumes and the whole configs: block. Leave the hashes on these</span>
-<span class="c">  # sentences; they are only notes.</span>
+<span class="c">  # HTTPS is not optional, but Caddy is. Browsers refuse camera and</span>
+<span class="c">  # microphone access on a plain-http page and the session cookie is</span>
+<span class="c">  # Secure-only, so without a certificate there is no studio and nobody</span>
+<span class="c">  # can even log in. How you get one is entirely your affair: nginx,</span>
+<span class="c">  # Apache, Traefik, a Cloudflare tunnel, a proxy on another machine, or</span>
+<span class="c">  # Tailscale, where `tailscale serve` issues the certificate for your</span>
+<span class="c">  # .ts.net name - the one case Caddy cannot cover, since it cannot get a</span>
+<span class="c">  # certificate for that name. Any of those: leave this block alone and</span>
+<span class="c">  # point your own front at 3000.</span>
 <span class="c">  #</span>
-<span class="c">  # Caddy fetches and renews your certificate and serves the studio on</span>
-<span class="c">  # ports 80 and 443. Without HTTPS there is no studio at all - browsers</span>
-<span class="c">  # refuse camera and microphone access on a plain-http page, and the</span>
-<span class="c">  # session cookie is Secure-only, so nobody can even log in.</span>
+<span class="c">  # The block below is here only for the common case of a public server</span>
+<span class="c">  # with a domain and nothing else in front of it. Switch it on by</span>
+<span class="c">  # deleting the "# " from the caddy: block, and at the foot of the file</span>
+<span class="c">  # from the two caddy volumes and the whole configs: block. Leave the</span>
+<span class="c">  # hashes on these sentences; they are only notes. Caddy then fetches</span>
+<span class="c">  # and renews the certificate and serves the studio on 80 and 443.</span>
 <span class="c">  #</span>
 <span class="c">  # With Caddy on, change the app's "3000:3000" above to</span>
 <span class="c">  # "127.0.0.1:3000:3000": Caddy reaches the app by its service name on</span>

@@ -42,22 +42,29 @@ services:
     # multiplexes every connection over them; the relay range belongs to
     # coturn below.
     ports:
-      - "3000:3000"                          # the studio (put Caddy in front)
+      - "3000:3000"                          # the studio, behind your HTTPS of choice
       - "40000-40003:40000-40003/udp"        # media
       - "40000-40003:40000-40003/tcp"        # media, for networks that block UDP
     volumes:
       - fossstudio_data:/data
 
   # ---------------------------------------------------------------------
-  # HTTPS. Most people want this. To switch it on, delete the "# " from
-  # the caddy: block below, and at the foot of the file from the two
-  # caddy volumes and the whole configs: block. Leave the hashes on these
-  # sentences; they are only notes.
+  # HTTPS is not optional, but Caddy is. Browsers refuse camera and
+  # microphone access on a plain-http page and the session cookie is
+  # Secure-only, so without a certificate there is no studio and nobody
+  # can even log in. How you get one is entirely your affair: nginx,
+  # Apache, Traefik, a Cloudflare tunnel, a proxy on another machine, or
+  # Tailscale, where `tailscale serve` issues the certificate for your
+  # .ts.net name - the one case Caddy cannot cover, since it cannot get a
+  # certificate for that name. Any of those: leave this block alone and
+  # point your own front at 3000.
   #
-  # Caddy fetches and renews your certificate and serves the studio on
-  # ports 80 and 443. Without HTTPS there is no studio at all - browsers
-  # refuse camera and microphone access on a plain-http page, and the
-  # session cookie is Secure-only, so nobody can even log in.
+  # The block below is here only for the common case of a public server
+  # with a domain and nothing else in front of it. Switch it on by
+  # deleting the "# " from the caddy: block, and at the foot of the file
+  # from the two caddy volumes and the whole configs: block. Leave the
+  # hashes on these sentences; they are only notes. Caddy then fetches
+  # and renews the certificate and serves the studio on 80 and 443.
   #
   # With Caddy on, change the app's "3000:3000" above to
   # "127.0.0.1:3000:3000": Caddy reaches the app by its service name on
