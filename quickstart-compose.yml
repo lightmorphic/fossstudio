@@ -34,6 +34,11 @@ services:
     volumes:
       - fossstudio_data:/data
 
+  # Caddy fetches and renews the HTTPS certificate and puts the studio on
+  # ports 80 and 443. Already running nginx, Apache or another proxy on
+  # this machine? Do not start this service - those ports are taken.
+  # Delete it from this file and point your own proxy at the app on
+  # 127.0.0.1:3000 instead; the README has a ready nginx config.
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped

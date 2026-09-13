@@ -16,6 +16,12 @@ services:
       - ${DATA_PATH:-./data}:/data
       - ./web:/app/web:ro
 
+  # Caddy fetches and renews the HTTPS certificate and puts the studio on
+  # ports 80 and 443. Already running nginx, Apache or another proxy on
+  # this machine? Do not start this service - those ports are taken. Use
+  # docker-compose.byo-proxy.yml instead, which is this same stack with
+  # the caddy service left out, and point your own proxy at the app on
+  # 127.0.0.1:${HTTP_PORT}.
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
