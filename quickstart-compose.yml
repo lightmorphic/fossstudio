@@ -8,7 +8,7 @@
 #   3. Turn HTTPS on: see the note above the caddy service.
 #   4. docker compose up -d
 #
-# That's the whole install: the app image builds straight from GitHub,
+# That's the whole install: the image is built and published by GitHub,
 # the web pages are inside it, and your studio is at https://<your
 # domain>. Sign in with username "admin" and the password below, then
 # change it in the dashboard.
@@ -33,9 +33,7 @@ x-config: &config
 
 services:
   app:
-    build:
-      context: https://github.com/lightmorphic/fossstudio.git
-      dockerfile: server/Dockerfile
+    image: ghcr.io/lightmorphic/fossstudio:latest
     restart: unless-stopped
     # Host networking: the media engine hands out many UDP ports and
     # needs real client addresses. The app itself binds to 127.0.0.1
