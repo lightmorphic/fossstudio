@@ -12,6 +12,36 @@ function required(name) {
   return v || "";
 }
 
+// The example config has to show the shape of a public IP address, and
+// whatever we put there some people will start the studio without
+// changing it. That failure is invisible in the worst way: the site
+// loads, the room opens, guests appear in the list, and no sound or
+// picture ever arrives, because the media engine has handed every one
+// of them an address that reaches nobody. So refuse to start instead,
+// and say what to do. These are the ranges RFC 5737 reserves for
+// documentation - the example.com of IP addresses - plus the empty
+// string, which fails the same way.
+function checkPublicIp(value) {
+  const ip = (value || "").trim();
+  if (!ip) return ip;
+  const documentation = /^(192\.0\.2\.|198\.51\.100\.|203\.0\.113\.)/;
+  const notAnAddress = !/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(ip);
+  if (documentation.test(ip) || notAnAddress) {
+    console.error(
+      `PUBLIC_IP is still the example value (${ip}).\n` +
+      "It has to be this server's own public IPv4, or guests will send\n" +
+      "their audio and video to an address that reaches nobody: the room\n" +
+      "will open and stay silent.\n\n" +
+      "Find it with:  curl -4 https://api.ipify.org\n" +
+      "then set PUBLIC_IP to that number and start again.\n\n" +
+      "Behind a home router, that is the router's address, and UDP 3478,\n" +
+      "40000-40100 and 49160-49200 have to be forwarded to this machine."
+    );
+    process.exit(1);
+  }
+  return ip;
+}
+
 const domain = process.env.DOMAIN || "localhost";
 
 // The dedicated panel domains work out of the box: for each of
@@ -35,7 +65,7 @@ export function panelDomains(kind) {
 
 export const config = {
   domain,
-  publicIp: process.env.PUBLIC_IP || "",
+  publicIp: checkPublicIp(process.env.PUBLIC_IP),
   httpPort: Number(process.env.HTTP_PORT || 3000),
   bindHost: process.env.BIND_HOST || "127.0.0.1",
   // Optional explicit panel domains; the derived defaults below cover
