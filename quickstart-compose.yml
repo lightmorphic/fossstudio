@@ -21,6 +21,16 @@ x-config: &config
   TURN_SECRET: and-change-me-to-random-too      # openssl rand -hex 32
   HTTP_PORT: "3000"
 
+  # Only if your reverse proxy runs on a DIFFERENT machine. The app
+  # listens on 127.0.0.1 so nothing but a proxy on this box can reach
+  # it, which is right for almost everybody. Uncomment to let a proxy
+  # elsewhere in, then firewall this port so only that proxy's address
+  # can connect: the app must never face the open internet directly.
+  # Media does not follow the proxy - PUBLIC_IP and the UDP ports stay
+  # this machine's - and TURN_HOST then needs an address that reaches
+  # here directly, because your domain now points at the proxy.
+  # BIND_HOST: "0.0.0.0"
+
 services:
   app:
     build:
@@ -28,7 +38,8 @@ services:
       dockerfile: server/Dockerfile
     restart: unless-stopped
     # Host networking: the media engine hands out many UDP ports and
-    # needs real client addresses. The app itself binds to 127.0.0.1.
+    # needs real client addresses. The app itself binds to 127.0.0.1
+    # unless BIND_HOST above says otherwise.
     network_mode: host
     environment:
       <<: *config

@@ -6,7 +6,9 @@ services:
     restart: unless-stopped
     # Host networking: the media engine hands out many UDP ports (40000-40100)
     # and needs to see real client addresses; mapping them one-by-one is slower
-    # and error-prone. The app itself binds only to 127.0.0.1.
+    # and error-prone. The app itself binds only to 127.0.0.1, unless
+    # BIND_HOST in .env says otherwise - see "Bring your own reverse
+    # proxy" in the README for the proxy-on-another-machine case.
     network_mode: host
     env_file: .env
     environment:
