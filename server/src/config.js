@@ -35,7 +35,7 @@ function checkPublicIp(value) {
       "Find it with:  curl -4 https://api.ipify.org\n" +
       "then set PUBLIC_IP to that number and start again.\n\n" +
       "Behind a home router, that is the router's address, and UDP 3478,\n" +
-      "40000-40100 and 49160-49200 have to be forwarded to this machine."
+      "40000-40003 and 49160-49189 have to be forwarded to this machine."
     );
     process.exit(1);
   }
@@ -73,13 +73,13 @@ export const config = {
   adminDomain: process.env.ADMIN_DOMAIN || "",
   hostDomain: process.env.HOST_DOMAIN || "",
   turnHost: process.env.TURN_HOST || domain,
-  // Port ranges, so several studios can share one host under host
-  // networking: the public media range (open it in the firewall) and
-  // the loopback-only base for the recording capture legs
-  // (base..base+900)
+  // The public media range: open it in the firewall, and the compose
+  // file publishes it one-to-one. It is deliberately tiny. Every
+  // transport is multiplexed over these few sockets by mediasoup's
+  // WebRtcServer (see media.js), so four ports carry a full room with
+  // room to spare; move the range if several studios share a host.
   rtcMinPort: Number(process.env.RTC_MIN_PORT || 40000),
-  rtcMaxPort: Number(process.env.RTC_MAX_PORT || 40100),
-  localPortBase: Number(process.env.LOCAL_PORT_BASE || 45000),
+  rtcMaxPort: Number(process.env.RTC_MAX_PORT || 40003),
   dataDir: process.env.DATA_DIR || path.join(root, "..", "data"),
   webDir: process.env.WEB_DIR || path.join(root, "..", "web"),
   sessionSecret: required("SESSION_SECRET"),

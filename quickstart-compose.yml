@@ -2,7 +2,7 @@
 #
 #   1. Save this file as docker-compose.yml on a Linux server whose
 #      DNS (your domain) points at it, with ports 80/443 (TCP) and
-#      3478 + 40000-40100 + 49160-49200 (UDP) open.
+#      3478 + 40000-40003 + 49160-49189 (UDP) open.
 #   2. Fill in the five values just below. Every one of them is a
 #      stand-in: none will work as it is.
 #   3. Turn HTTPS on: see the note above the caddy service.
@@ -21,26 +21,30 @@ x-config: &config
   TURN_SECRET: and-change-me-to-random-too      # openssl rand -hex 32
   HTTP_PORT: "3000"
 
-  # Only if your reverse proxy runs on a DIFFERENT machine. The app
-  # listens on 127.0.0.1 so nothing but a proxy on this box can reach
-  # it, which is right for almost everybody. Uncomment to let a proxy
-  # elsewhere in, then firewall this port so only that proxy's address
-  # can connect: the app must never face the open internet directly.
-  # Media does not follow the proxy - PUBLIC_IP and the UDP ports stay
-  # this machine's - and TURN_HOST then needs an address that reaches
-  # here directly, because your domain now points at the proxy.
-  # BIND_HOST: "0.0.0.0"
+  # The address the app listens on INSIDE its container. It has to be
+  # 0.0.0.0, or a published port has nothing to reach. What the outside
+  # world can get at is decided by the ports: list further down, not by
+  # this - "127.0.0.1:3000:3000" there keeps the web port on this
+  # machine, "3000:3000" opens it to anything that can route here.
+  BIND_HOST: "0.0.0.0"
 
 services:
   app:
     image: ghcr.io/lightmorphic/fossstudio:latest
     restart: unless-stopped
-    # Host networking: the media engine hands out many UDP ports and
-    # needs real client addresses. The app itself binds to 127.0.0.1
-    # unless BIND_HOST above says otherwise.
-    network_mode: host
     environment:
       <<: *config
+    # Every port is published host:container with the same number on
+    # both sides, and that is not tidiness: the media engine tells each
+    # guest which port to send audio and video to, so a port that means
+    # something different outside the container is a room that opens and
+    # stays silent. The media range is four ports because mediasoup
+    # multiplexes every connection over them; the relay range belongs to
+    # coturn below.
+    ports:
+      - "3000:3000"                          # the studio (put Caddy in front)
+      - "40000-40003:40000-40003/udp"        # media
+      - "40000-40003:40000-40003/tcp"        # media, for networks that block UDP
     volumes:
       - fossstudio_data:/data
 
@@ -55,6 +59,11 @@ services:
   # refuse camera and microphone access on a plain-http page, and the
   # session cookie is Secure-only, so nobody can even log in.
   #
+  # With Caddy on, change the app's "3000:3000" above to
+  # "127.0.0.1:3000:3000": Caddy reaches the app by its service name on
+  # the compose network, so the web port no longer needs to leave this
+  # machine at all.
+  #
   # The one reason to leave it commented out: this machine already runs
   # nginx, Apache or another proxy, which already holds ports 80 and 443.
   # Then leave the hashes where they are, keep your own proxy terminating
@@ -64,9 +73,12 @@ services:
   # caddy:
   #   image: caddy:2-alpine
   #   restart: unless-stopped
-  #   network_mode: host
   #   environment:
   #     <<: *config
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #     - "443:443/udp"
   #   configs:
   #     - source: caddyfile
   #       target: /etc/caddy/Caddyfile
@@ -77,9 +89,12 @@ services:
   coturn:
     image: coturn/coturn:4-alpine
     restart: unless-stopped
-    network_mode: host
     environment:
       <<: *config
+    ports:
+      - "3478:3478/tcp"                      # relay control
+      - "3478:3478/udp"                      # relay control
+      - "49160-49189:49160-49189/udp"        # relayed media
     # sh -c so the values come from the container's own environment
     # (this file has no .env for compose-time substitution)
     entrypoint: ["/bin/sh", "-c"]
@@ -90,8 +105,8 @@ services:
         --use-auth-secret
         --static-auth-secret="$$TURN_SECRET"
         --listening-port=3478
-        --min-port=49160 --max-port=49200
-        --no-cli
+        --min-port=49160 --max-port=49189
+        --external-ip="$$PUBLIC_IP"
         --no-multicast-peers
 
 volumes:
@@ -106,13 +121,13 @@ volumes:
 #     content: |
 #       {
 #         on_demand_tls {
-#           ask http://127.0.0.1:{$$HTTP_PORT}/tls-allowed
+#           ask http://app:{$$HTTP_PORT}/tls-allowed
 #         }
 #       }
 #       {$$DOMAIN} {
 #         encode zstd gzip
 #         header Strict-Transport-Security "max-age=31536000"
-#         reverse_proxy 127.0.0.1:{$$HTTP_PORT}
+#         reverse_proxy app:{$$HTTP_PORT}
 #       }
 #       https:// {
 #         tls {
@@ -120,5 +135,5 @@ volumes:
 #         }
 #         encode zstd gzip
 #         header Strict-Transport-Security "max-age=31536000"
-#         reverse_proxy 127.0.0.1:{$$HTTP_PORT}
+#         reverse_proxy app:{$$HTTP_PORT}
 #       }
