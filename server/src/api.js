@@ -109,8 +109,11 @@ api.post("/wallpaper", requireAuth,
     const name = `wallpaper.${ext}`;
     const dir = path.join(config.dataDir, "uploads");
     await fs.mkdir(dir, { recursive: true });
+    // The dashed form is the old per-account name (wallpaper-<uid>.jpg);
+    // matching it too means an install that came from those days does not
+    // leave a stray file behind the first time this is replaced.
     for (const f of await fs.readdir(dir)) {
-      if (f.startsWith("wallpaper.")) await fs.unlink(path.join(dir, f));
+      if (/^wallpaper[-.]/.test(f)) await fs.unlink(path.join(dir, f));
     }
     await fs.writeFile(path.join(dir, name), req.body);
     await updateSettings({ wallpaper: name });
@@ -121,7 +124,7 @@ api.delete("/wallpaper", requireAuth, async (req, res) => {
   const dir = path.join(config.dataDir, "uploads");
   try {
     for (const f of await fs.readdir(dir)) {
-      if (f.startsWith("wallpaper.")) await fs.unlink(path.join(dir, f));
+      if (/^wallpaper[-.]/.test(f)) await fs.unlink(path.join(dir, f));
     }
   } catch { /* nothing uploaded yet */ }
   await updateSettings({ wallpaper: null });
@@ -146,7 +149,7 @@ api.post("/adbanner", requireAuth,
     const dir = path.join(config.dataDir, "uploads");
     await fs.mkdir(dir, { recursive: true });
     for (const f of await fs.readdir(dir)) {
-      if (f.startsWith("ad.")) await fs.unlink(path.join(dir, f));
+      if (/^ad[-.]/.test(f)) await fs.unlink(path.join(dir, f));
     }
     await fs.writeFile(path.join(dir, name), req.body);
     await updateSettings({ adBanner: name });
@@ -157,7 +160,7 @@ api.delete("/adbanner", requireAuth, async (req, res) => {
   const dir = path.join(config.dataDir, "uploads");
   try {
     for (const f of await fs.readdir(dir)) {
-      if (f.startsWith("ad.")) await fs.unlink(path.join(dir, f));
+      if (/^ad[-.]/.test(f)) await fs.unlink(path.join(dir, f));
     }
   } catch { /* nothing uploaded yet */ }
   await updateSettings({ adBanner: null });
@@ -227,7 +230,7 @@ api.post("/logo", requireAuth,
     const dir = path.join(config.dataDir, "uploads");
     await fs.mkdir(dir, { recursive: true });
     for (const f of await fs.readdir(dir)) {
-      if (f.startsWith("logo.")) await fs.unlink(path.join(dir, f));
+      if (/^logo[-.]/.test(f)) await fs.unlink(path.join(dir, f));
     }
     await fs.writeFile(path.join(dir, name), req.body);
     await updateSettings({ logo: name });
@@ -238,7 +241,7 @@ api.delete("/logo", requireAuth, async (req, res) => {
   const dir = path.join(config.dataDir, "uploads");
   try {
     for (const f of await fs.readdir(dir)) {
-      if (f.startsWith("logo.")) await fs.unlink(path.join(dir, f));
+      if (/^logo[-.]/.test(f)) await fs.unlink(path.join(dir, f));
     }
   } catch { /* nothing uploaded yet */ }
   await updateSettings({ logo: null });

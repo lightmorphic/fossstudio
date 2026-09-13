@@ -132,7 +132,7 @@
           <div class="field">
             <label for="newPassword">New password</label>
             <input type="password" id="newPassword" autocomplete="new-password">
-            <p class="hint">At least 10 characters.</p>
+            <p class="hint">At least 10 characters. If <code>HOST_PASSWORD</code> is still filled in in your compose file, the next restart puts that one back - empty it there, or change it there instead, and the two can never disagree.</p>
           </div>
           <button class="btn primary" id="savePasswordBtn">Change password</button>
           <p class="msg" id="passwordMsg" hidden></p>
