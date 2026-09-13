@@ -62,11 +62,14 @@ and you never will.
   sees and the recording keeps.
 - **Recording:** each person is recorded in their own browser, on their
   own track, and uploaded as it is made. Nothing here converts anything,
-  so what you download is the file that browser wrote: uncompressed
-  audio where the browser can record it (a Chromium-based browser such as Chrome, Brave or Edge can), Opus where it
-  cannot. Print worth reading before a long show: uncompressed
-  comes to about 1.4 GB per person per hour, and a camera track is
-  whatever the browser's own encoder makes of the picture.
+  so what you download is the file that browser wrote: a `.webm` file
+  per person. **Read this before a long show.** In a Chromium-based
+  browser such as Chrome, Brave or Edge the audio inside is
+  uncompressed, which sounds better and is very large: about **1.4 GB
+  per person per hour**, so a two-hour show with four people is over
+  11 GB. Other browsers record Opus instead, which is a fraction of the
+  size. A camera track is whatever the browser's own encoder makes of
+  the picture.
 - **One video of the whole thing:** while a take is running, the host's
   browser also draws the show as everyone sees it onto a 1280x720
   canvas, mixes every voice into one track and encodes it. That arrives

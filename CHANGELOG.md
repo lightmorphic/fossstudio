@@ -28,10 +28,10 @@ moment it was done.
 
 Recording is the point of it, and the whole of it happens in the
 browsers taking part. Each person is recorded on their own track, on
-their own machine - uncompressed where the browser can do that, which
-Chromium-based browsers such as Chrome, Brave and Edge can, and in Opus
-where it cannot - and that file is
-what you are given, exactly as it was recorded. Alongside the separate
+their own machine, and that file is what you are given, exactly as it
+was recorded: one .webm per person. In a Chromium-based browser such as
+Chrome, Brave or Edge the audio inside it is uncompressed; other
+browsers record Opus, which is far smaller. Alongside the separate
 tracks comes one video of the whole show: while a take runs, the host's
 browser paints the programme onto a 1280x720 canvas, mixes every voice
 and encodes it, so a finished file arrives rather than a job for the
@@ -42,7 +42,9 @@ Nothing on the server opens a recording. There is no media tool
 installed in the image, no conversion step in the browser code either,
 and no long-running child process anywhere in the product. The bill for
 that honesty is disk: uncompressed audio runs to about 1.4 GB per
-person per hour, so a long show with a full room wants room to land.
+person per hour, so four people for two hours is over 11 GB. A long
+show with a full room wants room to land, and it is said on the site
+and in the README rather than discovered afterwards.
 
 The video of everyone is the picture people were on. Tile sizes,
 spacing and corners come from one set of frame-relative fractions that
