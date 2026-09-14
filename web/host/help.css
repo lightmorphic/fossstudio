@@ -1,37 +1,116 @@
-/* The help page. Long prose, so it is set for reading: one column at a
-   comfortable measure, generous line height, and headings that are
-   questions rather than labels. Nothing here is loaded from anywhere
-   else - the typeface and the colors come from host.css, which the
-   studio serves itself. */
-.help-wrap {
-  max-width: 42rem;
-  margin: 0 auto;
-  padding: 2rem 1.25rem 5rem;
+/* Help, as a pane of the dashboard.
+ *
+ * Charlie, 14 September 2026: "The help page is just a wall of text.
+ * It's about as interesting as custard ... And make it wider - the
+ * normal page size, not this narrow column of information", and then:
+ * "Don't have the Help in the top right-hand corner. Make it one of the
+ * tabs on the left. Make it part of the system."
+ *
+ * So there is no page shell here at all - it sits in the dashboard's
+ * grid, in the dashboard's panels, in the dashboard's one dark palette.
+ * What this file does is split each answer into two: the prose on the
+ * left at a measure somebody can actually read, and on the right the
+ * thing that makes it quicker to understand - a picture of the real
+ * screen, a table, or the one sentence that matters most.
+ *
+ * Everything it needs is served by the studio. No font, no stylesheet
+ * and no picture comes from another machine, because a studio with no
+ * internet is the normal case rather than the awkward one.
+ */
+
+/* Landing from a deep link (Settings links into these sections, and so
+   does the media warning in a live session) puts the heading under the
+   top of the window rather than flush against it. */
+.help .help-sec { scroll-margin-top: 1rem; }
+
+.help .help-lead { color: var(--muted-fg); max-width: 44rem; }
+
+.help .help-sec h2 { font-size: 1.0625rem; }
+
+/* The two columns. One below 1100px: at that width the dashboard's own
+   menus have already taken their share and a second column would be too
+   narrow for either a sentence or a screenshot. */
+.help-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
 }
-.help-wrap h1 { font-size: 1.6rem; margin-bottom: 0.6rem; }
-.help-wrap .back { margin-bottom: 1.5rem; font-size: 0.875rem; }
-.help-wrap .lead { color: var(--muted-fg); margin-bottom: 2.5rem; }
-.help-wrap section { margin-bottom: 2.75rem; }
-/* Landing from a deep link puts the heading under the top of the
-   window rather than flush against it, so it reads as the start of
-   something rather than as a page that has been cut off. */
-.help-wrap section { scroll-margin-top: 1.5rem; }
-.help-wrap h2 {
-  font-size: 1.15rem;
-  margin-bottom: 0.9rem;
-  line-height: 1.35;
+@media (min-width: 1100px) {
+  .help-cols { grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: 1.75rem; }
 }
-.help-wrap p { margin-bottom: 0.9rem; line-height: 1.65; max-width: 38rem; }
-.help-wrap ul { margin: 0 0 1.1rem 1.1rem; max-width: 38rem; }
-.help-wrap li { margin-bottom: 0.6rem; line-height: 1.6; }
-.help-wrap code {
+
+.help-prose > * + * { margin-top: 0.8rem; }
+.help-prose p { line-height: 1.65; max-width: 36rem; }
+.help-prose ul, .help-prose ol { margin: 0 0 0 1.15rem; max-width: 36rem; }
+.help-prose li { margin-bottom: 0.5rem; line-height: 1.6; }
+.help-side > * + * { margin-top: 1.25rem; }
+
+.help code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.9em;
 }
-.help-wrap .cmd {
-  background: rgba(127,127,127,0.12);
-  border-radius: 6px;
+/* A command to type. It scrolls inside itself rather than pushing the
+   page sideways on a phone. */
+.help .cmd {
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   padding: 0.6rem 0.8rem;
-  margin-bottom: 1.1rem;
   overflow-x: auto;
 }
+
+/* A picture of the real screen. The border keeps a screenshot whose own
+   edge is dark from bleeding into the panel behind it. */
+.help figure.shot { margin: 0; }
+.help figure.shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+.help figure.shot figcaption {
+  margin-top: 0.5rem;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--muted-fg);
+}
+
+/* The one sentence that matters most in a section. A gray panel and a
+   bold lead-in, not a painted box and never a colored rule down its
+   side - Charlie had those taken out everywhere for reading as
+   machine-made. */
+.help .note {
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+.help .note b { display: block; margin-bottom: 0.2rem; }
+
+.help table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+.help th, .help td {
+  text-align: left;
+  padding: 0.5rem 0.7rem 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.help th { font-weight: 600; color: var(--muted-fg); font-size: 0.75rem; }
+.help td:last-child, .help th:last-child { padding-right: 0; }
+.help tr:last-child td { border-bottom: 0; }
+.help td b { font-weight: 600; }
+/* A table is the one thing on the page that can be wider than its
+   column, so it gets to scroll inside itself. */
+.help .table-wrap { overflow-x: auto; }
+
+.help .links { list-style: none; margin: 0; padding: 0; }
+.help .links li { margin-bottom: 0.4rem; }

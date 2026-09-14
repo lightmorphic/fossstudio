@@ -17,9 +17,11 @@ const check = (label, ok) => { console.log(`${ok ? "OK  " : "FAIL"} ${label}`); 
 // Every page the studio serves, by the name it is served under.
 const served = new Set(["/", "/help", "/host/", "/join", "/watch"]);
 
-// Anchors the help page actually defines.
-const help = fs.readFileSync(path.join(web, "host", "help.html"), "utf8");
-const anchors = new Set([...help.matchAll(/<section id="([^"]+)"/g)].map((m) => m[1]));
+// The answers the help pane actually defines. It lives in the dashboard
+// now rather than in a page of its own, so the sections are read out of
+// the dashboard's markup.
+const dashboard = fs.readFileSync(path.join(web, "host", "index.html"), "utf8");
+const anchors = new Set([...dashboard.matchAll(/class="panel help-sec" id="([^"]+)"/g)].map((m) => m[1]));
 
 function pagesUnder(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
@@ -39,8 +41,14 @@ for (const file of pagesUnder(web)) {
     if (href.startsWith("/api/") || href.startsWith("/css/") || href.startsWith("/js/")) continue;
     check(`${name}: ${href} is a page the studio serves`, served.has(href) || href.endsWith(".html"));
   }
+  // Two shapes point at an answer: /help#x from outside the dashboard
+  // (the setup screen, a live session's media warning) and #help/x from
+  // inside it, which selects the pane without reloading the page.
   for (const [, hash] of html.matchAll(/href="\/help#([^"]+)"/g)) {
     check(`${name}: /help#${hash} is a section that exists`, anchors.has(hash));
+  }
+  for (const [, hash] of html.matchAll(/href="#help\/([^"]+)"/g)) {
+    check(`${name}: #help/${hash} is a section that exists`, anchors.has(hash));
   }
 }
 

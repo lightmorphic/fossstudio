@@ -49,6 +49,14 @@
       { id: "service", label: "Service" },
       { id: "backups", label: "Backups" },
       { id: "logs", label: "Logs" }
+    ] },
+    // Help sits with them. Charlie, 14 September 2026: "Don't have the
+    // Help in the top right-hand corner. Make it one of the tabs on the
+    // left. Make it part of the system, so it doesn't just open to a
+    // blank page with no menus." It is the studio's own answers, not a
+    // website, so it belongs in the same frame as everything else.
+    { id: "help", label: "Help", subs: [
+      { id: "help", label: "Help" }
     ] }
   ];
 
@@ -102,9 +110,38 @@
     history.replaceState(null, "", `#${currentMenu.id}/${subId}`);
   }
 
+  // Help is one pane with all its answers in it, so the second half of
+  // its fragment names an answer where every other menu names a
+  // sub-page: #help/public-ip. A bare #public-ip works as well, because
+  // /help#public-ip redirects here and a browser keeps the fragment
+  // across a redirect - that is the address the media warning in a live
+  // session points at, and the one people paste to each other.
+  function helpSection(id) {
+    return id && /^[a-z0-9-]+$/.test(id)
+      ? document.querySelector(`#pane-help .help-sec#${id}`)
+      : null;
+  }
+
+  function showHelp(section) {
+    currentMenu = visibleMenus().find((x) => x.id === "help");
+    renderMainMenu();
+    showSub("help");
+    const el = helpSection(section);
+    if (!el) return;
+    // The pane is showing by now, so the section has a height to scroll
+    // to; help.css keeps a little air above it rather than landing the
+    // heading flush against the top of the window.
+    history.replaceState(null, "", `#help/${section}`);
+    el.scrollIntoView();
+  }
+
   // Restore #menu/sub from the URL; false if it doesn't point anywhere
   function applyHash() {
     const [m, sub] = location.hash.replace(/^#/, "").split("/");
+    if (m === "help" || helpSection(m)) {
+      showHelp(helpSection(m) ? m : sub);
+      return true;
+    }
     const menu = visibleMenus().find((x) => x.id === m);
     if (!menu) return false;
     currentMenu = menu;

@@ -131,13 +131,16 @@ app.get("/tls-allowed", async (req, res) => {
   res.status(404).end();
 });
 
-// The studio's own help, behind the login and served from here. A
-// self-hosted box may have no internet at all, and a help link that
-// reaches a website describes whatever is current rather than what this
-// person installed. Nothing on the page is fetched from anywhere else.
+// The studio's own help. It is a pane of the dashboard now rather than
+// a page of its own (Charlie, 14 September 2026: a help page that opens
+// with no menus is not part of the system), so this address only points
+// at it. The fragment survives the redirect - a browser carries it over
+// when the new location has none of its own - so /help#public-ip, which
+// is what the media warning in a live session links to, arrives at the
+// dashboard as /host/#public-ip and the dashboard opens Help there.
 app.get("/help", (req, res) => {
   if (!isAuthedRequest(req)) return res.redirect("/host/login.html");
-  res.sendFile(path.join(config.webDir, "host", "help.html"));
+  res.redirect("/host/");
 });
 
 // Session links guests receive: https://<domain>/s/<room-id>

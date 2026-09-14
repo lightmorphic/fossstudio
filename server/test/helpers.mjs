@@ -190,3 +190,74 @@ export function mediaSeconds(file) {
   }
   return Number(text);
 }
+
+// ---------- Screenshots ----------
+//
+// The website's pictures and the help page's pictures are taken the same
+// way: real browsers with fake cameras, joining a real studio. This used
+// to live only in site-shots.mjs, and the help page would have had to
+// copy it; a copy is how the website's shots went a fortnight stale the
+// last time, so there is one of it.
+
+// A browser holding one person, parked on the join screen with their
+// name typed in. The camera is a clip from CAMS rather than Chrome's own
+// spinning ball, so the pictures have faces in them.
+export async function shotStudio(chromium, base, {
+  cam, name, tagline, sessionId, asHost = false,
+  viewport = { width: 1560, height: 975 }
+}) {
+  const browser = await chromium.launch({
+    args: [
+      "--use-fake-device-for-media-stream",
+      "--use-fake-ui-for-media-stream",
+      `--use-file-for-fake-video-capture=${CAMS}/${cam}`,
+      "--autoplay-policy=no-user-gesture-required"
+    ]
+  });
+  const ctx = await browser.newContext({
+    permissions: ["camera", "microphone"],
+    viewport,
+    deviceScaleFactor: 2
+  });
+  if (asHost) {
+    const login = await ctx.newPage();
+    await login.goto(`${base}/host/login.html`);
+    await login.fill("#username", STUDIO.username);
+    await login.fill("#password", STUDIO.password);
+    await login.click("button[type=submit]");
+    await login.waitForURL("**/host/");
+    await login.close();
+  }
+  const page = await ctx.newPage();
+  await page.goto(`${base}/s/${sessionId}${asHost ? "?as=host" : ""}`);
+  await page.waitForSelector("#joinBtn:not([disabled])");
+  if (name) await page.fill("#nameInput", name);
+  if (tagline) await page.fill("#taglineInput", tagline);
+  return { browser, page };
+}
+
+export async function joinAll(list) {
+  for (const s of list) {
+    await s.page.click("#joinBtn");
+    await s.page.waitForSelector("#session:not([hidden])");
+  }
+}
+
+// PNG in, JPEG out, at a width we choose. The browser is the converter,
+// so the suite still needs nothing installed; the PNG is removed, which
+// is the step somebody used to have to remember.
+export async function pngToJpeg(page, png, jpg, width = 2000, quality = 0.86) {
+  const b64 = await page.evaluate(async ({ data, width, quality }) => {
+    const img = new Image();
+    img.src = "data:image/png;base64," + data;
+    await img.decode();
+    const w = Math.min(width, img.width);
+    const h = Math.round(img.height * (w / img.width) / 2) * 2;
+    const c = document.createElement("canvas");
+    c.width = w; c.height = h;
+    c.getContext("2d").drawImage(img, 0, 0, w, h);
+    return c.toDataURL("image/jpeg", quality).split(",")[1];
+  }, { data: fs.readFileSync(png).toString("base64"), width, quality });
+  fs.writeFileSync(jpg, Buffer.from(b64, "base64"));
+  fs.unlinkSync(png);
+}

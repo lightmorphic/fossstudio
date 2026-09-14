@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FOSSStudio - Dashboard</title>
 <link rel="stylesheet" href="/host/host.css?v=20260914a">
+<link rel="stylesheet" href="/host/help.css?v=20260914b">
 <link rel="stylesheet" href="/css/tip.css?v=20260823f">
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icons/icon-192.png">
@@ -15,7 +16,6 @@
   <div class="topbar">
     <h1><span class="foss">FOSS</span>Studio</h1>
     <span class="whoami" id="whoami"></span>
-    <a class="btn" href="/help">Help</a>
     <button class="btn" id="logoutBtn">Log out</button>
   </div>
 
@@ -54,7 +54,7 @@
       <section id="pane-library" class="stack" hidden>
         <div class="panel">
           <h2>Recordings</h2>
-          <p class="hint" style="margin-bottom:0.8rem">Everyone's own track, plus one video of the whole show. Every track is the full length of the take, whenever that person joined. <a class="helplink" href="/help#guests">Guests who join late or drop out</a> &middot; <a class="helplink" href="/help#disk">How much disk a show takes</a></p>
+          <p class="hint" style="margin-bottom:0.8rem">Everyone's own track, plus one video of the whole show. Every track is the full length of the take, whenever that person joined. <a class="helplink" href="#help/guests">Guests who join late or drop out</a> &middot; <a class="helplink" href="#help/disk">How much disk a show takes</a></p>
           <div id="recordingList"><p class="hint">Loading…</p></div>
         </div>
       </section>
@@ -131,7 +131,7 @@
           </div>
           <span class="msg ok" id="qualityMsg" hidden>✓ Saved</span>
           <p class="hint" style="margin-top:1rem">A file with <code>.webm</code> on the end is a box, and the name on the box does not tell you what is inside it. The same box holds either every sample your microphone heard or about a twenty-fifth of that, and until you open it in an editor the two look alike. That is the whole of this choice: the box stays the same, the contents do not. Best quality keeps everything, which matters if the recording will be cleaned up, levelled or repaired afterwards. Smaller files throws away what the ear does not miss on speech, and a two-hour show with four people becomes a few hundred megabytes instead of eleven gigabytes.</p>
-          <p class="hint" style="margin-top:0.7rem">Firefox cannot record uncompressed audio at all. A guest on Firefox comes back compressed whatever this is set to, and the Recordings list says so beside their track. <a class="helplink" href="/help#recording-quality">More about what is in the file</a></p>
+          <p class="hint" style="margin-top:0.7rem">Firefox cannot record uncompressed audio at all. A guest on Firefox comes back compressed whatever this is set to, and the Recordings list says so beside their track. <a class="helplink" href="#help/recording-quality">More about what is in the file</a></p>
         </div>
       </section>
 
@@ -172,14 +172,14 @@
           <div class="field">
             <label for="newPassword">New password</label>
             <input type="password" id="newPassword" autocomplete="new-password">
-            <p class="hint">At least twelve characters, and not one of the passwords everybody guesses first. There are no rules about capitals and symbols; length is what makes a password hard to guess. If <code>HOST_PASSWORD</code> is still filled in in your compose file, the next restart puts that one back - empty it there and the password lives here instead. <a class="helplink" href="/help#login">More about the login</a></p>
+            <p class="hint">At least twelve characters, and not one of the passwords everybody guesses first. There are no rules about capitals and symbols; length is what makes a password hard to guess. If <code>HOST_PASSWORD</code> is still filled in in your compose file, the next restart puts that one back - empty it there and the password lives here instead. <a class="helplink" href="#help/login">More about the login</a></p>
           </div>
           <button class="btn primary" id="savePasswordBtn">Change password</button>
           <p class="msg" id="passwordMsg" hidden></p>
         </div>
         <div class="panel">
           <h2>Passkeys</h2>
-          <p class="hint" style="margin-bottom:0.8rem">Your browser or phone keeps the key and this studio only stores the public half, so a stolen copy of the data folder gives nobody a way in. A passkey belongs to the address you made it on: move the studio to a different domain and it stops working, which is why the password above stays as the way back. <a class="helplink" href="/help#login">More about the login</a></p>
+          <p class="hint" style="margin-bottom:0.8rem">Your browser or phone keeps the key and this studio only stores the public half, so a stolen copy of the data folder gives nobody a way in. A passkey belongs to the address you made it on: move the studio to a different domain and it stops working, which is why the password above stays as the way back. <a class="helplink" href="#help/login">More about the login</a></p>
           <div id="passkeyList"><p class="hint">Loading…</p></div>
           <button class="btn primary" id="addPasskeyBtn" style="margin-top:0.8rem">Add a passkey</button>
           <p class="msg err" id="passkeyMsg" hidden></p>
@@ -217,12 +217,12 @@
           <div class="field">
             <label for="placeDomain">Domain</label>
             <input type="text" id="placeDomain" autocomplete="off" spellcheck="false" placeholder="studio.example.com">
-            <p class="hint" style="margin-top:0.4rem">The address people type to reach the studio, and the one its certificate is fetched for. <a class="helplink" href="/help#https">Why HTTPS is not optional</a></p>
+            <p class="hint" style="margin-top:0.4rem">The address people type to reach the studio, and the one its certificate is fetched for. <a class="helplink" href="#help/https">Why HTTPS is not optional</a></p>
           </div>
           <div class="field">
             <label for="placePublicIp">This server's public address</label>
             <input type="text" id="placePublicIp" autocomplete="off" spellcheck="false" placeholder="203.0.113.10">
-            <p class="hint" style="margin-top:0.4rem">Audio and video go straight between browsers and this machine rather than through the web server, so the studio has to tell every guest which address to send them to. Get it wrong and the room opens and stays silent. Find it with <code>curl -4 https://api.ipify.org</code> on the machine. <a class="helplink" href="/help#public-ip">More about this</a></p>
+            <p class="hint" style="margin-top:0.4rem">Audio and video go straight between browsers and this machine rather than through the web server, so the studio has to tell every guest which address to send them to. Get it wrong and the room opens and stays silent. Find it with <code>curl -4 https://api.ipify.org</code> on the machine. <a class="helplink" href="#help/public-ip">More about this</a></p>
           </div>
           <div class="field">
             <label for="placeTurnHost">Relay address (optional)</label>
@@ -273,6 +273,245 @@
           <h2>Recent log</h2>
           <button class="btn" id="refreshLogsBtn" style="margin-bottom:0.6rem">Refresh</button>
           <pre id="logBox" style="font-size:0.72rem; line-height:1.5; overflow:auto; max-height:26rem; white-space:pre-wrap; word-break:break-all"></pre>
+        </div>
+      </section>
+
+      <!-- Help. A pane like any other: the studio's own answers, behind
+           the login, with the dashboard's menus still beside them.
+           Charlie, 14 September 2026: "Make it one of the tabs on the
+           left. Make it part of the system, so it doesn't just open to a
+           blank page with no menus." Every picture on it is a photograph
+           of the real screen, remade by test/help-shots.mjs, and served
+           from this machine: a studio with no internet is the normal
+           case, not the awkward one. -->
+      <section id="pane-help" class="stack help" hidden>
+        <div class="panel">
+          <h2>Help</h2>
+          <p class="help-lead">This is part of the studio, not a website. It works with no internet connection and it describes the version you have installed, not whatever is current somewhere else.</p>
+        </div>
+
+        <div class="panel help-sec" id="whats-in-the-file">
+          <h2>What is actually in my recording?</h2>
+          <div class="help-cols">
+            <div class="help-prose">
+              <p>A file ending in <code>.webm</code> is a box. The name on the box tells you how it is packed and nothing at all about what is inside, and the same box can hold two things that differ by a factor of twenty-five.</p>
+              <p>One is every sample your microphone heard, kept exactly as it arrived. The other is a compressed version of it, which throws away what the ear does not miss and is perfectly good for speech. Open them side by side in a player and they sound alike.</p>
+              <p>That is why the studio does not ask you to choose a codec. It asks whether you want <b>Best quality</b> or <b>Smaller files</b>, and it says the sizes.</p>
+            </div>
+            <div class="help-side">
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr><th>Setting</th><th>Per person, per hour</th><th>Four people, two hours</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td><b>Best quality</b></td><td>about 1.4 GB</td><td>about 11 GB</td></tr>
+                    <tr><td><b>Smaller files</b></td><td>about 54 MB</td><td>about 430 MB</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="note">
+                <b>The file you download is a .wav or an .opus</b>
+                That is the same audio your browser recorded, repackaged rather than re-encoded, in a form an editor opens without help. Audacity reads both on its own and needs an extra library installed for anything in a <code>.webm</code>.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel help-sec" id="recording-quality">
+          <h2>Which recording quality should I choose?</h2>
+          <div class="help-cols">
+            <div class="help-prose">
+              <p><b>Best quality</b> if the recording is going to be worked on afterwards - levelled, cleaned up, noise removed, a bad patch repaired. Every one of those jobs is better done on the real samples, and compressing once at the end is better than compressing twice.</p>
+              <p><b>Smaller files</b> if the show is two people talking and it goes out more or less as recorded. A two-hour show with four people is a few hundred megabytes instead of eleven gigabytes.</p>
+              <p>You can change it between sessions. A recording already running keeps whatever it started with, so one person's track can never come back in a different form from everybody else's.</p>
+              <div class="note">
+                <b>Firefox cannot record uncompressed audio at all</b>
+                Nothing can be done about that from here. A guest using Firefox comes back compressed however this is set, and the Recordings list says so beside their track rather than leaving you to notice the file is small.
+              </div>
+            </div>
+            <div class="help-side">
+              <figure class="shot">
+                <img src="/img/help/settings-quality.jpg" width="1400" height="808" loading="lazy"
+                     alt="The Recording quality screen in Settings, with two radio buttons: Best quality, described as every sample as the microphone heard it at about 1.4 GB per person per hour, and Smaller files at about 54 MB per person per hour.">
+                <figcaption>Settings, Recording. The two choices, with the sizes beside them. It applies to the next take you start.</figcaption>
+              </figure>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel help-sec" id="disk">
+          <h2>Why is my recording eleven gigabytes?</h2>
+          <div class="help-cols">
+            <div class="help-prose">
+              <p>Because at best quality every person in the room is producing about 1.4 GB an hour of their own audio, plus their camera, plus the one video of the whole show that your browser draws. Four people for two hours is over 11 GB, and it lands on this server.</p>
+              <p>The studio never opens a recording to shrink it - there is no media tool in it and nothing on the server decodes a single sample, which is why a full room does not need a powerful machine. The price of that is disk.</p>
+              <p>Download what you want and delete the rest; a recording deleted here is gone. If disk is the tighter constraint, that is what Smaller files is for.</p>
+            </div>
+            <div class="help-side">
+              <figure class="shot">
+                <img src="/img/help/recordings.jpg" width="1400" height="658" loading="lazy"
+                     alt="The Recordings screen, listing a take by its episode title with the files under it: an audio track and a camera track for each person, and one video of everyone, each with its size and a download button.">
+                <figcaption>Recordings. Every take that has been made on this studio, with each person's own track and the one video of everyone. This is where the disk goes, and where you delete it.</figcaption>
+              </figure>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel help-sec" id="https">
+          <h2>Why does it insist on HTTPS?</h2>
+          <div class="help-cols">
+            <div class="help-prose">
+              <p>Two hard reasons, neither of them ours. Browsers refuse to hand any page a camera or a microphone unless the page arrived over HTTPS, so without a certificate nobody can join a session. And the studio's login cookie is marked secure-only, so without one nobody can even sign in.</p>
+              <p>A studio reached only over your own network, with no certificate, will load its pages and then fail at the first camera. That is the browser, not the studio.</p>
+              <p>How you get a certificate is entirely up to you. Any of the four on the right is fine.</p>
+            </div>
+            <div class="help-side">
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr><th>Way in</th><th>What it means here</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td><b>The bundled Caddy</b></td><td>Switch it on in the compose file and it fetches and renews the certificate itself. The easy path for a public server with a domain and nothing else in front of it. Not compulsory and not the recommended way - one way.</td></tr>
+                    <tr><td><b>Your own proxy</b></td><td>nginx, Apache, Traefik, HAProxy, whatever already holds ports 80 and 443 on that machine. Leave Caddy switched off and point your proxy at the studio's port.</td></tr>
+                    <tr><td><b>A tunnel</b></td><td>Cloudflare Tunnel and the like terminate TLS for you. If the domain is proxied that way, set the relay address separately - see below.</td></tr>
+                    <tr><td><b>Tailscale</b></td><td><code>tailscale serve</code> issues a certificate for your <code>.ts.net</code> name. The one case Caddy cannot cover, because it cannot get a certificate for that name.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel help-sec" id="public-ip">
+          <h2>Why can nobody hear anything?</h2>
+          <div class="help-cols">
+            <div class="help-prose">
+              <div class="note">
+                <b>The room opens, everybody appears in the list, and no sound or picture ever arrives</b>
+                If that is what you are seeing, the public address is almost certainly wrong or missing.
+              </div>
+              <p>Here is why it exists. The pages come to you through your web server. The audio and video do not: they go straight between each person's browser and this machine, on their own ports, because sending them through a web server would add delay to a live conversation. So the studio has to tell every guest which address to send them to, and it cannot work that out for itself - inside a container it can see only a private address that means nothing to anybody outside.</p>
+              <ol>
+                <li>Run <code>curl -4 https://api.ipify.org</code> on the server.</li>
+                <li>Put what it prints in Settings, Studio address, as the public address.</li>
+                <li>Restart the studio. The engine is given the address when it opens its sockets, so a change cannot take effect under a session already running.</li>
+              </ol>
+              <p>Behind a home router it is the router's address, and the ports on the right have to be forwarded to this machine. The relay is for guests whose own network will not let their browser reach this machine directly - a locked-down office, some mobile networks. Their audio goes through this server instead. It is not needed often and it costs nothing when it is not used.</p>
+              <p>If your domain is behind a proxied Cloudflare record or a tunnel, relay traffic will not reach this machine through it. Put an unproxied name or the raw address in the relay address field, or that fallback will never work.</p>
+            </div>
+            <div class="help-side">
+              <figure class="shot">
+                <img src="/img/help/settings-address.jpg" width="1400" height="1018" loading="lazy"
+                     alt="The Studio address screen in Settings, with three fields: Domain, this server's public address, and an optional relay address.">
+                <figcaption>Settings, Studio address. The middle field is the one this is about. Both of the top two take effect when the studio restarts.</figcaption>
+              </figure>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr><th>Forward</th><th>For</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td><b>UDP 40000-40003</b><br>and the same four on TCP</td><td>The audio and video themselves. Only four, because the media engine multiplexes every connection in the room over them; TCP is for networks that block UDP.</td></tr>
+                    <tr><td><b>UDP and TCP 3478</b><br><b>UDP 49160-49189</b></td><td>The relay, for guests who cannot reach this machine directly.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel help-sec" id="login">
+          <h2>How does the login work, and what if I am locked out?</h2>
+          <div class="help-cols">
+            <div class="help-prose">
+              <p><b>The first time.</b> A studio nobody has claimed prints a code in its own log and asks for it before letting anybody set a password. Being able to read that log is the proof that the machine is yours - otherwise the first stranger to find the address would own your studio. On the server:</p>
+              <p class="cmd"><code>docker compose logs app</code></p>
+              <p>The code is near the end, in a box. It is held in memory only, never written to disk, and changes every time the studio restarts - so if you have lost it, restart and read the new one.</p>
+              <p><b>The password.</b> At least twelve characters, and not one of the ones everybody guesses. There are no rules about capitals and symbols: those produce <code>Password1!</code>, which is short, hard to remember and not much harder to guess. Four or five unrelated words in a row is longer, easier to keep in your head, and nobody has a list of them. The studio will offer you one.</p>
+              <p><b>Passkeys.</b> Your browser or phone keeps the private key and the studio stores only the public half, so somebody who steals the data folder gets nothing they can log in with, and there is no password for anybody to phish out of you. Add one from Settings, Account. A passkey belongs to the address it was made on: move the studio to a different domain and every passkey made on the old one stops working, which is exactly why the password stays. Keep it somewhere you can get at it.</p>
+              <p><b>Two-factor.</b> A six-digit code from an app on your phone, on top of the password. Worth the minute it takes; almost nobody comes back to do it later. The studio shows the secret and a link that opens your authenticator app - there is no code to scan, so on a desktop you copy the secret across.</p>
+            </div>
+            <div class="help-side">
+              <figure class="shot">
+                <img src="/img/help/setup.jpg" width="704" height="1000" loading="lazy"
+                     alt="The first-run screen: this studio has no owner yet, the first person to set a password owns it, and it asks for the code printed in the studio's own log before it will let anyone.">
+                <figcaption>The first run. Nobody can get past this without reading the studio's own log, which is the proof that the machine is yours.</figcaption>
+              </figure>
+              <div class="note">
+                <b>Locked out</b>
+                You have the machine, so you have a way in. Stop the studio, delete <code>users.json</code> from its data folder, start it again, and it will print a fresh setup code and let you claim it anew. Everything else - sessions, recordings, settings - is in other files and is untouched.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel help-sec" id="guests">
+          <h2>What happens to a guest who joins late or drops out?</h2>
+          <div class="help-cols">
+            <div class="help-prose">
+              <p>Guests need no account and nothing installed. You send them a session link, they land on a screen where they pick their camera and microphone, and they join in their browser.</p>
+              <p><b>Joining late.</b> Their own track still starts at zero, with silence in front of it for the time before they arrived, so every track in the take is the same length and lines up in an editor with nothing to drag.</p>
+              <p><b>Dropping out and coming back.</b> Their browser remembers who they are for that session, so they come back as the same person and carry on the same track. The time they were away becomes silence in the middle of one file, not a second file. A three-second blip does not split a recording in two.</p>
+              <p>Two things will produce a second track under the same name: coming back on a different device, or on a browser whose site data has been cleared. There is no honest way round that - a browser with no memory of the session is a stranger - so the studio says so beside the second track instead of pretending.</p>
+              <p>Cameras are the exception. Silence can be manufactured without an encoder and a picture of nothing cannot, so a person who dropped out has one camera file per stretch, each one told where in the take it starts. The sound beside it is still the full length. Two people sharing one link stay two people: the link is not what identifies anybody.</p>
+            </div>
+            <div class="help-side">
+              <figure class="shot">
+                <img src="/img/help/join.jpg" width="1100" height="1254" loading="lazy"
+                     alt="The screen a guest sees before joining: a preview of their camera, pickers for camera, zoom, microphone and speaker, fields for the name and subtitle on their banner, and a Join button.">
+                <figcaption>What your guest sees on the link you send. No account, nothing to install: they check their camera and microphone here, then join.</figcaption>
+              </figure>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel help-sec" id="host-panel">
+          <h2>What are the buttons in the host panel?</h2>
+          <div class="help-cols">
+            <div class="help-prose">
+              <p>Only the host has this panel, and only the host can start a recording. It is down the side of the session, and the arrow at its edge folds it away when you want the room to yourself.</p>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr><th>Control</th><th>What it does</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td><b>Record</b></td><td>Records the show: everyone's own track, plus one video of the whole thing as it looks on screen.</td></tr>
+                    <tr><td><b>Auto level</b></td><td>Evens out quiet and loud voices for everyone.</td></tr>
+                    <tr><td><b>Mute all</b></td><td>Mutes everyone at once, including you.</td></tr>
+                    <tr><td><b>Subscribe reminder</b></td><td>Plays the subscribe-and-bell reminder over the show.</td></tr>
+                    <tr><td><b>Ad banner</b></td><td>Shows the banner from Settings for about eighteen seconds.</td></tr>
+                    <tr><td><b>Banner colors</b></td><td>The color of everyone's name banners.</td></tr>
+                    <tr><td><b>Title color</b></td><td>The background of the logo and title block.</td></tr>
+                    <tr><td><b>Backdrop</b></td><td>Switches the show's background mid-show. A recording keeps the backdrop it started with.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <p>Every one of them carries an <b>i</b> beside it in the panel itself, saying the same thing at the moment you need it.</p>
+            </div>
+            <div class="help-side">
+              <figure class="shot">
+                <img src="/img/help/host-panel.jpg" width="1600" height="1000" loading="lazy"
+                     alt="A session with three people in it, the host panel open down the right-hand side showing the record button, a row of small icon buttons for auto level, mute all, subscribe reminder and ad banner, and a second row for the color tools.">
+                <figcaption>The host panel, open. Record at the top, the show controls under it, the color tools below those, and the people in the room at the foot.</figcaption>
+              </figure>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel help-sec" id="elsewhere">
+          <h2>Elsewhere</h2>
+          <div class="help-cols">
+            <div class="help-prose">
+              <p>These leave this machine and need an internet connection.</p>
+              <ul class="links">
+                <li><a href="https://fossstudio.org" rel="noopener">fossstudio.org</a> - the product site.</li>
+                <li><a href="https://github.com/lightmorphic/fossstudio" rel="noopener">github.com/lightmorphic/fossstudio</a> - the source, the changelog and where to report a bug.</li>
+              </ul>
+            </div>
+          </div>
         </div>
       </section>
 
