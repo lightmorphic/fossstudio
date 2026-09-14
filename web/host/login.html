@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Log in - FOSSStudio</title>
-<link rel="stylesheet" href="/host/host.css">
+<link rel="stylesheet" href="/host/host.css?v=20260914a">
 </head>
 <body>
 <div class="login-wrap">
@@ -23,9 +23,10 @@
       <input type="text" id="totp" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit code">
     </div>
     <button class="btn primary" style="width:100%" type="submit">Log in</button>
+    <button class="btn" style="width:100%; margin-top:0.5rem" type="button" id="passkeyBtn" hidden>Use a passkey</button>
     <p class="msg err" id="loginError" hidden></p>
   </form>
 </div>
-<script src="/host/login.js?v=20260819a"></script>
+<script src="/host/login.js?v=20260914a"></script>
 </body>
 </html>

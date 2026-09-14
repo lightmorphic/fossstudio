@@ -151,7 +151,7 @@ export async function changePassword(newPassword) {
 
 export async function get2faState() {
   const { getAccount } = await import("./account.js");
-  return { enabled: !!(await getAccount()).totpEnabled };
+  return { enabled: !!(await getAccount())?.totpEnabled };
 }
 
 export async function setup2fa() {
@@ -167,7 +167,7 @@ export async function setup2fa() {
 export async function confirm2fa(code) {
   const { getAccount, updateAccount } = await import("./account.js");
   const acc = await getAccount();
-  if (!acc.totpSecret || !verifyTotp(acc.totpSecret, code)) return false;
+  if (!acc?.totpSecret || !verifyTotp(acc.totpSecret, code)) return false;
   await updateAccount({ totpEnabled: true });
   return true;
 }
@@ -175,7 +175,7 @@ export async function confirm2fa(code) {
 export async function disable2fa(code) {
   const { getAccount, updateAccount } = await import("./account.js");
   const acc = await getAccount();
-  if (!acc.totpEnabled) return true;
+  if (!acc?.totpEnabled) return true;
   if (!verifyTotp(acc.totpSecret, code)) return false;
   await updateAccount({ totpEnabled: false, totpSecret: null });
   return true;

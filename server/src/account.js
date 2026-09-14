@@ -28,6 +28,36 @@ let account = null;
 //   password no longer opens it   the file wins, and the log says so
 //
 // A restart that changes nothing rewrites nothing.
+// Whether anybody owns this studio yet. A studio with no account is a
+// studio nobody has claimed, and the Setup screen is what it serves.
+export async function hasAccount() {
+  if (account) return true;
+  const list = await readJson(FILE);
+  if (list && list.length) return true;
+  // An install from before the account file also counts as claimed:
+  // its password is in auth.json and ensureAccount brings it forward.
+  return !!(await readJson("auth.json"))?.passwordHash;
+}
+
+// Claiming the studio: the first and only account, made by the person
+// who proved they can read this machine's log. Refuses if one exists,
+// so the setup screen can never be used to overwrite an owner.
+export async function claimAccount({ username, password }) {
+  if (await hasAccount()) throw new Error("this studio already has an owner");
+  stored = (await readJson(FILE)) || [];
+  account = {
+    id: crypto.randomUUID(),
+    username: String(username || "admin").trim().slice(0, 24) || "admin",
+    passwordHash: hashPassword(password),
+    totpEnabled: false,
+    totpSecret: null,
+    passkeys: []
+  };
+  stored = [account];
+  await writeJson(FILE, stored);
+  return account;
+}
+
 export async function ensureAccount() {
   if (account) return account;
   stored = await readJson(FILE);
@@ -37,6 +67,11 @@ export async function ensureAccount() {
     // look in settings.json; both are still read here so an install
     // from those days comes forward with everything it had.
     const legacyAuth = await readJson("auth.json");
+    // Nothing to bring forward and nothing in the environment: the
+    // studio has no owner, and the Setup screen is what answers. Making
+    // an account here with an empty password is how a studio used to
+    // ship with the door open.
+    if (!legacyAuth?.passwordHash && !config.hostPassword) return null;
     account = {
       id: crypto.randomUUID(),
       username: "admin",
@@ -53,6 +88,13 @@ export async function ensureAccount() {
   account = stored[0];
   // Roles are gone; a field left over from an install that had them is
   // data, not something to read, so it stays on disk and is ignored.
+  if (config.hostPassword) {
+    // Honoured for the installs that already have it, and said out loud
+    // once so nobody thinks a file is still where this belongs.
+    console.log("HOST_PASSWORD is set in the environment, so it is what opens this studio. " +
+      "The password lives in the panel now: set it there, clear the line from your compose " +
+      "file and restart, and it stops being in a file at all.");
+  }
   if (config.hostPassword && account.passwordHash &&
       !verifyPassword(config.hostPassword, account.passwordHash)) {
     account.passwordHash = hashPassword(config.hostPassword);
@@ -75,16 +117,17 @@ export async function getAccount() {
 // the callers read plainly.
 export async function findByUsername(username) {
   const acc = await ensureAccount();
-  return acc.username.toLowerCase() === String(username).toLowerCase().trim() ? acc : null;
+  return acc && acc.username.toLowerCase() === String(username).toLowerCase().trim() ? acc : null;
 }
 
 export async function findById(id) {
   const acc = await ensureAccount();
-  return acc.id === id ? acc : null;
+  return acc && acc.id === id ? acc : null;
 }
 
 export async function updateAccount(patch) {
   const acc = await ensureAccount();
+  if (!acc) throw new Error("this studio has no owner yet");
   Object.assign(acc, patch);
   await writeJson(FILE, stored);
   return acc;

@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Set up your studio - FOSSStudio</title>
+<link rel="stylesheet" href="/host/host.css?v=20260914a">
+</head>
+<body>
+<div class="login-wrap">
+  <div class="panel setup" id="setup">
+    <h1 style="font-size:1.4rem; margin-bottom:0.4rem"><span class="foss">FOSS</span>Studio</h1>
+
+    <!-- 1. proving the machine is yours -->
+    <section id="stepCode">
+      <p>This studio has no owner yet. The first person to set a password owns it, so it asks for a code before it will let anyone.</p>
+      <p class="hint" style="margin-bottom:1rem">The code is printed in the studio's own log when it starts, and nowhere else. On the machine running it:</p>
+      <p class="cmd"><code>docker compose logs app</code></p>
+      <p class="hint" style="margin-bottom:1rem">Look for the box near the end. The code changes every time the studio restarts.</p>
+      <div class="field">
+        <label for="code">Setup code</label>
+        <input type="text" id="code" autocomplete="off" spellcheck="false" placeholder="000-000">
+      </div>
+      <button class="btn primary" id="codeNext">Continue</button>
+      <p class="msg err" id="codeErr" hidden></p>
+    </section>
+
+    <!-- 2. the login -->
+    <section id="stepLogin" hidden>
+      <p>Choose how you will get back in. You can add a passkey in a moment; the password is what saves you if you ever lose it.</p>
+      <div class="field">
+        <label for="username">Username</label>
+        <input type="text" id="username" value="admin" autocomplete="username" spellcheck="false">
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" autocomplete="new-password">
+        <p class="hint" style="margin-top:0.4rem">At least twelve characters. There are no rules about capitals and symbols - they produce Password1! and help nobody. Length is what makes a password hard to guess.</p>
+      </div>
+      <div class="suggest">
+        <code id="suggestion"></code>
+        <button class="btn" id="useSuggestion" type="button">Use this one</button>
+        <button class="btn" id="newSuggestion" type="button">Another</button>
+      </div>
+      <button class="btn primary" id="claim" style="margin-top:1rem">Set the password</button>
+      <p class="msg err" id="loginErr" hidden></p>
+    </section>
+
+    <!-- 3. a passkey -->
+    <section id="stepPasskey" hidden>
+      <p><b>Add a passkey?</b> Your browser keeps the key and the studio only stores the public half, so a stolen copy of the data folder gives an attacker nothing they can log in with. There is no password to phish, either.</p>
+      <p class="hint" style="margin-bottom:1rem">A passkey belongs to the address you made it on. Move the studio to a different domain and it stops working - which is why the password you just set stays as the way back in.</p>
+      <button class="btn primary" id="addPasskey">Add a passkey</button>
+      <button class="btn" id="skipPasskey">Not now</button>
+      <p class="msg ok" id="passkeyOk" hidden>✓ Passkey added</p>
+      <p class="msg err" id="passkeyErr" hidden></p>
+    </section>
+
+    <!-- 4. two-factor -->
+    <section id="stepTwoFactor" hidden>
+      <p><b>Turn on two-factor?</b> A code from an app on your phone, on top of the password. It is worth the minute now; nobody comes back to do it later.</p>
+      <div id="tfaStart">
+        <button class="btn primary" id="startTfa">Set it up</button>
+        <button class="btn" id="skipTfa">Not now</button>
+      </div>
+      <div id="tfaCodes" hidden>
+        <p class="hint" style="margin-bottom:0.4rem">Add this secret to your authenticator app - 1Password, Aegis, Google Authenticator, whatever you use. On a phone, the link opens the app directly.</p>
+        <p class="secret"><code id="tfaSecret"></code></p>
+        <p style="margin-bottom:1rem"><a id="tfaLink" href="#">Open in an authenticator app</a></p>
+        <div class="field">
+          <label for="tfaCode">The six-digit code it shows</label>
+          <input type="text" id="tfaCode" inputmode="numeric" autocomplete="one-time-code" placeholder="000000">
+        </div>
+        <button class="btn primary" id="confirmTfa">Turn on two-factor</button>
+        <button class="btn" id="skipTfa2">Skip</button>
+        <p class="msg err" id="tfaErr" hidden></p>
+      </div>
+    </section>
+
+    <!-- 5. where the studio lives -->
+    <section id="stepPlace" hidden>
+      <p><b>Where this studio lives.</b> Both of these used to be lines in a compose file. They belong here, and you can change them later in Settings.</p>
+      <div class="field">
+        <label for="domain">Domain</label>
+        <input type="text" id="domain" autocomplete="off" spellcheck="false" placeholder="studio.example.com">
+        <p class="hint" style="margin-top:0.4rem">The address people type to reach the studio. <a class="helplink" href="/help#https">Why HTTPS is not optional</a></p>
+      </div>
+      <div class="field">
+        <label for="publicIp">This server's public address</label>
+        <input type="text" id="publicIp" autocomplete="off" spellcheck="false" placeholder="203.0.113.10">
+        <p class="hint" style="margin-top:0.4rem">Audio and video go straight between browsers and this machine, not through the web server, so the studio has to tell every guest which address to send them to. Get it wrong and the room opens and stays silent. Find it by running <code>curl -4 https://api.ipify.org</code> on the machine. <a class="helplink" href="/help#public-ip">More about this</a></p>
+      </div>
+      <button class="btn primary" id="savePlace">Finish</button>
+      <p class="msg err" id="placeErr" hidden></p>
+    </section>
+
+    <!-- 6. done -->
+    <section id="stepDone" hidden>
+      <p><b>That is the studio set up.</b> The settings you just gave it take effect when it restarts, so do that before your first session.</p>
+      <p class="cmd"><code>docker compose restart app</code></p>
+      <p><a class="btn primary" href="/host/">Go to the dashboard</a></p>
+    </section>
+  </div>
+</div>
+<script src="/host/setup.js?v=20260914a"></script>
+</body>
+</html>

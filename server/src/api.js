@@ -13,7 +13,15 @@ import {
   getSettings, updateSettings, listSessions, createSession, deleteSession, findSession,
   renameSession
 } from "./settings.js";
-import { getAccount, updateAccount } from "./account.js";
+import { getAccount, updateAccount, claimAccount, hasAccount } from "./account.js";
+import {
+  isClaimed, setupCodeMatches, clearSetupCode, saveSetup, getSetup,
+  passwordProblem, suggestPassphrase, MIN_PASSWORD
+} from "./setup.js";
+import { publicIpProblem } from "./config.js";
+import {
+  newChallenge, verifyRegistration, verifyAssertion, rpIdFor
+} from "./webauthn.js";
 import { getRoom } from "./rooms.js";
 import {
   verifyUploadToken, appendChunk, markPeerDone,
@@ -35,6 +43,164 @@ function requireAuth(req, res, next) {
   next();
 }
 
+// ---------- first run ----------
+
+// Whether this studio has an owner yet, which is all an unauthenticated
+// caller learns here. A studio that has one says so and nothing more.
+api.get("/setup/state", async (req, res) => {
+  res.json({ claimed: await isClaimed(), minPassword: MIN_PASSWORD });
+});
+
+// A passphrase to take or ignore. Harmless to hand out: it is random
+// every time and becomes a password only if somebody also holds the
+// setup code and uses it.
+api.get("/setup/passphrase", (req, res) => {
+  res.json({ passphrase: suggestPassphrase() });
+});
+
+// Saying what is wrong with a password, before it is set. The same
+// check runs again when it is set, so this is a courtesy rather than
+// the gate.
+api.post("/setup/check-password", (req, res) => {
+  res.json({ problem: passwordProblem(req.body.password, req.body.username) });
+});
+
+// Claiming the studio. The gate is the code printed in the log: being
+// able to read this machine's log is the proof that the machine is
+// yours. Everything else follows from a session cookie.
+api.post("/setup/claim", async (req, res) => {
+  if (await hasAccount()) return res.status(409).json({ error: "This studio already has an owner." });
+  if (!setupCodeMatches(req.body.code)) {
+    return res.status(403).json({
+      error: "That is not the setup code. It is printed in this studio's log when it starts - " +
+        "run `docker compose logs app` on the machine and look for the box near the end."
+    });
+  }
+  const username = String(req.body.username || "admin").trim().toLowerCase();
+  if (!/^[a-z0-9_-]{2,24}$/.test(username)) {
+    return res.status(400).json({ error: "Names are 2-24 characters: lowercase letters, numbers, - or _." });
+  }
+  const problem = passwordProblem(req.body.password, username);
+  if (problem) return res.status(400).json({ error: problem });
+  const user = await claimAccount({ username, password: req.body.password });
+  clearSetupCode();
+  setAuthCookie(res, user);
+  res.json({ ok: true, username });
+});
+
+// Where the studio lives. Kept apart from the login because it is a
+// different kind of thing and because an existing install changes it
+// from Settings without ever seeing the setup screen.
+api.get("/setup/place", requireAuth, async (req, res) => {
+  const place = await getSetup();
+  res.json({
+    domain: place.domain || config.domain || "",
+    publicIp: place.publicIp || config.publicIp || "",
+    turnHost: place.turnHost || "",
+    hostDomain: place.hostDomain || "",
+    live: { domain: config.domain, publicIp: config.publicIp }
+  });
+});
+
+api.put("/setup/place", requireAuth, async (req, res) => {
+  const domain = String(req.body.domain || "").trim().toLowerCase();
+  if (domain && !/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(domain)) {
+    return res.status(400).json({ error: "That is not a domain name. It looks like studio.example.com." });
+  }
+  const publicIp = String(req.body.publicIp || "").trim();
+  const ipProblem = publicIpProblem(publicIp);
+  if (ipProblem) return res.status(400).json({ error: ipProblem });
+  const turnHost = String(req.body.turnHost || "").trim().toLowerCase();
+  const hostDomain = String(req.body.hostDomain || "").trim().toLowerCase();
+  await saveSetup({ domain, publicIp, turnHost, hostDomain });
+  // Held until the next start: the media engine is given the public
+  // address when it opens its sockets, and moving them under a running
+  // session would cut it off mid-take.
+  res.json({
+    ok: true,
+    restartNeeded: domain !== config.domain || publicIp !== config.publicIp
+  });
+});
+
+// ---------- passkeys ----------
+
+api.get("/passkeys", requireAuth, async (req, res) => {
+  const acc = await getAccount();
+  res.json((acc?.passkeys || []).map((k) => ({ id: k.id, addedAt: k.addedAt, rpId: k.rpId })));
+});
+
+// The studio asks the browser to make a key pair. The challenge is ours
+// and is good for two minutes.
+api.post("/passkeys/begin", requireAuth, async (req, res) => {
+  const acc = await getAccount();
+  res.json({
+    challenge: newChallenge("register"),
+    rpId: rpIdFor(req.headers.host),
+    rpName: "FOSSStudio",
+    userId: Buffer.from(acc.id).toString("base64url"),
+    userName: acc.username,
+    excludeCredentials: (acc.passkeys || []).map((k) => k.id)
+  });
+});
+
+api.post("/passkeys/finish", requireAuth, async (req, res) => {
+  try {
+    const key = verifyRegistration({
+      response: req.body.response,
+      rpId: rpIdFor(req.headers.host)
+    });
+    const acc = await getAccount();
+    const passkeys = (acc.passkeys || []).filter((k) => k.id !== key.id);
+    passkeys.push(key);
+    await updateAccount({ passkeys });
+    res.json({ ok: true, id: key.id });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+api.delete("/passkeys/:id", requireAuth, async (req, res) => {
+  const acc = await getAccount();
+  const passkeys = (acc.passkeys || []).filter((k) => k.id !== req.params.id);
+  await updateAccount({ passkeys });
+  res.json({ ok: true });
+});
+
+// Signing in with one. The list of credential ids is not secret - a
+// browser needs it to know which key to offer - and it says nothing
+// about whether a password would work.
+api.post("/login/passkey/begin", async (req, res) => {
+  const acc = await getAccount();
+  res.json({
+    challenge: newChallenge("login"),
+    rpId: rpIdFor(req.headers.host),
+    allowCredentials: (acc?.passkeys || []).map((k) => k.id)
+  });
+});
+
+api.post("/login/passkey/finish", async (req, res) => {
+  try {
+    const acc = await getAccount();
+    const id = String(req.body.id || "");
+    const stored = (acc?.passkeys || []).find((k) => k.id === id);
+    if (!stored) throw new Error("that passkey is not registered with this studio");
+    const { signCount } = verifyAssertion({
+      response: req.body.response,
+      rpId: rpIdFor(req.headers.host),
+      stored
+    });
+    stored.signCount = signCount;
+    await updateAccount({ passkeys: acc.passkeys });
+    // A passkey is both factors at once: the device is the thing you
+    // have and its unlock is the thing you know, which is why a second
+    // code on top of it would be theatre.
+    setAuthCookie(res, acc);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(401).json({ error: err.message });
+  }
+});
+
 // ---------- auth ----------
 
 api.post("/login", async (req, res) => {
@@ -53,7 +219,7 @@ api.post("/logout", (req, res) => {
 api.get("/me", async (req, res) => {
   if (!isAuthedRequest(req)) return res.json({ authed: false });
   const acc = await getAccount();
-  res.json({ authed: true, username: acc.username });
+  res.json({ authed: true, username: acc?.username || "" });
 });
 
 // Rename the account (the login name). The session cookie is keyed on
@@ -69,9 +235,11 @@ api.post("/username", requireAuth, async (req, res) => {
 
 api.post("/password", requireAuth, async (req, res) => {
   const pw = String(req.body.password || "");
-  if (pw.length < 10) {
-    return res.status(400).json({ error: "Password needs at least 10 characters." });
-  }
+  const acc = await getAccount();
+  // The same rule as the setup screen. A password chosen later is not
+  // a lesser password.
+  const problem = passwordProblem(pw, acc?.username || "");
+  if (problem) return res.status(400).json({ error: problem });
   await changePassword(pw);
   res.json({ ok: true });
 });

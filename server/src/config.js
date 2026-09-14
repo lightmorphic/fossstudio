@@ -3,46 +3,48 @@ import { fileURLToPath } from "node:url";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 
-function required(name) {
-  const v = process.env[name];
-  if (!v && process.env.NODE_ENV === "production") {
-    console.error(`Missing required environment variable: ${name}`);
-    process.exit(1);
-  }
-  return v || "";
-}
 
-// The example config has to show the shape of a public IP address, and
-// whatever we put there some people will start the studio without
-// changing it. That failure is invisible in the worst way: the site
-// loads, the room opens, guests appear in the list, and no sound or
-// picture ever arrives, because the media engine has handed every one
-// of them an address that reaches nobody. So refuse to start instead,
-// and say what to do. These are the ranges RFC 5737 reserves for
-// documentation - the example.com of IP addresses - plus the empty
-// string, which fails the same way.
-function checkPublicIp(value) {
+
+// An address that is not this server's own is the worst kind of wrong:
+// the site loads, the room opens, guests appear in the list, and no
+// sound or picture ever arrives, because the media engine has handed
+// every one of them an address that reaches nobody. Refusing it at the
+// gate is right - but the gate is the Setup screen now, where a person
+// can be told and can fix it. Here, where it is only read back, an
+// unusable value is ignored with a line in the log rather than killing
+// a studio that would otherwise still answer its panel.
+//
+// The ranges below are the ones RFC 5737 reserves for documentation -
+// the example.com of IP addresses - which is what an untouched example
+// file leaves behind.
+export function publicIpProblem(value) {
   const ip = (value || "").trim();
-  if (!ip) return ip;
-  const documentation = /^(192\.0\.2\.|198\.51\.100\.|203\.0\.113\.)/;
-  const notAnAddress = !/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(ip);
-  if (documentation.test(ip) || notAnAddress) {
-    console.error(
-      `PUBLIC_IP is still the example value (${ip}).\n` +
-      "It has to be this server's own public IPv4, or guests will send\n" +
-      "their audio and video to an address that reaches nobody: the room\n" +
-      "will open and stay silent.\n\n" +
-      "Find it with:  curl -4 https://api.ipify.org\n" +
-      "then set PUBLIC_IP to that number and start again.\n\n" +
-      "Behind a home router, that is the router's address, and UDP 3478,\n" +
-      "40000-40003 and 49160-49189 have to be forwarded to this machine."
-    );
-    process.exit(1);
+  if (!ip) return "";
+  if (!/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(ip) ||
+      ip.split(".").some((n) => Number(n) > 255)) {
+    return "That is not an IPv4 address. It has to be four numbers with dots between them, " +
+      "like the one `curl -4 https://api.ipify.org` prints.";
   }
-  return ip;
+  if (/^(192\.0\.2\.|198\.51\.100\.|203\.0\.113\.)/.test(ip)) {
+    return "That is one of the addresses reserved for examples, so it is not this server's. " +
+      "Find the real one with `curl -4 https://api.ipify.org`.";
+  }
+  return "";
 }
 
-const domain = process.env.DOMAIN || "localhost";
+function checkPublicIp(value) {
+  const problem = publicIpProblem(value);
+  if (!problem) return (value || "").trim();
+  console.error(`The public address (${value}) cannot be right: ${problem}\n` +
+    "Guests will send their audio and video to an address that reaches nobody and the room " +
+    "will open and stay silent. Fix it in Settings.");
+  return "";
+}
+
+// The domain is a setting now, not a line in a file. This is the value
+// the rest of the process reads; initConfig fills it in from the store
+// before anything is served, and the Setup screen writes it there.
+let domain = process.env.DOMAIN || "";
 
 // A dedicated domain for the dashboard works out of the box: the
 // sibling of DOMAIN (app.example.com -> host.example.com) and the child
@@ -51,7 +53,8 @@ const domain = process.env.DOMAIN || "localhost";
 // demand - nothing to configure.
 export function panelDomains() {
   const out = new Set();
-  if (process.env.HOST_DOMAIN) out.add(process.env.HOST_DOMAIN.toLowerCase());
+  if (config.hostDomain) out.add(config.hostDomain.toLowerCase());
+  if (domain && domain !== "localhost") out.add(domain.toLowerCase());
   if (domain && domain !== "localhost") {
     // Sibling: replace the first label (app.example.com -> host.example.com)
     const labels = domain.split(".");
@@ -64,7 +67,7 @@ export function panelDomains() {
 
 export const config = {
   domain,
-  publicIp: checkPublicIp(process.env.PUBLIC_IP),
+  publicIp: "",
   httpPort: Number(process.env.HTTP_PORT || 3000),
   bindHost: process.env.BIND_HOST || "127.0.0.1",
   // An optional dedicated dashboard domain; the derived defaults in
@@ -78,9 +81,53 @@ export const config = {
   // room to spare; move the range if several studios share a host.
   rtcMinPort: Number(process.env.RTC_MIN_PORT || 40000),
   rtcMaxPort: Number(process.env.RTC_MAX_PORT || 40003),
+  turnMinPort: Number(process.env.TURN_MIN_PORT || 49160),
+  turnMaxPort: Number(process.env.TURN_MAX_PORT || 49189),
   dataDir: process.env.DATA_DIR || path.join(root, "..", "data"),
   webDir: process.env.WEB_DIR || path.join(root, "..", "web"),
-  sessionSecret: required("SESSION_SECRET"),
-  hostPassword: required("HOST_PASSWORD"),
-  turnSecret: required("TURN_SECRET")
+  sessionSecret: "",
+  hostPassword: process.env.HOST_PASSWORD || "",
+  turnSecret: ""
 };
+
+// Everything the studio needs to run, settled before a single request is
+// served. Docker's business - the image, the ports, the volumes - stays
+// in the environment. Everything that is a decision about this studio -
+// where it lives, its public address, its login - comes from the store,
+// because a person can change it there and a compose file is not a
+// place to keep a secret.
+//
+// An install that still sets the old environment variables keeps
+// working exactly as it did, and is told once where they belong now.
+export async function initConfig() {
+  const { ensureSecrets } = await import("./secrets.js");
+  const made = await ensureSecrets(config.dataDir);
+  config.sessionSecret = process.env.SESSION_SECRET || made.sessionSecret;
+  config.turnSecret = process.env.TURN_SECRET || made.turnSecret;
+  if (process.env.SESSION_SECRET || process.env.TURN_SECRET) {
+    console.log("reading a secret from the environment. The studio makes and keeps its own now: " +
+      "clear SESSION_SECRET and TURN_SECRET from your compose file and restart, and nothing is " +
+      "left in a file for somebody to paste by accident.");
+  }
+
+  const { getSetup } = await import("./setup.js");
+  const setup = await getSetup();
+  config.domain = domain = setup.domain || process.env.DOMAIN || "localhost";
+  config.hostDomain = setup.hostDomain || process.env.HOST_DOMAIN || "";
+  config.turnHost = setup.turnHost || process.env.TURN_HOST || config.domain;
+  config.publicIp = checkPublicIp(setup.publicIp || process.env.PUBLIC_IP);
+  if (process.env.DOMAIN || process.env.PUBLIC_IP) {
+    console.log("reading the domain or public address from the environment. " +
+      "They are in Settings now; set them there and clear the lines from your compose file.");
+  }
+
+  const { writeRelayConfig } = await import("./secrets.js");
+  await writeRelayConfig(config.dataDir, {
+    turnSecret: config.turnSecret,
+    publicIp: config.publicIp,
+    domain: config.domain,
+    minPort: config.turnMinPort,
+    maxPort: config.turnMaxPort
+  });
+  return config;
+}

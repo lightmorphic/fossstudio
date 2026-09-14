@@ -2,7 +2,7 @@ import express from "express";
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
-import { config, panelDomains } from "./config.js";
+import { config, initConfig, panelDomains } from "./config.js";
 import { startMediasoup } from "./media.js";
 import { attachSignaling } from "./signaling.js";
 import { api } from "./api.js";
@@ -11,6 +11,7 @@ import { scheduleDailyBackups } from "./ops.js";
 import { initPush } from "./push.js";
 import { migrateSettings } from "./settings.js";
 import { ensureAccount, findById } from "./account.js";
+import { setSetupDir, announceSetup, isClaimed } from "./setup.js";
 import { redeemLink } from "./loginlinks.js";
 import { setAuthCookie } from "./auth.js";
 
@@ -117,8 +118,17 @@ app.get("/", (req, res) => {
 // is approved, so pointing a random name at this server can never mint
 // a certificate. Same public posture as /healthz - the answer reveals
 // nothing beyond names any visitor already sees.
-app.get("/tls-allowed", (req, res) => {
-  res.status(panelDomains().has(String(req.query.domain || "").toLowerCase()) ? 200 : 404).end();
+app.get("/tls-allowed", async (req, res) => {
+  const asked = String(req.query.domain || "").toLowerCase();
+  if (panelDomains().has(asked)) return res.status(200).end();
+  // Before anybody owns the studio there is no domain to compare
+  // against, and refusing every name would mean no certificate, no
+  // HTTPS and therefore no way to reach the setup screen at all. So an
+  // unclaimed studio approves whatever name is pointed at it - which
+  // can only be a name whose DNS somebody has already aimed here - and
+  // stops the moment it has an owner.
+  if (!(await isClaimed()) && /^[a-z0-9.-]{4,253}$/.test(asked)) return res.status(200).end();
+  res.status(404).end();
 });
 
 // Session links guests receive: https://<domain>/s/<room-id>
@@ -151,8 +161,13 @@ server.on("upgrade", (req, socket, head) => {
 // The account and the studio's settings are put right before anything
 // can be served: the password in the settings file is true on every
 // start, not only the first.
+setSetupDir(config.dataDir);
+await initConfig();
 await ensureAccount();
 await migrateSettings();
+// Nobody owns this studio yet: print the code that claims it, and say
+// so plainly rather than leaving a login nobody can get past.
+await announceSetup();
 await startMediasoup();
 await initPush();
 scheduleDailyBackups();
