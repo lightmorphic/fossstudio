@@ -8,11 +8,19 @@
 // me for forcing a good password than complaining that we didn't force
 // them to use a good password after they get hacked."
 //
-// So: an empty data folder, the code out of the log, a weak password
-// refused with a sentence somebody can act on, a strong one accepted, a
-// passkey registered and then used to log in, two-factor set up and
-// used - and an install from before all this that still logs in and is
-// never sent through setup.
+// So: an empty data folder, a weak password refused with a sentence
+// somebody can act on, a strong one accepted, a passkey registered and
+// then used to log in, two-factor set up and used - and an install from
+// before all this that still logs in and is never sent through setup.
+//
+// And the setup code, which since 14 September 2026 is asked for only
+// when the browser is somewhere other than the machine the studio runs
+// on. Three things are proved about it, in their own section further
+// down: opened on loopback there is no code field on the page at all;
+// opened from this machine's LAN address the code is required and a
+// wrong or missing one is refused; and a request from that LAN address
+// carrying X-Forwarded-For: 127.0.0.1 is still asked for the code,
+// which is the check a future change would quietly break.
 //
 // The passkey is a real one as far as the browser and the server are
 // concerned: Chrome's virtual authenticator holds the private key and
@@ -51,7 +59,7 @@ function startStudio(dataDir, port, rtc, env = {}) {
     cwd: REPO,
     env: {
       ...process.env, ...env,
-      DATA_DIR: dataDir, HTTP_PORT: String(port), BIND_HOST: "127.0.0.1",
+      DATA_DIR: dataDir, HTTP_PORT: String(port), BIND_HOST: env.BIND_HOST || "127.0.0.1",
       RTC_MIN_PORT: String(rtc), RTC_MAX_PORT: String(rtc + 3)
     }
   });
@@ -75,6 +83,14 @@ function startStudio(dataDir, port, rtc, env = {}) {
   };
 }
 
+// A tab of its own for a one-off look at a page, closed by the caller.
+async function ctxPage(url) {
+  const ctx = await browser.newContext({ viewport: { width: 900, height: 1000 } });
+  const page = await ctx.newPage();
+  await page.goto(url);
+  return { ctx, page };
+}
+
 const root = fs.mkdtempSync(path.join(os.tmpdir(), "fossstudio-setup-"));
 const FRESH = path.join(root, "fresh");
 const OLD = path.join(root, "old");
@@ -94,6 +110,8 @@ const code = (studio.log().match(/\n\s+(\d{3}-\d{3})\s*\n/) || [])[1];
 if (!code) console.log(studio.log());
 console.log(`    the log prints a setup code: ${code || "none"}`);
 check("the studio prints a one-time setup code on a first start", !!code);
+check("and the log says the code is only needed from another machine",
+  /on this machine/.test(studio.log()) && /from another machine/.test(studio.log()));
 check("the code is nowhere on disk",
   !fs.readdirSync(FRESH).some((f) => {
     const full = path.join(FRESH, f);
@@ -128,22 +146,20 @@ await page.waitForURL("**/host/setup.html", { timeout: 10000 }).catch(() => {});
 check(`the login page sends you to setup (${new URL(page.url()).pathname})`,
   page.url().endsWith("/host/setup.html"));
 
-// A wrong code gets you no further
-await page.fill("#code", "000-000");
-await page.click("#codeNext");
-await page.fill("#password", "a-long-enough-password-here");
-await page.click("#claim");
-await page.waitForTimeout(700);
-const wrongCode = await page.$eval("#codeErr", (el) => el.hidden ? "" : el.textContent.trim());
-console.log(`    wrong code: ${wrongCode}`);
-check("a wrong setup code is refused and says where the right one is",
-  /setup code/i.test(wrongCode) && /logs/.test(wrongCode));
-check("a wrong code does not claim the studio",
-  (await fetch(`${B}/api/setup/state`).then((r) => r.json())).claimed === false);
+// On the machine itself there is no code step, and no trace of one:
+// not a disabled box, not a sentence explaining what it was for.
+await page.waitForSelector("#stepLogin:not([hidden])", { timeout: 10000 });
+check("opened on this machine, setup starts at the password",
+  await page.$eval("#stepLogin", (el) => !el.hidden));
+check("and the code field is not on the page at all", (await page.$("#code")) === null);
+const shown = await page.$eval("#setup", (el) => el.innerText);
+check("nor is the code mentioned anywhere on it",
+  !/setup code/i.test(shown) && !/compose logs/i.test(shown));
+check("the studio says so too", (await fetch(`${B}/api/setup/state`, {
+  headers: { Accept: "application/json" }
+}).then((r) => r.json())).needsCode === false);
 
-// The right code, then a weak password
-await page.fill("#code", code);
-await page.click("#codeNext");
+// A weak password
 await page.fill("#username", "charlie");
 await page.fill("#password", "password123");
 await page.waitForTimeout(800);
@@ -234,7 +250,112 @@ check("the password with the code works", (await tryPassword(totpCode(secret))).
 
 await cdp.send("WebAuthn.removeVirtualAuthenticator", { authenticatorId }).catch(() => {});
 await ctx.close();
+
+// One sign-up in the life of an install, and loopback buys no second
+// one. The screen is gone rather than redirected, and the route behind
+// it refuses whatever is sent to it.
+{
+  const gone = await fetch(`${B}/host/setup.html`, { redirect: "manual" });
+  check(`the setup screen is gone once the studio has an owner (${gone.status})`,
+    gone.status === 404);
+  const again = await fetch(`${B}/api/setup/claim`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code, username: "second", password: "a-perfectly-long-password" })
+  });
+  check(`and claiming it again is refused from this machine too (${again.status})`,
+    again.status === 409);
+  check("no second account was made",
+    (await fetch(`${B}/api/setup/state`).then((r) => r.json())).claimed === true);
+}
 studio.stop();
+
+// ---------------------------------------------------------------
+// From anywhere else, the code still applies - and no header can talk
+// its way past it.
+//
+// A studio bound to every address, reached on this machine's own LAN
+// address, is a genuinely non-loopback request: the same thing a
+// stranger on the network makes. The forgery check is the one that
+// matters. X-Forwarded-For and its cousins are plain text anybody can
+// write, and if the studio ever reads an address out of one of them
+// instead of off the socket, every studio on the internet can be
+// claimed by a stranger in one request. Leave this check here.
+// ---------------------------------------------------------------
+{
+  const lanIp = Object.values(os.networkInterfaces()).flat()
+    .filter((n) => n && n.family === "IPv4" && !n.internal).map((n) => n.address)[0];
+  if (!lanIp) {
+    check("this machine has a non-loopback address to be a stranger from", false);
+  } else {
+    const LAN = path.join(root, "lan");
+    const lan = startStudio(LAN, PORT + 2, RTC + 8, { BIND_HOST: "0.0.0.0" });
+    await lan.ready();
+    const R = `http://${lanIp}:${PORT + 2}`;          // the stranger's view
+    const L = `http://127.0.0.1:${PORT + 2}`;         // the same studio, from itself
+    const lanCode = (lan.log().match(/\n\s+(\d{3}-\d{3})\s*\n/) || [])[1];
+    console.log(`    a second studio on ${lanIp}, code ${lanCode || "none"}`);
+
+    const claim = (base, body, headers = {}) => fetch(`${base}/api/setup/claim`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...headers },
+      body: JSON.stringify({ username: "stranger", password: "plum-lantern-vault-drift-onyx", ...body })
+    });
+    const state = (base, headers = {}) =>
+      fetch(`${base}/api/setup/state`, { headers }).then((r) => r.json());
+
+    check("from another address the studio asks for the code",
+      (await state(R)).needsCode === true);
+
+    const remote = await ctxPage(`${R}/host/setup.html`);
+    await remote.page.waitForSelector("#stepCode:not([hidden])", { timeout: 10000 });
+    check("and the page opens on the code step, with the box on it",
+      (await remote.page.$("#code")) !== null);
+    await remote.ctx.close();
+
+    check(`no code at all is refused (${(await claim(R, { code: "" })).status})`,
+      (await claim(R, { code: "" })).status === 403);
+    check(`a wrong code is refused (${(await claim(R, { code: "000-000" })).status})`,
+      (await claim(R, { code: "000-000" })).status === 403);
+
+    // The forgery, three ways
+    for (const [label, headers] of [
+      ["X-Forwarded-For", { "X-Forwarded-For": "127.0.0.1" }],
+      ["X-Real-IP", { "X-Real-IP": "127.0.0.1" }],
+      ["Forwarded", { Forwarded: "for=127.0.0.1" }]
+    ]) {
+      const res = await claim(R, { code: "" }, headers);
+      check(`a stranger claiming to be local with ${label} is still asked for the code (${res.status})`,
+        res.status === 403);
+      check(`and ${label} does not even change what the studio says it wants`,
+        (await state(R, headers)).needsCode === true);
+    }
+
+    // The other side of the same coin: a proxy sharing this machine
+    // reaches us over loopback, and then the address on the socket is
+    // the proxy's and proves nothing. Any sign of a relay puts the code
+    // back, even on loopback.
+    check("a loopback request that has been through a proxy is asked for the code",
+      (await state(L, { "X-Forwarded-For": "203.0.113.7" })).needsCode === true);
+    check("a plain loopback request is not",
+      (await state(L)).needsCode === false);
+
+    check("none of that claimed the studio", (await state(R)).claimed === false);
+
+    // And the right code, from the stranger's address, still works -
+    // this is somebody who read the log over SSH, which is the whole
+    // point of the code.
+    const ok = await claim(R, { code: lanCode });
+    check(`the right code claims the studio from another address (${ok.status})`, ok.ok);
+    check("which is the one and only sign-up",
+      (await claim(R, { code: lanCode, username: "third" })).status === 409 &&
+      (await claim(L, { code: lanCode, username: "third" })).status === 409);
+    for (const [where, base] of [["from another address", R], ["from this machine", L]]) {
+      const gone = await fetch(`${base}/host/setup.html`, { redirect: "manual" });
+      check(`the setup screen is gone ${where} (${gone.status})`, gone.status === 404);
+    }
+    lan.stop();
+  }
+}
 
 // ---------------------------------------------------------------
 // Somebody's existing install. Charlie and Bill both have one, and
