@@ -1907,12 +1907,19 @@
       }
     }
 
-    // Audio: uncompressed PCM when the browser can, else Opus. The
-    // microphone goes through steadyTrack so a stalled device leaves
+    // What goes in the file is the studio's choice, made in Settings
+    // and pinned for this take. Best quality is every sample the
+    // microphone heard; smaller files is Opus. Firefox cannot record
+    // uncompressed at all, so a guest on it falls through to Opus and
+    // the dashboard says which track that was.
+    //
+    // The microphone goes through steadyTrack so a stalled device leaves
     // silence in the file rather than shortening it, and through
     // watchMicDelivery so the host is told when that happens.
-    startOne(micProducer?.track && steadyTrack(micProducer.track), "audio",
-      ["audio/webm;codecs=pcm", "audio/webm;codecs=opus", "audio/webm"]);
+    const audioTypes = upload.quality === "smaller"
+      ? ["audio/webm;codecs=opus", "audio/webm"]
+      : ["audio/webm;codecs=pcm", "audio/webm;codecs=opus", "audio/webm"];
+    startOne(micProducer?.track && steadyTrack(micProducer.track), "audio", audioTypes);
     watchMicDelivery();
     startOne(camProducer?.track, "video",
       ["video/webm;codecs=vp8", "video/webm"], 2_500_000);

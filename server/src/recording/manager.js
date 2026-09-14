@@ -59,7 +59,7 @@ async function saveSnapshot(rec) {
   try {
     const snap = {
       id: rec.id, roomId: rec.roomId,
-      title: rec.title, startedAt: rec.startedAt,
+      title: rec.title, startedAt: rec.startedAt, quality: rec.quality,
       people: Object.fromEntries(rec.people)
     };
     // writeJson: atomic (temp file + rename) and owner-only (0600), same
@@ -76,7 +76,10 @@ async function clearSnapshot(recId) {
 
 export function uploadCreds(rec, peer) {
   const personId = personOf(peer);
-  return { recId: rec.id, peerId: personId, token: uploadToken(rec.id, personId) };
+  return {
+    recId: rec.id, peerId: personId, token: uploadToken(rec.id, personId),
+    quality: rec.quality || "best"
+  };
 }
 
 export async function saveIndex(entry) {
@@ -90,7 +93,7 @@ export async function listRecordings() {
   return readJson("recordings.json", []);
 }
 
-export async function startRecording(room) {
+export async function startRecording(room, quality = "best") {
   if (active.has(room.id)) throw new Error("already recording");
   const recId = `${room.id}-${new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19)}`;
   const rec = {
@@ -98,6 +101,10 @@ export async function startRecording(room) {
     roomId: room.id,
     title: room.title || "",
     startedAt: Date.now(),
+    // Pinned for the life of the take: a setting changed halfway through
+    // must not leave one person's track in a different format from
+    // everybody else's.
+    quality,
     // personId -> one person's whole take: who they are, the stretches
     // they recorded, and what their microphone lost. Keyed by the person
     // rather than the connection, so a reconnect continues a take
@@ -298,7 +305,7 @@ async function finalize(rec) {
         await fs.rename(path.join(out, `${who}-audio.pending`), path.join(out, name));
         files.push(name);
         for (const a of audio) await fs.rm(path.join(raw, a.file), { force: true });
-        const note = trackNote(p, built, audio);
+        const note = trackNote(p, built, audio, rec.quality || "best");
         if (note) notes.push({ file: name, text: note });
         if (names.get(p.name) > 1) {
           notes.push({ file: name, text: `There is more than one track under the name ${p.name}. ` +
@@ -347,8 +354,16 @@ function plainSeconds(ms) {
 
 // The sentence beside a finished track: what was made up and why, and
 // what the microphone lost, in one place rather than two.
-function trackNote(p, built, parts) {
+function trackNote(p, built, parts, quality) {
   const lines = [];
+  // Firefox cannot record uncompressed at all, so a guest on it comes
+  // back compressed however the studio is set. Say which track it was,
+  // rather than leaving the host to notice the file is small.
+  if (quality === "best" && built.format !== "wav") {
+    lines.push(`${p.name}'s browser cannot record uncompressed audio, so this track is ` +
+      `compressed even though the studio is set to best quality. Firefox is the usual reason. ` +
+      `It is very good for speech; it is not every sample the microphone heard.`);
+  }
   const lead = built.gaps.find((g) => g.atMs === 0);
   const middle = built.gaps.filter((g) => g.atMs > 0);
   if (lead && lead.lengthMs >= 1000) {

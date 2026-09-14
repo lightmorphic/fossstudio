@@ -476,3 +476,20 @@ a.iconbtn { text-decoration: none; }
 
 /* Framed inside another application's shell: no second top bar. */
 body.embedded .topbar { display: none; }
+
+/* A named choice between two settings: the words carry it, so the rows
+   are plain and the only mark is the radio itself. */
+.choice-row {
+  display: flex; align-items: flex-start; gap: 0.7rem;
+  padding: 0.7rem 0.8rem; margin-bottom: 0.4rem;
+  font-weight: 400; border-radius: 8px;
+  background: var(--panel-2, rgba(255,255,255,0.03));
+  cursor: pointer;
+}
+.choice-row input { margin-top: 0.25rem; accent-color: var(--accent); }
+.choice-row b { display: block; font-size: 0.9375rem; margin-bottom: 0.15rem; }
+.choice-row .hint { display: block; }
+/* The quiet link from a setting to the part of the help page that
+   explains it. A link, not an icon and not a tooltip: it has to be
+   readable and it has to be clickable. */
+.helplink { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }

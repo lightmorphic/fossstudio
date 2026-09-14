@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FOSSStudio - Dashboard</title>
-<link rel="stylesheet" href="/host/host.css?v=20260823f">
+<link rel="stylesheet" href="/host/host.css?v=20260914a">
 <link rel="stylesheet" href="/css/tip.css?v=20260823f">
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icons/icon-192.png">
@@ -92,6 +92,33 @@
             <input type="file" id="wallpaperFile" accept="image/jpeg,image/png,image/webp" hidden>
           </div>
           <p class="hint" style="margin-top:0.5rem">One of the looks the host can switch to mid-show, from the Backdrop button in the host controls - alongside solid colours and generated logo layouts, all picked there during the show. 1920×1080 pixels is the ideal size (anything with the same 16:9 shape works). JPEG, PNG or WebP, up to 8 MB.</p>
+        </div>
+      </section>
+
+      <!-- Settings: what a recording holds -->
+      <section id="pane-recording" class="stack" hidden>
+        <div class="panel">
+          <h2>Recording quality</h2>
+          <p class="hint" style="margin-bottom:0.9rem">What each person's own track holds. It applies to the next recording you start; a take already running keeps the setting it began with.</p>
+          <div class="choice">
+            <label class="choice-row">
+              <input type="radio" name="recordingQuality" value="best" checked>
+              <span>
+                <b>Best quality</b>
+                <span class="hint">Every sample as the microphone heard it. About 1.4 GB per person per hour.</span>
+              </span>
+            </label>
+            <label class="choice-row">
+              <input type="radio" name="recordingQuality" value="smaller">
+              <span>
+                <b>Smaller files</b>
+                <span class="hint">Very good for speech, and about 54 MB per person per hour.</span>
+              </span>
+            </label>
+          </div>
+          <span class="msg ok" id="qualityMsg" hidden>✓ Saved</span>
+          <p class="hint" style="margin-top:1rem">A file with <code>.webm</code> on the end is a box, and the name on the box does not tell you what is inside it. The same box holds either every sample your microphone heard or about a twenty-fifth of that, and until you open it in an editor the two look alike. That is the whole of this choice: the box stays the same, the contents do not. Best quality keeps everything, which matters if the recording will be cleaned up, levelled or repaired afterwards. Smaller files throws away what the ear does not miss on speech, and a two-hour show with four people becomes a few hundred megabytes instead of eleven gigabytes.</p>
+          <p class="hint" style="margin-top:0.7rem">Firefox cannot record uncompressed audio at all. A guest on Firefox comes back compressed whatever this is set to, and the Recordings list says so beside their track. <a class="helplink" href="/help#recording-quality">More about what is in the file</a></p>
         </div>
       </section>
 
@@ -218,6 +245,6 @@
 </div>
 
 <script src="/js/tip.js?v=20260823f"></script>
-<script src="/host/host.js?v=20260823f"></script>
+<script src="/host/host.js?v=20260914a"></script>
 </body>
 </html>

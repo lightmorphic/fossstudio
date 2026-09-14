@@ -30,6 +30,7 @@
       { id: "library", label: "Library" }
     ] },
     { id: "settings", label: "Settings", subs: [
+      { id: "recording", label: "Recording" },
       { id: "themes", label: "Themes" },
       { id: "banner", label: "Ad Banner" },
       { id: "publish", label: "Publish" },
@@ -437,11 +438,28 @@
   }
   autoSave(["fosscastUrl", "fosscastToken"], saveFosscast);
 
+  // ---------- what a recording holds ----------
+
+  async function saveQuality(value) {
+    await apiFetch("/api/settings", {
+      method: "PUT",
+      body: JSON.stringify({ recordingQuality: value })
+    });
+    $("qualityMsg").hidden = false;
+    setTimeout(() => { $("qualityMsg").hidden = true; }, 2000);
+  }
+  for (const input of document.querySelectorAll("input[name=recordingQuality]")) {
+    input.addEventListener("change", () => { saveQuality(input.value).catch(() => {}); });
+  }
+
   // ---------- theme ----------
 
 
   async function loadSettings() {
     const s = await apiFetch("/api/settings");
+    const quality = s.recordingQuality === "smaller" ? "smaller" : "best";
+    const chosen = document.querySelector(`input[name=recordingQuality][value="${quality}"]`);
+    if (chosen) chosen.checked = true;
     $("fosscastUrl").value = s.fosscastUrl || "";
     $("fosscastToken").value = s.fosscastToken || "";
     canPublish = !!(s.fosscastUrl && s.fosscastToken);

@@ -6,10 +6,17 @@ import { legacyAccountSettings } from "./account.js";
 
 const FILE = "settings.json";
 
+// What a recording holds. "best" is every sample the microphone heard,
+// "smaller" is Opus - very good for speech and a twenty-sixth of the
+// size. Best is the default: a studio's job is to keep what was said,
+// and disk is cheaper than a take nobody can improve on afterwards.
+export const QUALITIES = ["best", "smaller"];
+
 export const SETTINGS_DEFAULTS = {
   wallpaper: null,
   bg: null,
-  logo: null
+  logo: null,
+  recordingQuality: "best"
 };
 
 // Installs from the days when the look was carried on an account bring
@@ -48,6 +55,9 @@ export async function updateSettings(patch) {
     if (u === "" || /^https:\/\/[^\s]+$/.test(u) || u.startsWith("http://127.0.0.1")) {
       clean.fosscastUrl = u.slice(0, 200);
     }
+  }
+  if (QUALITIES.includes(patch.recordingQuality)) {
+    clean.recordingQuality = patch.recordingQuality;
   }
   if (typeof patch.fosscastToken === "string") {
     clean.fosscastToken = patch.fosscastToken.trim().slice(0, 300);
