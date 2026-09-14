@@ -157,7 +157,7 @@ const WORDS = ("able acid aged also area army away baby back bald bank barn base
   "earn ease east easy edge exit face fact fade fail fair fall farm fast fear feed feel fell felt fern " +
   "file fill film find fine fire firm fish fist five flag flat flax flee flew flip flow foam fold folk " +
   "font food foot fork form fort four free frog from fuel full fund gain game gate gave gear gift girl " +
-  "give glad glow glue goal goat gold golf gone good gown grab gram grew grey grid grim grin grip grow " +
+  "give glad glow glue goal goat gold golf gone good gown grab gram grew gray grid grim grin grip grow " +
   "gulf hail hair half hall hand hang hard harm hate haul have hawk haze head heal heap hear heat heel " +
   "held helm help herb herd hero hide high hill hint hive hold hole holy home hood hoof hook hoop hope " +
   "horn hose host hour huge hunt hurl hurt hymn idea inch iron item jade jail jazz jean join joke jump " +

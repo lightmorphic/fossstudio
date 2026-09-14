@@ -48,7 +48,7 @@ check("banner overlays the bottom-left of the video, compact width",
     return inside && compact && flushLeft;
   }));
 
-// Host changes banner colour to pink; guest should follow
+// Host changes banner color to pink; guest should follow
 // The color tools live behind the banner-colors button now
 await host.page.click("#hpBannerColorsBtn");
 await host.page.waitForSelector("#hpBannerPop:not([hidden])");
@@ -62,26 +62,26 @@ const guestColor = await guest.page.evaluate(() =>
   getComputedStyle(document.querySelector(".tile .lower-third")).backgroundColor);
 check(`guest banner turned pink (${guestColor})`, guestColor === "rgb(232, 32, 126)");
 
-// Multi-colour mode: each person gets their own banner colour
+// Multi-color mode: each person gets their own banner color
 await host.page.click("#hpBannerMulti");
 await new Promise((r) => setTimeout(r, 1500));
-const colours = await guest.page.evaluate(() =>
+const colors = await guest.page.evaluate(() =>
   [...document.querySelectorAll(".tile .lower-third")].map((el) => getComputedStyle(el).backgroundColor));
-check(`per-person colours differ (${colours.join(" vs ")})`,
-  colours.length === 2 && colours[0] !== colours[1]);
+check(`per-person colors differ (${colors.join(" vs ")})`,
+  colors.length === 2 && colors[0] !== colors[1]);
 
-// Back to a single colour via a swatch
+// Back to a single color via a swatch
 await host.page.$$eval("#hpBannerSwatches .hp-swatch", (btns) => btns[5].click());
 await new Promise((r) => setTimeout(r, 1500));
 const uniform = await guest.page.evaluate(() =>
   [...document.querySelectorAll(".tile .lower-third")].map((el) => getComputedStyle(el).backgroundColor));
-check(`swatch returns everyone to one colour (${uniform[0]})`,
+check(`swatch returns everyone to one color (${uniform[0]})`,
   uniform[0] === uniform[1]);
 
-// Guests pick their own colour
+// Guests pick their own color
 await host.page.click("#hpBannerChoice");
 await new Promise((r) => setTimeout(r, 1200));
-check("guest sees their own colour button",
+check("guest sees their own color button",
   await guest.page.$eval("#myColorBtn", (el) => !el.hidden));
 await guest.page.click("#myColorBtn");
 await guest.page.$$eval("#myColorPop .hp-swatch", (btns) => btns[3].click());
@@ -90,7 +90,7 @@ const chosen = await host.page.evaluate(() => {
   const t = [...document.querySelectorAll(".tile")].find((x) => !x.classList.contains("self"));
   return getComputedStyle(t.querySelector(".lower-third")).backgroundColor;
 });
-check(`guest's chosen colour shows for everyone (${chosen})`, chosen === "rgb(139, 195, 74)");
+check(`guest's chosen color shows for everyone (${chosen})`, chosen === "rgb(139, 195, 74)");
 check("layout: grid and panel share the row (no overlap)",
   await host.page.evaluate(() => {
     const g = document.getElementById("grid").getBoundingClientRect();

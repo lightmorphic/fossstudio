@@ -55,7 +55,7 @@ and you never will.
   private key stays on your own device and a stolen data folder yields
   nothing to log in with, and a second factor on top. There is no way to
   make a second account, because a
-  second person who wants a studio runs their own copy - the licence is
+  second person who wants a studio runs their own copy - the license is
   there for exactly that. Guests need no account at all, which is the
   whole point of the link. The dashboard can have a domain of its own
   if you like: point host.<your-domain> at the server and it works,
@@ -98,7 +98,7 @@ and you never will.
   everyone's tile, their lower-third name banners, the podcast logo and
   episode title block (the host drags it anywhere, resizes it, and
   right-clicks it for the rest: logo left of the title, right, above or
-  below, the block's background colour, or drop either for a session),
+  below, the block's background color, or drop either for a session),
   the spotlight when the host has spotlit someone, and any overlay
   triggered, at the moment it was triggered.
 - **Downloads:** everything is in the dashboard when you stop - per
@@ -133,13 +133,13 @@ and you never will.
   browser. FOSSCast is a separate self-hosted app that publishes a
   podcast; neither needs the other to run.
 - **Backdrops, switched mid-show:** the host panel's Backdrop control
-  holds it all - pick a colour (palette or hex) and wear it solid, or
+  holds it all - pick a color (palette or hex) and wear it solid, or
   as any of six logo layouts generated on the spot from your logo in
-  that colour (a 3D scatter, a dense mosaic, aligned rows, brick
+  that color (a 3D scatter, a dense mosaic, aligned rows, brick
   offset, a tilted diagonal grid, or a single corner watermark) - or
   switch to the uploaded wallpaper. A new look for a new segment, on
-  every screen at once; sessions open on the colour you used last.
-- **One look per show:** the theme (wallpaper, background colour, logo,
+  every screen at once; sessions open on the color you used last.
+- **One look per show:** the theme (wallpaper, background color, logo,
   episode title) is pinned the moment the first person joins and holds
   until the session empties, so everyone and the recording see the same
   thing even if settings change or the session is renamed mid-show. The
@@ -198,7 +198,7 @@ broadcast one.
   [CONTRIBUTING.md](CONTRIBUTING.md) explains why in full, and says what
   changes after the beta.
 
-## Licence
+## License
 
 Free software under the [GNU AGPL v3](LICENSE).
 
@@ -206,7 +206,7 @@ Free software under the [GNU AGPL v3](LICENSE).
 Lightmorphic's own work throughout; the third-party material is
 mediasoup-client (ISC), RNNoise via `@jitsi/rnnoise-wasm` (Apache-2.0
 over BSD-3-Clause) and the Manrope typeface (SIL OFL 1.1). Four runtime
-npm dependencies, listed there with their licences.
+npm dependencies, listed there with their licenses.
 
 See [CHANGELOG.md](CHANGELOG.md) for release history.
 
@@ -397,7 +397,7 @@ at `http://127.0.0.1:3000`), with two things to know:
   pages, not the media.
 - **Set the relay address.** With Cloudflare in front, your domain
   resolves to Cloudflare's edge, which does not forward the TURN port.
-  Put an unproxied (grey-cloud) hostname or your raw server IP in
+  Put an unproxied (gray-cloud) hostname or your raw server IP in
   Settings, Studio address, so guests behind strict NATs can still
   connect.
 
@@ -457,6 +457,7 @@ node test/help-test.mjs <url> <password>          # the help page and every link
 node test/fosscast-publish-test.mjs      # publish-to-FOSSCast flow against a stub instance
 node test/ten-guest-fit.mjs              # ten people in one room, every tile the same size
 node test/firefox-compat-test.mjs <url> <password>  # same flows, real Firefox engine
+node test/spelling-test.mjs               # American spelling everywhere a person reads
 ```
 
 The tests that need moving faces feed Chromium fake camera clips

@@ -56,7 +56,7 @@
     if (below) y = Math.min(r.bottom + TAIL + 4, window.innerHeight - h - 8);
     tip.classList.toggle("below", below);
     // The tail sits under (or over) the control it points at, and
-    // leans towards the bubble's nearer side - like a speech bubble
+    // leans toward the bubble's nearer side - like a speech bubble
     const ax = Math.max(10, Math.min(r.left + r.width / 2 - x - TAIL / 2, w - TAIL - 10));
     tip.classList.toggle("tail-right", ax > w / 2);
     tip.style.left = `${x}px`;

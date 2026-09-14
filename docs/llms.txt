@@ -19,7 +19,7 @@ GitHub.
 - Home: https://fossstudio.org/
 - Source and README: https://github.com/lightmorphic/fossstudio
 - Sister project (podcast hosting and RSS): https://fosscast.org/
-- Licence: AGPL-3.0 - https://www.gnu.org/licenses/agpl-3.0.html
+- License: AGPL-3.0 - https://www.gnu.org/licenses/agpl-3.0.html
 - Hosted, for people who would rather not run a server:
   https://castmorphic.com
 - Contact: complaints@lightmorphic.com

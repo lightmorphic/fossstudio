@@ -2,7 +2,7 @@
 //
 // Every participant's browser records itself and uploads chunks; the
 // server appends them to a file and never opens one. The host's browser
-// also records the programme - the finished picture and mixed sound it
+// also records the program - the finished picture and mixed sound it
 // drew for everyone - so the whole show arrives as one file too,
 // already encoded. Nothing here converts, mixes or re-encodes anything.
 //
@@ -148,7 +148,7 @@ export function addPeerToRecording(rec, peer) {
 }
 
 // Which person a connection belongs to. The browser keeps this id for
-// the room it is in, so the same browser rejoining is recognised; a
+// the room it is in, so the same browser rejoining is recognized; a
 // different browser, or one whose site data was cleared, is honestly a
 // new person and gets a second track the host can see.
 export function personOf(peer) {

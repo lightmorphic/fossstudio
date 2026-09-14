@@ -47,7 +47,7 @@ check("block shows the theme logo above the title",
 check("block shows the episode title",
   (await host.$eval("#bannerTitle", (el) => el.textContent)) === "Logo Test Episode");
 
-// Drag the block towards the bottom-left; position must move
+// Drag the block toward the bottom-left; position must move
 const before = await host.$eval("#banner", (el) => ({ l: el.offsetLeft, t: el.offsetTop }));
 const box = await host.$eval("#banner", (el) => {
   const r = el.getBoundingClientRect();

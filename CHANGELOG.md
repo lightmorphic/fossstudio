@@ -4,6 +4,28 @@ All notable changes to FOSSStudio are documented here.
 
 ## Unreleased
 
+**The host panel speaks in icons.** Eleven word buttons down the side of
+a live session become seven pictures on two rows - auto level, mute all,
+the subscribe reminder, the ad banner, then banner colors, title color
+and backdrop. Each says its name on hover and on keyboard focus, and
+carries the same words as an aria-label so a screen reader is not handed
+a blank button. Record keeps its word: it is the one button where a
+mistake costs a whole show, it changes state in the middle of a take,
+and it carries the elapsed clock. The paired choices - Random and Guests
+choose, Color and Wallpaper - keep their words too, because a pair of
+pictures says "two more buttons" rather than "one or the other". The
+panel is 172 pixels wide instead of 200, because its width now follows
+what has to fit rather than the longest label.
+
+**American spelling throughout.** Every word a person reads - the
+screens, the help page, the website, the README, this file, the code's
+own comments - is now spelled the American way. Names in code are not:
+the backdrop's `colour` key on the wire, the `programme` recording kind
+in stored file names and the browser's own `AnalyserNode` keep their
+spelling, because renaming those is a data change and does not belong in
+a wording change. `server/test/spelling-test.mjs` keeps it that way, and
+lists those exceptions one by one.
+
 **Every track is the full length of the take.** A guest who joins five
 minutes late used to hand you a track that started at zero along with
 everybody else's, so every word in it sat five minutes early; a guest
@@ -81,7 +103,7 @@ in rather than disappearing. Two-factor is offered in the same minute as
 the password, because nobody comes back to do it later.
 
 An existing install keeps working and is never sent through setup.
-HOST_PASSWORD left in somebody's compose file is still honoured, and the
+HOST_PASSWORD left in somebody's compose file is still honored, and the
 log says once where that belongs now.
 
 **A help page inside the studio**, at /help, behind the login, with
@@ -133,7 +155,7 @@ was recorded: one .webm per person. In a Chromium-based browser such as
 Chrome, Brave or Edge the audio inside it is uncompressed; other
 browsers record Opus, which is far smaller. Alongside the separate
 tracks comes one video of the whole show: while a take runs, the host's
-browser paints the programme onto a 1280x720 canvas, mixes every voice
+browser paints the program onto a 1280x720 canvas, mixes every voice
 and encodes it, so a finished file arrives rather than a job for the
 server. Everything is in the dashboard when you stop, file by file or
 as a zip.
@@ -185,7 +207,7 @@ Nothing on any page is fetched from another domain: the typeface, the
 scripts and the WebAssembly all come from your own server. There is no
 account with us, no relay we run, and no limit we could lift.
 
-The licence is the GNU AGPL v3. The difference from the GPL is one
+The license is the GNU AGPL v3. The difference from the GPL is one
 clause: the GPL asks for changes to be shared when the software is
 handed to someone, the AGPL asks for them when it is run for someone
 over a network as well. This is the free edition of a hosted service,

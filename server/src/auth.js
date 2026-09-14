@@ -106,7 +106,7 @@ export function totpCode(secretB32, timeStep = Math.floor(Date.now() / 30000)) {
 
 export function verifyTotp(secretB32, code) {
   const step = Math.floor(Date.now() / 30000);
-  // Accept the neighbouring steps to allow for clock drift
+  // Accept the neighboring steps to allow for clock drift
   return [step - 1, step, step + 1].some((s) => totpCode(secretB32, s) === String(code).trim());
 }
 

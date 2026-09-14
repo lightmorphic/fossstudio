@@ -22,7 +22,7 @@ OPEN, CLOSE = '<pre id="composeSrc">', "</pre>"
 
 # The values a person must replace. There are none left: the domain, the
 # login and the secrets are all settings inside the studio now, so the
-# paste is the paste. The set stays because the renderer still colours
+# paste is the paste. The set stays because the renderer still colors
 # whatever is in it, and the next thing that has to be edited by hand
 # goes here rather than being marked up by eye.
 CHANGE_ME = set()

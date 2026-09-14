@@ -1,7 +1,7 @@
 /* The help page. Long prose, so it is set for reading: one column at a
    comfortable measure, generous line height, and headings that are
    questions rather than labels. Nothing here is loaded from anywhere
-   else - the typeface and the colours come from host.css, which the
+   else - the typeface and the colors come from host.css, which the
    studio serves itself. */
 .help-wrap {
   max-width: 42rem;

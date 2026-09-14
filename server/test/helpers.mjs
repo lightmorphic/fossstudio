@@ -41,7 +41,7 @@ export async function makeRoom(base, password = STUDIO.password, title = "Automa
   return session.id;
 }
 
-// A one-pixel PNG of a given colour, for the tests that need an image to
+// A one-pixel PNG of a given color, for the tests that need an image to
 // upload. Written here rather than generated, so the suite needs nothing
 // installed beyond node and a browser.
 export function solidPng(hex = "fbc711") {
@@ -90,7 +90,7 @@ export function solidPng(hex = "fbc711") {
 }
 
 // Load a recording in a real <video> element and read it back: how long
-// it is, how big, and the average colour of a box at a moment. The
+// it is, how big, and the average color of a box at a moment. The
 // browser is the decoder, so the suite needs no media tools at all - and
 // what it proves is the thing that matters, that the file the host
 // downloads actually plays.

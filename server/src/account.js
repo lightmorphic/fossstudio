@@ -1,6 +1,6 @@
 // The account. A FOSSStudio install is one person's studio: one login,
 // and no way to make a second. Anybody who wants their own studio runs
-// their own copy - that is what the licence is for.
+// their own copy - that is what the license is for.
 //
 // The file on disk is still an array called users.json, because installs
 // that predate this hold theirs there and nothing of theirs is thrown
@@ -89,7 +89,7 @@ export async function ensureAccount() {
   // Roles are gone; a field left over from an install that had them is
   // data, not something to read, so it stays on disk and is ignored.
   if (config.hostPassword) {
-    // Honoured for the installs that already have it, and said out loud
+    // Honored for the installs that already have it, and said out loud
     // once so nobody thinks a file is still where this belongs.
     console.log("HOST_PASSWORD is set in the environment, so it is what opens this studio. " +
       "The password lives in the panel now: set it there, clear the line from your compose " +

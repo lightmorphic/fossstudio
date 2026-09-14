@@ -44,9 +44,9 @@ const guest = await join(guestCtx, "Guest Greta", false);
 await new Promise((r) => setTimeout(r, 2000));
 
 // Turn the shared banner red so its pixels are easy to probe later
-// The colour tools sit behind a button since the panel redesign
+// The color tools sit behind a button since the panel redesign
 await host.click('#hpBannerColorsBtn');
-await host.click('.hp-swatch[aria-label="Banner colour #f34236"]');
+await host.click('.hp-swatch[aria-label="Banner color #f34236"]');
 await new Promise((r) => setTimeout(r, 500));
 
 await host.click("#hpRecordBtn");
@@ -60,7 +60,7 @@ check("guest's recording light is on",
 await new Promise((r) => setTimeout(r, 12000));
 await host.click("#hpRecordBtn");
 await new Promise((r) => setTimeout(r, 2000));
-check("guest's recording light back to grey",
+check("guest's recording light back to gray",
   await guest.$eval("#recLight", (el) => !el.classList.contains("on")));
 
 // Wait for the last chunks to land and the take to be filed
@@ -104,12 +104,12 @@ if (rec?.status === "ready") {
       probe.ok && probe.duration > 8);
   }
 
-  // The episode title block sits top-centre of the combined picture, and
+  // The episode title block sits top-center of the combined picture, and
   // the lower-third is the red we picked: both drawn by the host's
   // browser, so finding them proves the mixer put them in the video.
   const url = `/api/recordings/${encodeURIComponent(rec.id)}/files/${encodeURIComponent(everyone)}`;
   const title = await probeMedia(player, url, { at: 5, crop: { x: 620, y: 40, w: 40, h: 10 } });
-  check(`episode title drawn top-centre (rgb ${title.rgb})`,
+  check(`episode title drawn top-center (rgb ${title.rgb})`,
     title.ok && !(title.rgb[1] > 100 && title.rgb[0] < 60 && title.rgb[2] < 60));
   const banner = await probeMedia(player, url, { at: 5, crop: { x: 40, y: 505, w: 30, h: 8 } });
   check(`name banner drawn into the video (rgb ${banner.rgb})`,

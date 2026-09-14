@@ -23,7 +23,7 @@ import {
 
 const ROOM_ID_RE = /^[a-zA-Z0-9_-]{4,32}$/;
 // Mirrors BANNER_COLOURS in web/js/session.js: guests' own picks are
-// validated against it, and multi-colour mode deals from it
+// validated against it, and multi-color mode deals from it
 const BANNER_PALETTE = [
   "#f34236", "#fe9700", "#fbc711", "#8bc34a", "#4bae4f", "#019587",
   "#00bcd3", "#2295f1", "#3d51b4", "#9b26ae", "#e8207e", "#795649",
@@ -135,16 +135,16 @@ export function attachSignaling() {
                 .filter((p) => p.id !== peer.id && p.role !== "viewer")
                 .map(peerSummary)
             });
-            // Viewers are invisible: no tile, no banner colour, no
+            // Viewers are invisible: no tile, no banner color, no
             // notification - the rest of the room never knows
             if (role === "viewer") break;
             broadcast(room, peer.id, { event: "peerJoined", data: peerSummary(peer) });
-            // Multi-colour banners: latecomers get the next palette colour
+            // Multi-color banners: latecomers get the next palette color
             if (room.control.bannerMulti) {
               const used = Object.keys(room.control.bannerColors).length;
               room.control.bannerColors[peer.id] = BANNER_PALETTE[used % BANNER_PALETTE.length];
             }
-            // Everyone refreshes control state (noise/colour for the newcomer)
+            // Everyone refreshes control state (noise/color for the newcomer)
             broadcast(room, peer.id, { event: "control", data: room.control });
             const people = [...room.peers.values()].filter((p) => p.role !== "viewer");
             if (role === "guest" && people.length === 1) {
@@ -164,7 +164,7 @@ export function attachSignaling() {
 
           case "myBannerColor": {
             if (!peer) return fail("not joined");
-            if (!room.control.bannerChoice) return fail("colour choice is off");
+            if (!room.control.bannerChoice) return fail("color choice is off");
             if (!BANNER_PALETTE.includes(String(data.color || ""))) return fail("pick from the palette");
             room.control.bannerColors[peer.id] = data.color;
             reply({});
@@ -253,7 +253,7 @@ export function attachSignaling() {
                 break;
               case "bannerChoice": {
                 // Guests choose their own from the palette; start from
-                // auto-assigned colours so nobody is blank
+                // auto-assigned colors so nobody is blank
                 c.bannerChoice = true;
                 c.bannerMulti = true;
                 let ci2 = Object.keys(c.bannerColors).length;
@@ -321,8 +321,8 @@ export function attachSignaling() {
               }
               case "backdrop": {
                 // Switch the show's backdrop mid-show. Two ideas only:
-                // colour (solid, or the host's browser generates a
-                // logo layout in that colour and sends the PNG along,
+                // color (solid, or the host's browser generates a
+                // logo layout in that color and sends the PNG along,
                 // like banner snapshots), or the pinned wallpaper.
                 // Everyone's screen follows; a recording keeps the
                 // backdrop it started with, like titlePos.
@@ -331,10 +331,10 @@ export function attachSignaling() {
                 const t = room.theme;
                 if (mode === "wallpaper" && !t.wallpaperPath) return fail("No wallpaper uploaded in Themes.");
                 if (data.colour != null) {
-                  if (!/^#[0-9a-fA-F]{6}$/.test(String(data.colour))) return fail("bad colour");
+                  if (!/^#[0-9a-fA-F]{6}$/.test(String(data.colour))) return fail("bad color");
                   t.bg = String(data.colour).toLowerCase();
-                  // The in-show pick is the colour setting now - it
-                  // persists as the next session's starting colour
+                  // The in-show pick is the color setting now - it
+                  // persists as the next session's starting color
                   updateSettings({ bg: t.bg }).catch(() => {});
                 }
                 if (mode === "generated") {
@@ -360,11 +360,11 @@ export function attachSignaling() {
                 break;
               }
               case "titleBg": {
-                // Background colour of the logo/title block; the host's
+                // Background color of the logo/title block; the host's
                 // browser redraws the block PNG with it, so the recording
                 // follows automatically
                 if (data.color !== null && !/^#[0-9a-fA-F]{6}$/.test(String(data.color))) {
-                  return fail("bad colour");
+                  return fail("bad color");
                 }
                 c.titleBg = data.color ? String(data.color).toLowerCase() : null;
                 break;

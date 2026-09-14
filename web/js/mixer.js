@@ -1,4 +1,4 @@
-/* The programme mixer: the host's browser draws the show.
+/* The program mixer: the host's browser draws the show.
  *
  * Everything the audience will see is already in the host's browser -
  * every face, the lower thirds, the title block, an overlay. So rather
@@ -9,7 +9,7 @@
  * it, which is what lets a recording cost it almost nothing.
  *
  * The geometry is the recording's geometry, not the screen's: a host's
- * window is whatever shape their laptop is, but the programme is always
+ * window is whatever shape their laptop is, but the program is always
  * the same 16:9 frame whatever shape the window is, laid out by the same
  * fractions the page itself uses (LAYOUT in server/test/layout.js;
  * geometry-test.mjs keeps them in step). What the DOM contributes is the
@@ -97,7 +97,7 @@
   const ready = (v) => v && v.readyState >= 2 && v.videoWidth > 0;
 
   // The subscribe reminder, drawn rather than played from a file: the
-  // same dark pill the screen shows, centred at the foot of the frame,
+  // same dark pill the screen shows, centered at the foot of the frame,
   // with the red button, the bell and the three lines. Drawing it means
   // it looks the same in every browser and needs nothing decoded.
   function drawSubscribe(x) {
@@ -230,7 +230,7 @@
       const c = control();
       const cs = getComputedStyle(grid);
 
-      // Background: the session colour, then the wallpaper over it
+      // Background: the session color, then the wallpaper over it
       x.fillStyle = cs.backgroundColor || "#14161a";
       x.fillRect(0, 0, W, H);
       const bgUrl = /url\("?([^")]+)"?\)/.exec(cs.backgroundImage || "")?.[1] || "";

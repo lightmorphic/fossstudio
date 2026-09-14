@@ -36,14 +36,14 @@ const bgOf = (p) => p.page.evaluate(() =>
 const a = await joinGuest("Anna");
 const before = await bgOf(a);
 
-// Host changes the background colour while Anna is in the session
+// Host changes the background color while Anna is in the session
 await setBg("#654321");
 
-// Ben joins mid-session: must see the pinned colour, not the new one
+// Ben joins mid-session: must see the pinned color, not the new one
 const b = await joinGuest("Ben");
 const benSees = await bgOf(b);
 
-// Everyone leaves; the room dies; a new gathering gets the new colour
+// Everyone leaves; the room dies; a new gathering gets the new color
 await a.ctx.close();
 await b.ctx.close();
 await new Promise((r) => setTimeout(r, 1500));
@@ -53,7 +53,7 @@ await browser.close();
 
 let fails = 0;
 const expect = (label, ok) => { console.log(`${ok ? "PASS" : "FAIL"}  ${label}`); if (!ok) fails++; };
-expect(`first guest got the original colour (${before})`, before === "rgb(18, 52, 86)");
-expect(`mid-session joiner still sees the pinned colour (${benSees})`, benSees === "rgb(18, 52, 86)");
-expect(`new session after everyone left gets the new colour (${afterRestart})`, afterRestart === "rgb(101, 67, 33)");
+expect(`first guest got the original color (${before})`, before === "rgb(18, 52, 86)");
+expect(`mid-session joiner still sees the pinned color (${benSees})`, benSees === "rgb(18, 52, 86)");
+expect(`new session after everyone left gets the new color (${afterRestart})`, afterRestart === "rgb(101, 67, 33)");
 process.exit(fails ? 1 : 0);

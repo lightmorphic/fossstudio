@@ -189,7 +189,7 @@ function blockPayloads(buf, at, end) {
     for (let i = 1; i < frames - 1; i++) {
       const d = readVint(buf, pos, true);
       pos += d.len;
-      // signed: the range is centred on zero
+      // signed: the range is centered on zero
       const bias = (1 << (7 * d.len - 1)) - 1;
       prev += d.value - bias;
       sizes.push(prev);

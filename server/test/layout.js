@@ -37,7 +37,7 @@ export const LAYOUT = {
 const even = (v) => Math.max(2, 2 * Math.floor(v / 2));
 
 // Even grid: one tile size for everyone, rows as even as possible with
-// fuller rows first, the block centred. Mirrors applyLayout() in
+// fuller rows first, the block centered. Mirrors applyLayout() in
 // web/js/session.js.
 function gridLayout(n, W, H, PAD, GAP) {
   const cols = Math.ceil(Math.sqrt(n));

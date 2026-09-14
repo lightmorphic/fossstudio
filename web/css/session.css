@@ -327,7 +327,7 @@ body {
   text-align: center;
   opacity: 0.6;
 }
-/* The recording light in everyone's control row: grey when idle,
+/* The recording light in everyone's control row: gray when idle,
    red and blinking while the session is recorded */
 .ctl.rec-light { cursor: default; }
 .ctl.rec-light svg { color: #565d6b; }
@@ -341,8 +341,8 @@ body.is-guest.rec-dim .controls:hover { opacity: 1; }
 .grid {
   position: relative;
   flex: 1;
-  /* Uniform tiles, centred rows: 2 side by side; 3 = two on top, one
-     centred below; 5 = three up, two centred below - all one size */
+  /* Uniform tiles, centered rows: 2 side by side; 3 = two on top, one
+     centered below; 5 = three up, two centered below - all one size */
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -354,7 +354,7 @@ body.is-guest.rec-dim .controls:hover { opacity: 1; }
   overflow: hidden;
 }
 .tile {
-  /* Placed by hand in normal layout (balanced centred rows) */
+  /* Placed by hand in normal layout (balanced centered rows) */
   position: absolute;
   background: #000;
   border-radius: var(--tile-rad, 16px);
@@ -369,7 +369,7 @@ body.is-guest.rec-dim .controls:hover { opacity: 1; }
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* Portrait phone feeds: crop equally from top and bottom (centre) */
+  /* Portrait phone feeds: crop equally from top and bottom (center) */
 }
 .tile.self video { transform: scaleX(-1); }
 /* Full-width lower third: name plus a smaller info line */
@@ -523,7 +523,7 @@ body.is-guest.rec-dim .controls:hover { opacity: 1; }
   --lm-muted: #1c1c1f;
   --lm-muted-fg: #a1a1aa;
   --lm-fg: #fafafa;
-  /* Active states are calm grays, not bright colours: on = lighter
+  /* Active states are calm grays, not bright colors: on = lighter
      gray fill, off = outline. Yellow stays only on the raised hand. */
   --lm-accent: #565d6b;
   --lm-on-accent: #f4f5f7;
@@ -570,7 +570,7 @@ body.is-guest.rec-dim .controls:hover { opacity: 1; }
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
-/* Colour tools open on demand under their buttons. Both palettes are
+/* Color tools open on demand under their buttons. Both palettes are
    the same shape: 6 + 6 + 3 swatches, the hex box on the right half of
    the third row. */
 .hp-pop {
@@ -741,7 +741,7 @@ body.dim-ui .host-panel:hover { opacity: 1; }
 /* Host panel info dots: the same ⓘ as the join screen, but their text
    rides the floating #tipBubble so it never clips inside the panel */
 /* A plain sentence under the record button when somebody's microphone
-   is losing audio. Words only - no colour, no box: it belongs to the
+   is losing audio. Words only - no color, no box: it belongs to the
    panel it sits in. */
 .hp-note {
   font-size: 0.72rem;
@@ -755,7 +755,7 @@ body.dim-ui .host-panel:hover { opacity: 1; }
 /* The dot shares the line with its buttons - they give up the ~1.7rem
    it needs rather than pushing it onto a row of its own */
 /* Grow from each label's own width (an equal split starves "Banner
-   colours" while its neighbour has room spare), with tighter padding
+   colors" while its neighbor has room spare), with tighter padding
    and gap to make room for the dot - the fit is a few px fine */
 .hp-row:has(> .info-btn) { flex-wrap: nowrap; gap: 0.2rem; }
 .hp-row:has(> .info-btn) .hp-btn { flex: 1 1 auto; min-width: 0; padding-inline: 0.3rem; }

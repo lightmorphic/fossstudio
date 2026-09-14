@@ -10,7 +10,7 @@
 // So they are made here on the first start and kept in the data folder
 // with the rest of the studio's state, owner-readable only, and nobody
 // ever types them. An install that still sets them in the environment
-// is honoured unchanged - see config.js - because breaking somebody's
+// is honored unchanged - see config.js - because breaking somebody's
 // studio to make a point is not a security improvement.
 import crypto from "node:crypto";
 import fs from "node:fs/promises";

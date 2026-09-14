@@ -32,7 +32,7 @@ app.use((req, res, next) => {
   res.setHeader("Referrer-Policy", "same-origin");
   res.setHeader("Permissions-Policy", "camera=(self), microphone=(self), geolocation=()");
   // Content Security Policy: everything loads from our own origin. No
-  // inline scripts (they were externalised); inline styles are still
+  // inline scripts (they were externalized); inline styles are still
   // used as element style= attributes. blob:/data: cover the audio
   // worklet and canvas-drawn banner images; wss: is the signaling
   // socket. frame-ancestors none double-locks against clickjacking.

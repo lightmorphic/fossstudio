@@ -27,9 +27,9 @@ export async function getOrCreateRoom(roomId) {
         muted: {},               // peerId -> true when mic is muted
         noise: {},               // peerId -> noise suppression on/off
         hands: {},               // peerId -> wants to talk
-        bannerColor: null,       // solid colour of the name banners
-        bannerMulti: false,      // one colour per person instead
-        bannerChoice: false,     // guests may pick their own colour
+        bannerColor: null,       // solid color of the name banners
+        bannerMulti: false,      // one color per person instead
+        bannerChoice: false,     // guests may pick their own color
         bannerColors: {},        // peerId -> hex when bannerMulti
         autoGain: true,          // per-session, host-toggled (on by default)
         titlePos: { x: 0.5, y: 0 }, // logo/title block, fraction of free space
@@ -48,7 +48,7 @@ export function getRoom(roomId) {
   return rooms.get(roomId);
 }
 
-// Freeze the theme for the life of the room: title, colour, and private
+// Freeze the theme for the life of the room: title, color, and private
 // copies of the logo/wallpaper files. Settings changed mid-session (or a
 // renamed session) only show once the room has emptied and re-formed -
 // everyone in a session always sees the same thing. The copies live in
@@ -60,7 +60,7 @@ export async function pinTheme(room, session, settings) {
     logoUrl: null, logoPath: null,
     wallpaperUrl: null, wallpaperPath: null,
     // A backdrop the host generates during the show (their logo laid
-    // out in a chosen style and colour) lands here
+    // out in a chosen style and color) lands here
     backdropUrl: null, backdropPath: null,
     // Which backdrop the show wears right now. The pinned copies mean
     // the dashboard can't change what any look means mid-show.
@@ -77,16 +77,16 @@ export async function pinTheme(room, session, settings) {
       await fs.copyFile(src, dst);
       theme[`${kind}Path`] = dst;
       theme[`${kind}Url`] = `/api/room-theme/${room.id}/${kind}`;
-    } catch { /* source vanished: theme falls back to the colour */ }
+    } catch { /* source vanished: theme falls back to the color */ }
   }
-  // Every session opens on the flat colour; the wallpaper and logo
+  // Every session opens on the flat color; the wallpaper and logo
   // background are pinned alongside as the looks the host can switch
   // to live from the host controls
   room.theme = theme;
 }
 
 // The image behind the show under the current backdrop choice - null
-// means the flat colour. One helper, used by clients' URLs, the stream
+// means the flat color. One helper, used by clients' URLs, the stream
 // compositor and recording pinning alike, so they can never disagree.
 export function activeBackdropPath(room) {
   const t = room.theme;

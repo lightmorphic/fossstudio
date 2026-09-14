@@ -3,7 +3,7 @@
 // and the compositors lay tiles out the same way, and they cannot share
 // code (the browser can't load anything from server/src), so this
 // compares the real DOM against tileLayout() rather than trusting that
-// two copies of the same maths stayed in step.
+// two copies of the same math stayed in step.
 //
 // It also covers spotlight, which the compositors ignored entirely until
 // now: a spotlit session recorded as a plain even grid.

@@ -79,7 +79,7 @@ For self-hosters assessing the project:
   domain derived from `DOMAIN`, so a stranger pointing their name at
   the server can never mint a certificate), the session page at
   `/s/<session>` (session ids are unguessable, and the page still has
-  to join through the signalling socket), and the studio's advertising
+  to join through the signaling socket), and the studio's advertising
   banner, which is drawn into every guest's screen anyway.
 - **Headers**: `X-Content-Type-Options`, `X-Frame-Options: DENY`,
   `Referrer-Policy`, and a restrictive `Permissions-Policy`.

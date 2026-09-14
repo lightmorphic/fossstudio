@@ -9,7 +9,7 @@ written for this project. No code has been merged from anyone outside
 the company, and `CONTRIBUTING.md` explains why that is deliberate.
 
 The project is released to the public under the GNU Affero General
-Public Licence v3 (`LICENSE`). Because Lightmorphic owns the copyright in the
+Public License v3 (`LICENSE`). Because Lightmorphic owns the copyright in the
 whole of it, Lightmorphic can also release the same code under other
 terms, and does: the hosted service at
 [castmorphic.com](https://castmorphic.com) runs it. That is the owner's
@@ -37,7 +37,7 @@ may do with its own code.
   which is one `export * from "mediasoup-client"` line.
 * **Whose:** Iñaki Baz Castillo, José Luis Millán and the mediasoup
   authors.
-* **Licence:** ISC.
+* **License:** ISC.
 * **From:** <https://github.com/versatica/mediasoup-client>
 
 ### RNNoise, via @jitsi/rnnoise-wasm
@@ -70,7 +70,7 @@ and MIT notices above.
 * **Where:** `web/fonts/Manrope.woff2`, and a second copy at
   `docs/Manrope.woff2` for the project website.
 * **Whose:** Mikhail Sharanda.
-* **Licence:** SIL Open Font Licence 1.1. The full text ships beside
+* **License:** SIL Open Font License 1.1. The full text ships beside
   each copy as `OFL.txt`.
 * **From:** <https://github.com/sharanda/manrope>
 
@@ -85,7 +85,7 @@ and shipped inside the container image. Their transitive tree is 97
 packages; every one is MIT, ISC, BSD-3-Clause, Apache-2.0 or
 BlueOak-1.0.0, except `web-push` as noted.
 
-| Package | Whose | Licence |
+| Package | Whose | License |
 |---|---|---|
 | `express` 4 | OpenJS Foundation and contributors | MIT |
 | `mediasoup` 3 | Iñaki Baz Castillo, José Luis Millán and contributors | ISC |
@@ -104,15 +104,15 @@ container image; the bundles they produce are covered above.
 
 ## Things the software runs inside, but does not contain
 
-Separate programs under their own licences, distributed alongside
+Separate programs under their own licenses, distributed alongside
 FOSSStudio in the published container image rather than combined with
 it.
 
-| What | Whose | Licence |
+| What | Whose | License |
 |---|---|---|
 | Node.js (`node:22-bookworm-slim` base image) | OpenJS Foundation | MIT |
 | Debian bookworm (base image) | Debian | mixed, mostly GPL/MIT/BSD |
-| zip (recording bundles) | Info-ZIP | Info-ZIP licence, BSD-like |
+| zip (recording bundles) | Info-ZIP | Info-ZIP license, BSD-like |
 | Caddy (the reverse proxy in the example compose files) | Light Code Labs | Apache-2.0 |
 
 ## Artwork and media

@@ -193,7 +193,7 @@ api.post("/login/passkey/finish", async (req, res) => {
     await updateAccount({ passkeys: acc.passkeys });
     // A passkey is both factors at once: the device is the thing you
     // have and its unlock is the thing you know, which is why a second
-    // code on top of it would be theatre.
+    // code on top of it would be theater.
     setAuthCookie(res, acc);
     res.json({ ok: true });
   } catch (err) {

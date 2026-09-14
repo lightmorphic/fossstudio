@@ -16,7 +16,7 @@ function check(label, ok, extra = "") {
   pass &&= ok;
 }
 
-// Mean colour of a box in the recorded picture, read by playing the file
+// Mean color of a box in the recorded picture, read by playing the file
 // in the browser and drawing a frame onto a canvas.
 let player = null;
 let mediaUrl = null;
@@ -86,11 +86,11 @@ try {
   // Two people spotlit: the featured tile spans the frame at the top,
   // the other sits in the strip below. In an even grid the two tiles
   // would be side by side with background down the middle, so the
-  // centre column is what tells the two layouts apart.
+  // center column is what tells the two layouts apart.
   const boxes = tileLayout(2, 0);
   const featured = boxes[0], strip = boxes[1];
   const mid = await sample(30, 30, 625, Math.round(featured.y + featured.h / 2));
-  check("centre of the frame is video, not the gap of an even grid",
+  check("center of the frame is video, not the gap of an even grid",
     !isBackground(mid), `rgb ${mid.map((v) => v.toFixed(0)).join(",")}`);
 
   const inStrip = await sample(30, 20, Math.round(strip.x + strip.w / 2), Math.round(strip.y + strip.h / 2));

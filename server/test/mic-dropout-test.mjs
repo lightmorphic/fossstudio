@@ -334,7 +334,7 @@ if (audio) {
   check(`the file is as long as the take (short by ${short.toFixed(2)}s, allowed 0.5s)`, short < 0.5);
 }
 
-// The programme the host's browser drew carries the same microphone, so
+// The program the host's browser drew carries the same microphone, so
 // it would slide the same way if the graph could starve
 const everyone = (rec?.files || []).find((f) => /^everyone\.(webm|mp4)$/.test(f));
 if (everyone) {

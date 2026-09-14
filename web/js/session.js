@@ -517,12 +517,12 @@
   const tiles = new Map();     // peerId -> {el, video, stream, name, gain}
   const consumers = new Map(); // consumerId -> {consumer, peerId}
 
-  // ---------- The programme: this browser as the mixer ----------
+  // ---------- The program: this browser as the mixer ----------
   // When the host records, this page draws the show onto a canvas, mixes
   // every voice and encodes the result, so the finished video needs no
   // drawing on the server at all.
   let mixer = null;
-  let micBus = null;                // the host's own mic into the programme, muted with the button
+  let micBus = null;                // the host's own mic into the program, muted with the button
   const bannerImgs = new Map();     // peerId -> Image, the same PNG the recording would use
   let titleImg = null;
 
@@ -545,7 +545,7 @@
     // What the theme provides, and what is actually shown, are separate:
     // the host can drop either part for this session
     applyTitleShow();
-    // Background colour shows when there is no wallpaper; a wallpaper
+    // Background color shows when there is no wallpaper; a wallpaper
     // paints over it
     if (theme.bg) els.grid.style.backgroundColor = theme.bg;
     if (theme.wallpaper) {
@@ -723,7 +723,7 @@
       const blockH = rows * tileH + (rows - 1) * gap;
       const startY = mobile ? padT : padT + Math.max(0, (availH - blockH) / 2);
       els.grid.style.setProperty("--tile-w", `${Math.floor(tileW)}px`);
-      // Place tiles by hand: same maths as the recording/stream grid
+      // Place tiles by hand: same math as the recording/stream grid
       const els2 = [...els.grid.querySelectorAll(".tile")];
       let idx = 0;
       rowSizes.forEach((size, r) => {
@@ -745,7 +745,7 @@
   window.addEventListener("resize", () => applyLayout());
   matchMedia("(max-width: 700px)").addEventListener("change", applyLayout);
 
-  // One palette for both colour tools: 15 colours laid out 6 + 6 + 3,
+  // One palette for both color tools: 15 colors laid out 6 + 6 + 3,
   // with the hex box filling the rest of the third row
   const BANNER_COLOURS = [
     "#f34236", "#fe9700", "#fbc711", "#8bc34a", "#4bae4f", "#019587",
@@ -765,14 +765,14 @@
       b.className = "hp-swatch" + (!control.bannerMulti && hex === control.bannerColor ? " active" : "");
       b.style.background = hex;
       b.dataset.tip = hex;
-      b.setAttribute("aria-label", `Banner colour ${hex}`);
+      b.setAttribute("aria-label", `Banner color ${hex}`);
       b.onclick = () => sendBannerColor(hex);
       els.hpBannerSwatches.appendChild(b);
     }
   }
 
-  // The colour tools sit behind two small buttons - the panel stays
-  // calm until colours are wanted
+  // The color tools sit behind two small buttons - the panel stays
+  // calm until colors are wanted
   const togglePop = (pop, ...others) => () => {
     for (const o of others) o.hidden = true;
     pop.hidden = !pop.hidden;
@@ -836,9 +836,9 @@
     x.globalAlpha = 1;
     x.fillStyle = baseColour;
     x.fillRect(0, 0, W, H);
-    // The logos are drawn as SHADES of the base colour, not in their
-    // own colours: four silhouette stamps mixed different distances
-    // towards white and black, picked per copy for depth
+    // The logos are drawn as SHADES of the base color, not in their
+    // own colors: four silhouette stamps mixed different distances
+    // toward white and black, picked per copy for depth
     const shades = [
       mixHex(baseColour, "#ffffff", 0.16),
       mixHex(baseColour, "#ffffff", 0.30),
@@ -847,7 +847,7 @@
     ].map((t) => makeStamp(img, t));
     const ar = shades[0].width / shades[0].height;
     // Jittered grid placement: one copy per cell fills the frame with
-    // no empty patches, while overlap is capped at neighbours' edges
+    // no empty patches, while overlap is capped at neighbors' edges
     const cellH = 58 + Math.random() * 14;
     const cellW = cellH * Math.min(Math.max(ar, 0.7), 2.4);
     for (let row = -1; row * cellH < H + cellH; row++) {
@@ -861,11 +861,11 @@
         x.transform(1, (Math.random() - 0.5) * 0.5,       // the 3D lean
                     (Math.random() - 0.5) * 0.5,
                     0.62 + Math.random() * 0.38, 0, 0);   // foreshortening
-        x.globalAlpha = 0.75 + Math.random() * 0.25;      // the shade IS the colour
+        x.globalAlpha = 0.75 + Math.random() * 0.25;      // the shade IS the color
         x.drawImage(shades[Math.floor(Math.random() * shades.length)], -w / 2, -h / 2, w, h);
       }
     }
-    // Gentle vignette so tiles sit on a calmer centre
+    // Gentle vignette so tiles sit on a calmer center
     x.setTransform(1, 0, 0, 1, 0, 0);
     x.filter = "none";
     x.globalAlpha = 1;
@@ -955,11 +955,11 @@
   }
 
   // ---------- Backdrop: switch the show's background live ----------
-  // Colour, the pinned wallpaper, or the pinned logo background - a
-  // segment per kind, the palette shown for colour. Availability comes
+  // Color, the pinned wallpaper, or the pinned logo background - a
+  // segment per kind, the palette shown for color. Availability comes
   // from the pinned theme (a host without a wallpaper can't pick one).
-  // Two kinds: Colour (solid, or the logo laid out in the picked
-  // colour and style, generated right here and pushed like a banner
+  // Two kinds: Color (solid, or the logo laid out in the picked
+  // color and style, generated right here and pushed like a banner
   // snapshot) - or the pinned Wallpaper.
   const BACKDROP_STYLES = [
     ["solid", "Solid"], ["scatter", "Scatter"], ["mosaic", "Mosaic"],
@@ -985,7 +985,7 @@
       sw.className = "hp-swatch" + (hex === backdropColour ? " active" : "");
       sw.style.background = hex;
       sw.dataset.tip = hex;
-      sw.setAttribute("aria-label", `Backdrop colour ${hex}`);
+      sw.setAttribute("aria-label", `Backdrop color ${hex}`);
       sw.onclick = () => { backdropColour = hex; els.hpBackdropHex.value = hex; applyBackdropChoice(); };
       els.hpBackdropSwatches.appendChild(sw);
     }
@@ -1057,7 +1057,7 @@
     else els.hpBackdropHex.value = "";
   };
 
-  // Background colour of the logo/title block. The first swatch is the
+  // Background color of the logo/title block. The first swatch is the
   // default dark; light backgrounds flip the text dark automatically.
   const TITLE_DEFAULT_BG = "#1e2127";
   function titleBgColor() {
@@ -1086,7 +1086,7 @@
       b.className = "hp-swatch" + (hex === titleBgColor() ? " active" : "");
       b.style.background = hex;
       b.dataset.tip = hex === TITLE_DEFAULT_BG ? "Default" : hex;
-      b.setAttribute("aria-label", `Title block colour ${hex}`);
+      b.setAttribute("aria-label", `Title block color ${hex}`);
       b.onclick = () => sendTitleBg(hex === TITLE_DEFAULT_BG ? null : hex);
       els.hpTitleSwatches.appendChild(b);
     }
@@ -1107,7 +1107,7 @@
   els.hpBannerChoice.onclick = () =>
     request("hostControl", { action: "bannerChoice" }).catch(() => {});
 
-  // ---------- Everyone's own colour picker (when the host allows) ----------
+  // ---------- Everyone's own color picker (when the host allows) ----------
 
   function renderMyColors() {
     els.myColorPop.innerHTML = "";
@@ -1115,7 +1115,7 @@
       const b = document.createElement("button");
       b.className = "hp-swatch" + (control.bannerColors?.[selfId] === hex ? " active" : "");
       b.style.background = hex;
-      b.setAttribute("aria-label", `My banner colour ${hex}`);
+      b.setAttribute("aria-label", `My banner color ${hex}`);
       b.onclick = () => {
         request("myBannerColor", { color: hex }).catch(() => {});
         els.myColorPop.hidden = true;
@@ -1144,7 +1144,7 @@
     const c = control.bannerColor || "#1e2127";
     els.grid.style.setProperty("--banner-c", c);
     els.grid.style.setProperty("--banner-fg", bannerFg(c));
-    // Per-person colours override the shared one on each tile
+    // Per-person colors override the shared one on each tile
     for (const [peerId, tile] of tiles) {
       const mine = control.bannerMulti ? control.bannerColors?.[peerId] : null;
       if (mine) {
@@ -1216,7 +1216,7 @@
   // ---------- Banner snapshots ----------
   // The mixer draws the show onto a canvas, and a canvas cannot lay out
   // HTML - so each lower-third and the logo/title block are redrawn here
-  // as images, in the same font and colours as the ones on screen.
+  // as images, in the same font and colors as the ones on screen.
 
   let bannerSnapTimer = null;
   function scheduleBannerImages() {
@@ -1333,7 +1333,7 @@
     x.textBaseline = "middle";
 
     if (row) {
-      // Logo one side, title the other, both vertically centred
+      // Logo one side, title the other, both vertically centered
       const logoX = layout === "left" ? padX : W - padX - logoW;
       const textStart = layout === "left" ? padX + logoW + gap : padX;
       x.drawImage(logo, logoX, (H - logoH) / 2, logoW, logoH);
@@ -1689,7 +1689,7 @@
       : "Recording light - lights up red when recording";
     if (isHost) {
       // Fixed-width labels: the button must never grow and shove its
-      // neighbours around when the timer appears
+      // neighbors around when the timer appears
       els.hpRecordBtn.textContent = on
         ? `■ ${fmtElapsed(Date.now() - recStartAt)}`
         : "● Record";
@@ -1879,7 +1879,7 @@
       recorders.push({ recorder, getQueue: () => queue, kind });
     };
 
-    // The host's browser draws and encodes the finished programme itself,
+    // The host's browser draws and encodes the finished program itself,
     // so the combined file needs no render on the server at all
     if (isHost) {
       const m = ensureMixer();
@@ -2032,7 +2032,7 @@
     request("hostControl", { action: "record", start: !recording })
       .catch((e) => console.error("record toggle failed:", e.message));
 
-  // ---------- The programme: the mixer the recording is drawn from ----------
+  // ---------- The program: the mixer the recording is drawn from ----------
   function ensureMixer() {
     if (mixer) return mixer;
     mixer = FSMixer.create({
@@ -2228,7 +2228,7 @@
       eventHandlers.consumerClosed = ({ consumerId }) => dropConsumer(consumerId);
       eventHandlers.control = (c) => applyControl(c);
       eventHandlers.theme = (t) => {
-        // The host switched the backdrop: colour and/or image
+        // The host switched the backdrop: color and/or image
         if (t.bg) els.grid.style.backgroundColor = t.bg;
         if (t.wallpaper) {
           els.grid.style.backgroundImage = `url(${t.wallpaper})`;
@@ -2322,7 +2322,7 @@
       eventHandlers.consumerClosed = ({ consumerId }) => dropConsumer(consumerId);
       eventHandlers.control = (c) => applyControl(c);
       eventHandlers.theme = (t) => {
-        // The host switched the backdrop: colour and/or image
+        // The host switched the backdrop: color and/or image
         if (t.bg) els.grid.style.backgroundColor = t.bg;
         if (t.wallpaper) {
           els.grid.style.backgroundImage = `url(${t.wallpaper})`;

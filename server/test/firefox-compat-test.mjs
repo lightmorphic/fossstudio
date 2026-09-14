@@ -130,7 +130,7 @@ const browser = await firefox.launch({ firefoxUserPrefs: FF_PREFS });
   // Noise suppression: the RNNoise AudioWorklet must load without error
   await host.page.evaluate(() => window.__noiseApplied);
   await host.page.waitForTimeout(500);
-  check("RNNoise AudioWorklet initialised without a console error (host)",
+  check("RNNoise AudioWorklet initialized without a console error (host)",
     !host.errors.some((e) => /worklet|AudioWorklet|noise/i.test(e)));
 
   check("no console errors during the call (host)", host.errors.length === 0);
