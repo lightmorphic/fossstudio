@@ -86,8 +86,16 @@ async function copyExampleAd() {
   }
 }
 
+// Settings an older install may still be carrying that nothing reads
+// any more. They stay on disk - somebody's file is not ours to rewrite -
+// but they are not handed back out, so a dead secret does not keep
+// arriving in a browser for no reason.
+const FORGOTTEN = ["fosscastUrl", "fosscastToken"];
+
 export async function getSettings() {
-  return { ...SETTINGS_DEFAULTS, ...(await readJson(FILE, {})) };
+  const stored = { ...SETTINGS_DEFAULTS, ...(await readJson(FILE, {})) };
+  for (const dead of FORGOTTEN) delete stored[dead];
+  return stored;
 }
 
 export async function updateSettings(patch) {
