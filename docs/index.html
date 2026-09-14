@@ -878,13 +878,14 @@
       - "3478:3478/udp"
       - "49160-49189:49160-49189/udp"
     <span class="k">volumes:</span>
+<span class="c">      # Mounted whole and read-only rather than reaching for the turn/</span>
+<span class="c">      # folder inside it: picking a subfolder out of a volume is a recent</span>
+<span class="c">      # Compose feature, and some panels refuse a file that uses it.</span>
       - type: volume
         <span class="k">source:</span> <span class="v">fossstudio_data</span>
-        <span class="k">target:</span> <span class="v">/etc/coturn</span>
+        <span class="k">target:</span> <span class="v">/studio</span>
         <span class="k">read_only:</span> <span class="v">true</span>
-        <span class="k">volume:</span>
-          <span class="k">subpath:</span> <span class="v">turn</span>
-    <span class="k">command:</span> <span class="v">["-c", "/etc/coturn/turnserver.conf"]</span>
+    <span class="k">command:</span> <span class="v">["-c", "/studio/turn/turnserver.conf"]</span>
 
 <span class="k">volumes:</span>
   <span class="k">fossstudio_data:</span>

@@ -60,13 +60,14 @@ services:
       - "3478:3478/udp"
       - "49160-49189:49160-49189/udp"
     volumes:
+      # Mounted whole and read-only rather than reaching for the turn/
+      # folder inside it: picking a subfolder out of a volume is a recent
+      # Compose feature, and some panels refuse a file that uses it.
       - type: volume
         source: fossstudio_data
-        target: /etc/coturn
+        target: /studio
         read_only: true
-        volume:
-          subpath: turn
-    command: ["-c", "/etc/coturn/turnserver.conf"]
+    command: ["-c", "/studio/turn/turnserver.conf"]
 
 volumes:
   fossstudio_data:
