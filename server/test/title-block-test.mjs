@@ -9,7 +9,7 @@
 // title.
 //   node test/title-block-test.mjs <url> <password>
 import { chromium } from "playwright";
-import { makeRoom } from "./helpers.mjs";
+import { makeRoom, solidPng } from "./helpers.mjs";
 import { titleWidth, TITLE_WIDTH_FRACTION } from "./layout.js";
 
 const B = process.argv[2] || "http://127.0.0.1:3993";
@@ -21,11 +21,21 @@ function check(label, ok, extra = "") {
   pass &&= ok;
 }
 
-// Block width as a fraction of the video area it sits in
+// Block width as a fraction of the video area it sits in, and the
+// margin either side of what is inside it - the part that must stay put
+// however long the words are.
 const measure = (page) => page.evaluate(() => {
   const b = document.getElementById("banner");
   const g = document.getElementById("grid");
-  return { w: b.getBoundingClientRect().width, grid: g.clientWidth };
+  const box = b.getBoundingClientRect();
+  const cs = getComputedStyle(b);
+  const kids = [...b.children].filter((el) => !el.hidden && el.getBoundingClientRect().width);
+  const left = kids.length ? Math.min(...kids.map((el) => el.getBoundingClientRect().left)) : box.left;
+  const right = kids.length ? Math.max(...kids.map((el) => el.getBoundingClientRect().right)) : box.right;
+  return {
+    w: box.width, grid: g.clientWidth, max: parseFloat(cs.maxWidth),
+    padLeft: +(left - box.left).toFixed(1), padRight: +(box.right - right).toFixed(1)
+  };
 });
 
 async function join(ctx, roomId, name, asHost) {
@@ -40,11 +50,17 @@ async function join(ctx, roomId, name, asHost) {
 }
 
 // The block's controls live in its right-click menu
+// Bigger and Smaller deliberately leave the menu open so it can be
+// pressed twice, so the test has to put it away before it touches the
+// block again - the menu opens at the pointer, which is the middle of
+// the block, and a narrow block sits entirely underneath it.
 async function menuClick(page, selector) {
   await page.click("#banner", { button: "right" });
   await page.waitForSelector("#titleMenu:not([hidden])", { timeout: 4000 });
   await page.click(selector);
   await page.waitForTimeout(400);
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(150);
 }
 
 const browser = await chromium.launch({
@@ -73,12 +89,16 @@ try {
   // The compositors' share of the frame is what the DOM must match
   const target = TITLE_WIDTH_FRACTION;
 
+  // The full width is what the recording draws a full block at. A block
+  // may be narrower than that when its words are short - that is the
+  // point - but never wider.
   for (const [who, page] of [["host", host], ["guest", guest]]) {
     const m = await measure(page);
-    const frac = m.w / m.grid;
+    const frac = m.max / m.grid;
     const driftPct = Math.abs(frac - target) / target * 100;
-    check(`${who}: block is ${(frac * 100).toFixed(1)}% of the video area (video uses ${(target * 100).toFixed(1)}%)`,
-      driftPct < 2, `${driftPct.toFixed(1)}% off`);
+    check(`${who}: the widest the block may go is ${(frac * 100).toFixed(1)}% of the video area ` +
+      `(the recording uses ${(target * 100).toFixed(1)}%)`, driftPct < 2, `${driftPct.toFixed(1)}% off`);
+    check(`${who}: the block is no wider than that`, m.w <= m.max + 1);
   }
 
   // Same fraction whatever the window size: the old viewport-unit sizing
@@ -87,7 +107,7 @@ try {
     await guest.setViewportSize({ width, height: 900 });
     await guest.waitForTimeout(300);
     const m = await measure(guest);
-    const frac = m.w / m.grid;
+    const frac = m.max / m.grid;
     const driftPct = Math.abs(frac - target) / target * 100;
     check(`guest at ${width}px: ${(frac * 100).toFixed(1)}% of the video area`,
       driftPct < 2, `${driftPct.toFixed(1)}% off`);
@@ -154,14 +174,17 @@ try {
 
   // --- logo position: left is the default, changes reach everyone ---
   // A second session whose theme carries a logo
-  const logoUp = await host.evaluate(async () => {
-    const b64 = "iVBORw0KGgoAAAANSUhEUgAAAAoAAAAECAYAAAC3OK7NAAAAFklEQVR4nGP8z8DwnwEPYMKnYDAoAADAgQMBVti6WgAAAABJRU5ErkJggg==";
-    const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+  // 300x100, a real logo's shape and bigger than the box it goes in.
+  // A tiny one is never scaled down by a browser, which would hide the
+  // whole question of whether the block fits its contents.
+  const logoBytes = [...solidPng("fbc711", 300, 100)];
+  const logoUp = await host.evaluate(async (bytes) => {
     const r = await fetch("/api/logo", {
-      method: "POST", headers: { "Content-Type": "image/png" }, body: bytes
+      method: "POST", headers: { "Content-Type": "image/png" },
+      body: Uint8Array.from(bytes)
     });
     return r.status;
-  });
+  }, logoBytes);
   check("logo uploaded for the layout checks", logoUp === 200, String(logoUp));
   const roomId2 = await makeRoom(B, PASS, "Layout Test");
   const host2 = await join(hostCtx, roomId2, "Host", true);
@@ -179,8 +202,53 @@ try {
   await host2.click('.tm-layout[data-layout="top"]');
   await host2.waitForTimeout(800);
   check("host moved the logo above the title", await layoutOf(host2) === "layout-top");
+
   check("guests follow the layout change", await layoutOf(guest2) === "layout-top",
     String(await layoutOf(guest2)));
+
+  // Back to the logo beside the title, which is where a short name used
+  // to sit at one end of a lane of empty background.
+  await menuClick(host2, '.tm-layout[data-layout="left"]');
+  await host2.waitForTimeout(600);
+
+  // What the screen shows and what the recording draws have to be the
+  // same shape. The block is drawn against a 532px design width and the
+  // mixer scales it by what it actually is, so a narrow block has to
+  // arrive narrow rather than stretched back out to a fixed width.
+  const shapes = await host2.evaluate(async () => {
+    const out = {};
+    const title = document.getElementById("bannerTitle");
+    const block = document.getElementById("banner");
+    for (const [name, text] of [["short", "Ash"], ["long", "The Longest Running Podcast About Everything"]]) {
+      title.textContent = text;
+      // Redrawn through the studio's own code, not a copy of it
+      const img = await window.__refreshTitle();
+      await new Promise((r) => setTimeout(r, 300));
+      const box = block.getBoundingClientRect();
+      const kids = [...block.children].filter((el) => !el.hidden && el.getBoundingClientRect().width);
+      out[name] = {
+        onScreen: +(box.width / box.height).toFixed(3),
+        padLeft: +(Math.min(...kids.map((el) => el.getBoundingClientRect().left)) - box.left).toFixed(1),
+        padRight: +(box.right - Math.max(...kids.map((el) => el.getBoundingClientRect().right))).toFixed(1),
+        drawn: img && img.naturalWidth ? +(img.naturalWidth / img.naturalHeight).toFixed(3) : null
+      };
+    }
+    return out;
+  });
+  console.log("   ", JSON.stringify(shapes));
+  check(`a short name makes a narrower block than a long one ` +
+    `(${shapes.short.onScreen} against ${shapes.long.onScreen})`,
+    shapes.short.onScreen < shapes.long.onScreen * 0.8);
+  check(`the margin either side does not move with the words ` +
+    `(${shapes.short.padLeft}/${shapes.short.padRight} against ${shapes.long.padLeft}/${shapes.long.padRight})`,
+    Math.abs(shapes.short.padLeft - shapes.long.padLeft) < 1 &&
+    Math.abs(shapes.short.padRight - shapes.long.padRight) < 1);
+  for (const name of ["short", "long"]) {
+    check(`the ${name} block the recording draws is the shape the screen shows ` +
+      `(${shapes[name].drawn} against ${shapes[name].onScreen})`,
+      shapes[name].drawn !== null &&
+      Math.abs(shapes[name].drawn - shapes[name].onScreen) / shapes[name].onScreen < 0.06);
+  }
 } catch (err) {
   check(`test run: ${err.message}`, false);
 } finally {

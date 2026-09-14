@@ -32,12 +32,12 @@ export const SETTINGS_DEFAULTS = {
   bg: null,
   logo: null,
   // The one question most people have: what the finished video of
-  // everyone should be. The rest only applies when the separate files
-  // per person are wanted too, which they are by default - that is what
-  // the studio is for - but plenty of people want one file to upload
-  // and nothing else.
+  // everyone should be. A fresh studio answers no to the rest, because
+  // most people want one file to upload somewhere and nothing else -
+  // and because the parts are what fills a disk. Anybody who is going
+  // to edit says yes once and never thinks about it again.
   showFormat: "mp4",
-  separateFiles: true,
+  separateFiles: false,
   audioFormats: ["wav"],
   cameraFormats: ["mp4"]
 };
@@ -80,6 +80,11 @@ export async function migrateSettings() {
   // twenty-four times as much to disk without being told.
   if (current?.recordingQuality && !current.audioFormats) {
     next.audioFormats = current.recordingQuality === "smaller" ? ["opus"] : ["wav"];
+    // A studio already running was getting a track per person, and a
+    // new default of no must not quietly take that away from it. Only
+    // a studio with no settings at all starts with the simple answer.
+    next.separateFiles = true;
+    next.cameraFormats = ["mp4"];
     changed = true;
   }
   delete next.recordingQuality;

@@ -27,6 +27,9 @@
   const RAD = Math.round(W * (16 / 1280));
   const STRIP = 0.16;
   const TITLE_W = 286 / 1280;
+  // The width drawTitlePng() designs against; a block narrower than this
+  // is narrower on the frame by the same proportion.
+  const TITLE_DESIGN_W = 532;
   const TITLE_TOP_INSET = 14;
 
   const even = (v) => Math.max(2, 2 * Math.floor(v / 2));
@@ -276,7 +279,12 @@
       if (title && title.naturalWidth) {
         const pos = c.titlePos || { x: 0.5, y: 0 };
         const scale = Math.min(2, Math.max(0.5, Number(c.titleScale) || 1));
-        const tw = Math.round(W * TITLE_W * scale / 2) * 2;
+        // The block is drawn against a 532px design width and comes back
+        // narrower when the words are short, so it is scaled by what it
+        // actually is rather than stretched to a fixed width. Stretching
+        // it was what put a lane of empty background beside a short name.
+        const full = W * TITLE_W * scale;
+        const tw = Math.round(full * (title.naturalWidth / TITLE_DESIGN_W) / 2) * 2;
         const th = tw * title.naturalHeight / title.naturalWidth;
         const px = Number(pos.x) || 0, py = Number(pos.y) || 0;
         x.drawImage(title, (W - tw) * px, (H - th) * py + TITLE_TOP_INSET * (1 - py), tw, th);

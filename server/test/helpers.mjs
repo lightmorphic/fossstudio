@@ -44,8 +44,11 @@ export async function makeRoom(base, password = STUDIO.password, title = "Automa
 // A one-pixel PNG of a given color, for the tests that need an image to
 // upload. Written here rather than generated, so the suite needs nothing
 // installed beyond node and a browser.
-export function solidPng(hex = "fbc711") {
-  // A 1x1 truecolour PNG: header, IHDR, IDAT holding one raw pixel, IEND.
+export function solidPng(hex = "fbc711", width = 1, height = 1) {
+  // A truecolour PNG of one color: header, IHDR, IDAT holding the raw
+  // scanlines, IEND. A size is worth giving when the test is about how
+  // the picture is fitted into a box - a 1x1 is never scaled down by a
+  // browser, so it hides every question about fitting.
   const rgb = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
   const crcTable = [...Array(256)].map((_, n) => {
     let c = n;
@@ -66,11 +69,13 @@ export function solidPng(hex = "fbc711") {
     return Buffer.concat([len, body, sum]);
   };
   const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(1, 0); ihdr.writeUInt32BE(1, 4);
+  ihdr.writeUInt32BE(width, 0); ihdr.writeUInt32BE(height, 4);
   ihdr[8] = 8; ihdr[9] = 2; // 8-bit truecolour
-  // one scanline: filter byte 0, then the pixel - stored uncompressed in
-  // a zlib block, so there is no deflate to write
-  const raw = Buffer.from([0, ...rgb]);
+  // Each scanline: a filter byte 0, then the pixels - stored
+  // uncompressed in one zlib block, so there is no deflate to write
+  const row = [0];
+  for (let i = 0; i < width; i++) row.push(...rgb);
+  const raw = Buffer.from(Array.from({ length: height }, () => row).flat());
   const z = Buffer.concat([
     Buffer.from([0x78, 0x01, 0x01]),
     Buffer.from([raw.length & 0xff, raw.length >> 8, ~raw.length & 0xff, (~raw.length >> 8) & 0xff]),

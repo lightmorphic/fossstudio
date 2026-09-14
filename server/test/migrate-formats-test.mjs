@@ -64,5 +64,17 @@ for (const [was, wanted] of [["smaller", "opus"], ["best", "wav"]]) {
   fs.rmSync(dir, { recursive: true, force: true });
 }
 
+// A studio with nothing stored at all is a new one, and a new one gets
+// the simple answer: the video of everyone and nothing else.
+{
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "fossstudio-migrate-"));
+  const run = spawnSync(process.execPath, [new URL(import.meta.url).pathname, dir], { encoding: "utf8" });
+  if (run.status !== 0) throw new Error(`migration child failed: ${run.stderr}`);
+  const after = JSON.parse(run.stdout);
+  check("a brand new studio keeps only the video of everyone", after.separateFiles === false);
+  check(`and it is an MP4 (${after.showFormat})`, after.showFormat === "mp4");
+  fs.rmSync(dir, { recursive: true, force: true });
+}
+
 console.log(pass ? "ALL PASS" : "SOME CHECKS FAILED");
 process.exit(pass ? 0 : 1);

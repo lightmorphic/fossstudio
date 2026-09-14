@@ -129,9 +129,14 @@ if (rec?.status === "ready") {
   // the lower-third is the red we picked: both drawn by the host's
   // browser, so finding them proves the mixer put them in the video.
   const url = `/api/recordings/${encodeURIComponent(rec.id)}/files/${encodeURIComponent(everyone)}`;
+  // Not "anything but the camera": a frame with no block on it at all is
+  // black there, and black passed that. The block's own background is a
+  // dark gray, so this asks for gray - three channels close together and
+  // none of them at the ends.
   const title = await probeMedia(player, url, { at: 5, crop: { x: 620, y: 40, w: 40, h: 10 } });
+  const [tr, tg, tb] = title.rgb || [];
   check(`episode title drawn top-center (rgb ${title.rgb})`,
-    title.ok && !(title.rgb[1] > 100 && title.rgb[0] < 60 && title.rgb[2] < 60));
+    title.ok && Math.max(tr, tg, tb) - Math.min(tr, tg, tb) < 30 && tr > 12 && tr < 120);
   const banner = await probeMedia(player, url, { at: 5, crop: { x: 40, y: 505, w: 30, h: 8 } });
   check(`name banner drawn into the video (rgb ${banner.rgb})`,
     banner.ok && banner.rgb[0] > 140 && banner.rgb[0] - banner.rgb[1] > 60 && banner.rgb[0] - banner.rgb[2] > 60);

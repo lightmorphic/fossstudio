@@ -1269,6 +1269,15 @@
   // HTML - so each lower-third and the logo/title block are redrawn here
   // as images, in the same font and colors as the ones on screen.
 
+  // Redraw the name banners and the title block now, and hand back the
+  // block the recording would use. The shape of that PNG and the shape
+  // of the block on screen drifting apart is invisible until somebody
+  // watches the finished video, so a test can ask for both.
+  window.__refreshTitle = async () => {
+    await refreshBannerImages(true);
+    return titleImg;
+  };
+
   let bannerSnapTimer = null;
   function scheduleBannerImages() {
     if (!isHost || !recording) return;
@@ -1309,10 +1318,16 @@
     if (title) {
       if (titleImg?.src !== title) { titleImg = new Image(); titleImg.src = title; }
     } else titleImg = null;
+    window.__titleImage = titleImg;
   }
 
-  // The logo/title block for the composite, drawn at a 532px design
-  // width. Every measurement here has a matching ratio in session.css
+  // The design width the block is drawn at. A full one is exactly this
+  // wide; a short one is narrower, and the mixer scales whatever it gets
+  // against this number so both land at the same size on the frame.
+  const TITLE_DESIGN_W = 532;
+
+  // The logo/title block for the composite, drawn at up to a 532px
+  // design width. Every measurement here has a matching ratio in session.css
   // (via --title-w), including the four logo positions, and the block
   // is content-height exactly like the DOM one - so the video shows
   // the same block the session did.
@@ -1321,37 +1336,37 @@
     const hasLogo = !logo.hidden && logo.complete && logo.naturalWidth > 0;
     const layout = ["left", "right", "top", "bottom"].includes(control?.titleLayout)
       ? control.titleLayout : "left";
-    const W = 532, r = 16, padX = 16, padY = 14;
+    const MAX_W = TITLE_DESIGN_W, r = 16, padX = 16, padY = 14;
     const row = hasLogo && text && (layout === "left" || layout === "right");
-    const innerW = W - 2 * padX;
+    const maxInnerW = MAX_W - 2 * padX;
 
     // Row layouts box the logo at 30% width; column layouts let it
     // span the block - both mirror the CSS ratios exactly
     let logoW = 0, logoH = 0;
     if (hasLogo) {
-      const boxW = row ? W * 0.3008 : 500;
-      const boxH = row ? W * 0.1203 : 100;
+      const boxW = row ? MAX_W * 0.3008 : 500;
+      const boxH = row ? MAX_W * 0.1203 : 100;
       const fit = Math.min(boxW / logo.naturalWidth, boxH / logo.naturalHeight);
       logoW = logo.naturalWidth * fit;
       logoH = logo.naturalHeight * fit;
     }
 
-    const gap = row ? W * 0.015 : 4;
-    const textW = row ? innerW - logoW - gap : innerW;
+    const gap = row ? MAX_W * 0.015 : 4;
+    const roomForText = row ? maxInnerW - logoW - gap : maxInnerW;
     const font = hasLogo ? "700 30px Manrope, sans-serif" : "700 40px Manrope, sans-serif";
     const lineH = hasLogo ? Math.round(30 * 1.15) : Math.round(40 * 1.2);
     const meas = document.createElement("canvas").getContext("2d");
     meas.font = font;
     let lines = [];
     if (text && hasLogo) {
-      lines = [ellipsize(meas, text, textW)];
+      lines = [ellipsize(meas, text, roomForText)];
     } else if (text) {
       // Text-only: wrap to at most three larger lines, like the DOM's
       // -webkit-line-clamp: 3
       let line = "";
       for (const word of text.split(/\s+/)) {
         const next = line ? `${line} ${word}` : word;
-        if (meas.measureText(next).width > textW && line) {
+        if (meas.measureText(next).width > roomForText && line) {
           lines.push(line);
           line = word;
         } else line = next;
@@ -1361,9 +1376,19 @@
         lines = lines.slice(0, 3);
         lines[2] += "…";
       }
-      lines = lines.map((l) => ellipsize(meas, l, textW));
+      lines = lines.map((l) => ellipsize(meas, l, roomForText));
     }
     const titleH = lines.length * lineH;
+
+    // The block is as wide as what is in it, and no wider. A short name
+    // beside a logo used to leave a lane of empty background between
+    // them because the width was fixed; the margin either side is the
+    // same whatever is in there, which is the part that must not move.
+    const textW = Math.min(roomForText,
+      lines.length ? Math.max(...lines.map((l) => meas.measureText(l).width)) : 0);
+    const W = Math.round(Math.min(MAX_W, row
+      ? padX + logoW + gap + textW + padX
+      : padX + Math.max(logoW, textW) + padX));
 
     const H = Math.round(row
       ? Math.max(logoH, titleH) + 2 * padY

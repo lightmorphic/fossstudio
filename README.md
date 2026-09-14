@@ -77,19 +77,21 @@ and you never will.
   lower a raised hand, start and stop recording, and two overlays -
   a subscribe reminder and your own advertising banner - that everyone
   sees and the recording keeps.
-- **Recording:** each person is recorded in their own browser, on their
-  own track, and uploaded as it is made. Nothing on the server ever
-  opens a recording - there is no media tool in the image and nothing
-  decodes a sample - so the box stays quiet however full the room is.
+- **Recording:** the host's browser draws and encodes the video of
+  everyone, and each person can be recorded in their own browser on a
+  track of their own as well, uploaded as it is made. Nothing on the
+  server ever opens a recording - there is no media tool in the image
+  and nothing decodes a sample - so the box stays quiet however full the
+  room is.
 - **One question, then the rest only if you want it.** Settings, Formats
   asks what the finished **video of everyone** should be - **MP4
   (H.264)**, **WebM VP8**, **VP9** or **AV1** - and then whether you
-  want a file for each person as well. Say no and a recording is one
-  file. Say yes and you pick what those are: **WAV**, every sample as
-  the microphone heard it at about **1.4 GB per person per hour**, or
-  **Opus** at about **58 MB**, and the same four for the cameras. The
-  screen adds up what a show of your size comes to before you record
-  rather than after. **Read this before a long show.**
+  want a file for each person as well. A new studio says no, so a
+  recording is one file. Say yes and you pick what those are: **WAV**,
+  every sample as the microphone heard it at about **1.4 GB per person
+  per hour**, or **Opus** at about **58 MB**, and the same four for the
+  cameras. The screen adds up what a show of your size comes to before
+  you record rather than after. **Read this before a long show.**
 - **Whoever hosts decides the video of everyone.** Their browser draws
   the show and encodes it; no guest's browser touches that file. So an
   MP4 needs the host on Chrome or Edge, and a host on Firefox gets WebM

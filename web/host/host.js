@@ -621,8 +621,14 @@
   }
 
   // What the answers add up to, in the shape of a real show.
+  // Only worth showing when there is something to add up. With one file
+  // a recording there is no sum: the number beside the choice above is
+  // the whole answer, and a box asking how many people are coming is a
+  // question with no bearing on it.
   function sumUp() {
     if (!catalog) return;
+    $("formatSum").hidden = !chosen.separateFiles;
+    if (!chosen.separateFiles) return;
     const people = Math.max(1, Math.min(10, Number($("sumPeople").value) || 1));
     const hours = Math.max(1, Math.min(8, Number($("sumHours").value) || 1));
     const lines = [];
@@ -633,19 +639,17 @@
       total += bytes;
       lines.push([`The video of everyone, ${show.label}`, bytes]);
     }
-    if (chosen.separateFiles) {
-      for (const f of catalog.audio) {
-        if (!chosen.audio.includes(f.id)) continue;
-        const bytes = f.bytesPerHour * people * hours;
-        total += bytes;
-        lines.push([`${f.label}, ${people} ${people === 1 ? "track" : "tracks"}`, bytes]);
-      }
-      for (const f of catalog.video) {
-        if (!chosen.camera.includes(f.id)) continue;
-        const bytes = catalog.cameraBytesPerHour * people * hours;
-        total += bytes;
-        lines.push([`${f.label}, ${people} ${people === 1 ? "camera" : "cameras"}`, bytes]);
-      }
+    for (const f of catalog.audio) {
+      if (!chosen.audio.includes(f.id)) continue;
+      const bytes = f.bytesPerHour * people * hours;
+      total += bytes;
+      lines.push([`${f.label}, ${people} ${people === 1 ? "track" : "tracks"}`, bytes]);
+    }
+    for (const f of catalog.video) {
+      if (!chosen.camera.includes(f.id)) continue;
+      const bytes = catalog.cameraBytesPerHour * people * hours;
+      total += bytes;
+      lines.push([`${f.label}, ${people} ${people === 1 ? "camera" : "cameras"}`, bytes]);
     }
     $("sumTotal").textContent =
       `About ${saidSize(total)} for a ${hours}-hour show with ${people} ${people === 1 ? "person" : "people"}`;
