@@ -30,7 +30,7 @@
       { id: "library", label: "Library" }
     ] },
     { id: "settings", label: "Settings", subs: [
-      { id: "recording", label: "Recording" },
+      { id: "recording", label: "Audio" },
       { id: "place", label: "Studio address" },
       { id: "themes", label: "Themes" },
       { id: "banner", label: "Ad Banner" },
