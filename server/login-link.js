@@ -17,7 +17,7 @@ await initConfig();
 const account = await ensureAccount();
 if (!account) {
   console.error("This studio has no owner yet, so there is nobody to sign in as.\n" +
-    "Start it and look in its log for the setup code, then claim it in a browser.");
+    "Open it in a browser and choose a password first.");
   process.exit(1);
 }
 const token = await mintLink(account.id);

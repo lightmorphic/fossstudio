@@ -16,7 +16,7 @@ import {
 import { getAccount, updateAccount, claimAccount, hasAccount } from "./account.js";
 import {
   isClaimed, setupCodeMatches, clearSetupCode, saveSetup, getSetup,
-  passwordProblem, suggestPassphrase, MIN_PASSWORD, isLocalRequest
+  passwordProblem, suggestPassphrase, MIN_PASSWORD, needsCode
 } from "./setup.js";
 import { publicIpProblem } from "./config.js";
 import {
@@ -48,21 +48,22 @@ function requireAuth(req, res, next) {
 // Whether this studio has an owner yet, which is all an unauthenticated
 // caller learns here. A studio that has one says so and nothing more.
 //
-// needsCode is about the caller, not about the studio: opened on the
-// machine the studio runs on there is nothing left for a code to prove,
-// so the page drops that step. See isLocalRequest for how that is
-// decided and why a header never comes into it.
+// needsCode is false on every ordinary install: the first person to
+// open the studio claims it. It is true only where somebody has set
+// REQUIRE_SETUP_CODE, and then only for a request that did not come
+// from the machine itself. See needsCode in setup.js for why a header
+// never comes into that.
 api.get("/setup/state", async (req, res) => {
   res.json({
     claimed: await isClaimed(),
     minPassword: MIN_PASSWORD,
-    needsCode: !isLocalRequest(req)
+    needsCode: needsCode(req)
   });
 });
 
 // A passphrase to take or ignore. Harmless to hand out: it is random
-// every time and becomes a password only if somebody also holds the
-// setup code and uses it.
+// every time, and it becomes a password only if somebody sets it as
+// one, which can happen once in the life of an install.
 api.get("/setup/passphrase", (req, res) => {
   res.json({ passphrase: suggestPassphrase() });
 });
@@ -76,16 +77,15 @@ api.post("/setup/check-password", (req, res) => {
 
 // Claiming the studio, which happens once in the life of an install:
 // afterwards this route refuses everybody, from this machine as much as
-// from anywhere else.
+// from anywhere else. That is the gate that matters, and it is the
+// account file rather than anything the browser sends.
 //
-// The gate is the code printed in the log - being able to read this
-// machine's log is the proof that the machine is yours - except when
-// the request came from the machine itself, where opening the
-// connection at all is the same proof. That is decided here on the
-// server; a browser saying it is local counts for nothing.
+// Where REQUIRE_SETUP_CODE is set there is a code in front of it as
+// well, decided here on the server; a browser saying it is local counts
+// for nothing.
 api.post("/setup/claim", async (req, res) => {
   if (await hasAccount()) return res.status(409).json({ error: "This studio already has an owner." });
-  if (!isLocalRequest(req) && !setupCodeMatches(req.body.code)) {
+  if (needsCode(req) && !setupCodeMatches(req.body.code)) {
     return res.status(403).json({
       error: "That is not the setup code. It is printed in this studio's log when it starts - " +
         "run `docker compose logs app` on the machine and look for the box near the end."

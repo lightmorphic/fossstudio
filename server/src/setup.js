@@ -1,22 +1,27 @@
 // First run: claiming the studio, and the rules for the password.
 //
-// A setup page anybody can reach is a studio anybody can own. Whoever
-// finds the address first sets the password and the person who paid for
-// the server is locked out of their own machine. So the page asks for a
-// code the studio prints in its log when it starts and keeps nowhere
-// else: `docker compose logs app` is a command every self-hoster can
-// run, and being able to run it is the proof that the box is yours.
+// Whoever opens the studio first sets the password, and it is theirs.
+// There is no code to find, nothing to copy out of a log, nothing to
+// type. That is how Jellyfin, Immich and Home Assistant all work, and
+// it is what a person installing self-hosted software expects.
 //
-// The code lives in memory for the life of the process. It is never
-// written down, so a stolen backup does not contain it, and it changes
-// every time the studio restarts.
+// It was not always so. The studio used to print a code in its log and
+// ask for it, skipping the step only when the browser reached it on
+// loopback. In Docker the browser is outside the container, so the
+// connection crosses Docker's network and is never loopback however
+// close you are sitting - which meant every documented install still
+// had a code to find, which is the thing that was meant to go.
 //
-// The code has one job: to prove the person at the browser is the
-// person who owns the machine. A request that arrives on the loopback
-// address has already proved that - nothing but this machine can open a
-// connection to 127.0.0.1 - so opening the studio on the machine it
-// runs on skips the code entirely and goes straight to choosing a
-// password. From anywhere else the code applies exactly as before.
+// What is given up: between the studio starting and you opening the
+// page, anybody who can reach that address can claim it. On a home
+// network that is a minute with nobody looking. On a server with the
+// port open to the internet it is a real window, and for that there is
+// REQUIRE_SETUP_CODE - see codeRequired below - or simply keeping the
+// port shut until you have claimed it.
+//
+// The code, when it is asked for, lives in memory for the life of the
+// process. It is never written down, so a stolen backup does not
+// contain it, and it changes every time the studio restarts.
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -71,8 +76,32 @@ export async function isClaimed() {
 // Printed once, on a start where nobody owns the studio yet. Said in
 // full sentences because the person reading it is looking at a wall of
 // container output and has to be able to find it.
+//
+// With the code off - the default - there is no code in this log and no
+// code anywhere else. The line is still worth printing: it tells
+// somebody who has just started the studio that it is waiting to be
+// claimed, and it says out loud that the address is claimable until
+// they do it.
 export async function announceSetup() {
   if (await isClaimed()) return null;
+  if (!codeRequired()) {
+    console.log([
+      "",
+      "  ------------------------------------------------------------",
+      "  This studio has no owner yet.",
+      "",
+      "  Open it in a browser and choose a password. The first person",
+      "  to do that owns it - there is no code to find.",
+      "",
+      "  Until you have, anybody who can reach this address could",
+      "  claim it instead. On a machine open to the internet, keep the",
+      "  port shut until you have done it, or set REQUIRE_SETUP_CODE=1",
+      "  and restart to be asked for a code from the log.",
+      "  ------------------------------------------------------------",
+      ""
+    ].join("\n"));
+    return null;
+  }
   setupCode = `${crypto.randomInt(0, 1000).toString().padStart(3, "0")}-` +
     `${crypto.randomInt(0, 1000).toString().padStart(3, "0")}`;
   console.log([
@@ -80,9 +109,8 @@ export async function announceSetup() {
     "  ------------------------------------------------------------",
     "  This studio has no owner yet.",
     "",
-    "  Open it in a browser on this machine and it will simply ask you",
-    "  to choose a password. Opening it from another machine, it asks",
-    "  for this code first:",
+    "  REQUIRE_SETUP_CODE is set, so the page asks for this code",
+    "  before it will let anyone choose a password:",
     "",
     `      ${setupCode}`,
     "",
@@ -120,31 +148,33 @@ export function isLoopbackAddress(address) {
     ip.split(".").every((n) => Number(n) <= 255);
 }
 
-// The whole of the decision, in one place, erring on the side of asking.
+// The escape hatch, off unless somebody turns it on.
+//
+// REQUIRE_SETUP_CODE=1 puts the code back for the install that cannot
+// afford the open minute: a studio whose port is on the internet before
+// anybody has claimed it. It is in the environment rather than in the
+// settings because there is nobody to have settings until the studio
+// has been claimed.
+export function codeRequired() {
+  return /^(1|true|yes|on|always)$/i.test(String(process.env.REQUIRE_SETUP_CODE || ""));
+}
+
+// Whether this particular request has to produce the code.
 //
 // The address is taken from the socket, never from a header: a header
-// is written by whoever is in front and X-Forwarded-For: 127.0.0.1 costs
-// a stranger nothing. Taken from the socket, a loopback address means
-// the connection was opened on this machine.
+// is written by whoever is in front and X-Forwarded-For: 127.0.0.1
+// costs a stranger nothing. Taken from the socket, a loopback address
+// with no sign of a relay means the connection was opened on this
+// machine, and somebody sitting at the machine has already proved
+// everything a code could prove - so even with the hatch on, they are
+// not asked.
 //
-// The one case where that is not enough is a reverse proxy running on
-// this same machine and reaching the studio over loopback: then every
-// request in the world arrives from 127.0.0.1 and the shortcut would
-// hand the studio to the first passer-by. There is no way to see past
-// a relay that says nothing about itself, so anything that looks like
-// one - any of the headers above - means the code is asked for. Caddy,
-// nginx, Apache and Traefik all set X-Forwarded-For by default, and the
-// bundled Caddy reaches the app across the compose network rather than
-// loopback, so its requests are not loopback in the first place.
-//
-// REQUIRE_SETUP_CODE=1 turns the shortcut off for anybody whose proxy
-// strips those headers and shares this machine. It is in the
-// environment rather than in the settings because there is nobody to
-// have settings until the studio has been claimed.
-export function isLocalRequest(req) {
-  if (/^(1|true|yes|always)$/i.test(String(process.env.REQUIRE_SETUP_CODE || ""))) return false;
-  if (PROXY_HEADERS.some((h) => req.headers?.[h] !== undefined)) return false;
-  return isLoopbackAddress(req.socket?.remoteAddress);
+// Every other request is asked, including one from a reverse proxy on
+// this same machine reaching us over loopback: there the address on the
+// socket is the proxy's and proves nothing about who is really there,
+// which is why any of the headers above puts the code back.
+export function needsCode(req) {
+  return codeRequired() && !isLocalRequest(req);
 }
 
 export function clearSetupCode() { setupCode = null; }

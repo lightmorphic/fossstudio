@@ -8,8 +8,8 @@
   function show(id) {
     ["stepCode", "stepLogin", "stepPasskey", "stepTwoFactor", "stepPlace", "stepDone"]
       .forEach(function (s) {
-        // stepCode is taken out of the page altogether when the studio
-        // is being set up on the machine it runs on.
+        // stepCode is taken out of the page altogether unless the
+        // studio has been set to ask for a code.
         var el = $(s);
         if (el) el.hidden = s !== id;
       });
@@ -32,10 +32,10 @@
   }
 
   // A studio somebody already owns has no business showing this page.
-  // And the studio, not the browser, decides whether a code is wanted:
-  // reached on the machine it is running on there is nothing left for
-  // one to prove, so the step is removed rather than hidden. Nobody
-  // should have to wonder what a grayed-out box was for.
+  // And the studio, not the browser, decides whether a code is wanted -
+  // ordinarily it is not, and then the step is removed rather than
+  // hidden. Nobody should have to wonder what a grayed-out box was
+  // for, or go looking in a log for a code that was never printed.
   fetch("/api/setup/state").then(function (r) { return r.json(); }).then(function (s) {
     if (s.claimed) return void (location.href = "/host/login.html");
     if (s.needsCode) return show("stepCode");
@@ -45,7 +45,7 @@
     show("stepLogin");
   });
 
-  // ---- 1. the code -------------------------------------------------
+  // ---- 1. the code, on the installs that ask for one ---------------
   // It is only checked when the password is set, because checking it
   // twice would mean holding it in the page in between. So this step
   // just carries it forward.

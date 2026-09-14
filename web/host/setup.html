@@ -11,11 +11,12 @@
   <div class="panel setup" id="setup">
     <h1 style="font-size:1.4rem; margin-bottom:0.4rem"><span class="foss">FOSS</span>Studio</h1>
 
-    <!-- 1. proving the machine is yours. Hidden until the studio has
-         said whether it is needed: opened on the machine the studio
-         runs on, this whole section is taken out of the page. -->
+    <!-- 1. the setup code, which most people never see: it is here
+         only for an install that has REQUIRE_SETUP_CODE set. Hidden
+         until the studio has said it wants one, and taken out of the
+         page altogether when it does not. -->
     <section id="stepCode" hidden>
-      <p>This studio has no owner yet. The first person to set a password owns it, so it asks for a code before it will let anyone.</p>
+      <p>This studio has no owner yet, and it has been set to ask for a code before it will let anyone claim it.</p>
       <p class="hint" style="margin-bottom:1rem">The code is printed in the studio's own log when it starts, and nowhere else. On the machine running it:</p>
       <p class="cmd"><code>docker compose logs app</code></p>
       <p class="hint" style="margin-bottom:1rem">Look for the box near the end. The code changes every time the studio restarts.</p>
@@ -32,7 +33,7 @@
       <!-- Shown only when there was no code step in front of this, so
            the page does not open on a username box that reads like an
            ordinary login. -->
-      <p id="noOwnerYet" hidden>This studio has no owner yet, and you are at the machine it is running on, so it is yours to claim.</p>
+      <p id="noOwnerYet" hidden>This studio has no owner yet, so it is yours to claim. Set a password and it is.</p>
       <p>Choose how you will get back in. You can add a passkey in a moment; the password is what saves you if you ever lose it.</p>
       <div class="field">
         <label for="username">Username</label>
