@@ -209,6 +209,11 @@ for (const r of await fetch(`${B}/api/recordings`, { headers: { Cookie: cookie }
   }
 }
 
+// The session goes too: it was made for the pictures and a studio that
+// has had this run on it a few times should not end up with a list of
+// identical episodes.
+await fetch(`${B}/api/sessions/${encodeURIComponent(room.id)}`, { method: "DELETE", headers: { Cookie: cookie } });
+
 // ---------- PNG to JPEG ----------
 
 const conv = await chromium.launch();
