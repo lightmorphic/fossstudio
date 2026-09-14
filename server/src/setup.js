@@ -177,6 +177,16 @@ export function needsCode(req) {
   return codeRequired() && !isLocalRequest(req);
 }
 
+// Did this request come from the machine the studio is running on?
+//
+// The address is taken from the socket, never from a header, and any
+// sign of a relay in front means the answer is no whatever the socket
+// says - see PROXY_HEADERS above.
+export function isLocalRequest(req) {
+  if (PROXY_HEADERS.some((h) => req.headers?.[h] !== undefined)) return false;
+  return isLoopbackAddress(req.socket?.remoteAddress);
+}
+
 export function clearSetupCode() { setupCode = null; }
 
 export function setupCodeMatches(given) {
