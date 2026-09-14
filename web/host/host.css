@@ -74,10 +74,17 @@ h2 { font-size: 1.0625rem; font-weight: 600; margin-bottom: 0.75rem; }
 
 .shell {
   display: flex;
+  gap: 1.25rem;
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
+  padding: 1.25rem;
 }
+/* The menu is a card that floats with a gap around it, not a slab
+   pinned to the edge of the window - pinned, it made the whole product
+   look shoved to the left (Charlie, 14 September 2026). It is still the
+   full height of the window, which was the other half of what he asked
+   for: a card that stops where its contents stop looks unfinished. */
 .sidebar {
   flex: 0 0 var(--menu-w);
   width: var(--menu-w);
@@ -85,21 +92,31 @@ h2 { font-size: 1.0625rem; font-weight: 600; margin-bottom: 0.75rem; }
   flex-direction: column;
   height: 100%;
   overflow-y: auto;
-  padding: 1.5rem 1rem 1.25rem;
+  padding: 1.4rem 1rem 1.25rem;
   background: var(--panel);
-  border-right: 1px solid var(--panel-border);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--panel-radius);
+  box-shadow: var(--shadow-panel);
 }
+/* The wordmark and the credit line at the foot are set to the same
+   measure, so the column has one left edge and one right edge from top
+   to bottom. The sidebar is a container, so the name scales with it
+   rather than being a number that only works at one width. */
+.sidebar { container-type: inline-size; }
 .sidebar .wordmark {
-  font-size: 1.65rem;
-  margin-bottom: 1.5rem;
+  font-size: 17.6cqi;
+  margin-bottom: 1.4rem;
   flex: 0 0 auto;
+  white-space: nowrap;
 }
 .workspace {
   flex: 1 1 auto;
   min-width: 0;
   height: 100%;
   overflow-y: auto;
-  padding: 1.5rem 1.5rem 3rem;
+  /* The shell already holds the gap; the work only needs room at the
+     foot so the last panel is not flush against the window. */
+  padding: 0 0.25rem 3rem;
 }
 .workspace > * { max-width: 64rem; }
 .topbar {
@@ -172,6 +189,9 @@ h2 { font-size: 1.0625rem; font-weight: 600; margin-bottom: 0.75rem; }
 /* The credit closes the sidebar, under the foot block and the rule that
    ends it - the quiet end of the column rather than a band stuck across
    the page. */
+/* The credit's first line is tracked out to the same measure as the
+   wordmark above it, so the column reads with one edge on each side. */
+.sponsor .said { display: block; letter-spacing: 0.118em; }
 .sponsor {
   flex: 0 0 auto;
   margin: 0.9rem 0 0;
@@ -200,14 +220,13 @@ h2 { font-size: 1.0625rem; font-weight: 600; margin-bottom: 0.75rem; }
    rows: the same thirteen pages in four bands, the group headings
    taking a line of their own so the grouping survives. */
 @media (max-width: 820px) {
-  .shell { display: block; height: auto; overflow: visible; }
+  .shell { display: block; height: auto; overflow: visible; padding: 1rem; }
   .sidebar {
     width: auto;
     height: auto;
     overflow: visible;
-    border-right: 0;
-    border-bottom: 1px solid var(--panel-border);
     padding: 1rem 1rem 0.9rem;
+    margin-bottom: 1rem;
   }
   .sidebar .wordmark { font-size: 1.5rem; margin-bottom: 0.8rem; }
   .mainmenu, .menu-foot {
@@ -225,7 +244,7 @@ h2 { font-size: 1.0625rem; font-weight: 600; margin-bottom: 0.75rem; }
   .menu-head, .menu-foot .menu-head { margin: 0.7rem 0 0.1rem; padding: 0; }
   .menu-foot hr { margin: 0.6rem 0 0.2rem; }
   .sponsor { margin-top: 0.8rem; padding-top: 0.7rem; }
-  .workspace { height: auto; overflow: visible; padding: 1.25rem 1rem 3rem; }
+  .workspace { height: auto; overflow: visible; padding: 0 0 2rem; }
 }
 .grid-2 {
   display: grid;
