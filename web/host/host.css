@@ -103,17 +103,20 @@ h2 { font-size: 1.0625rem; font-weight: 600; margin-bottom: 0.75rem; }
   border-radius: var(--panel-radius);
   box-shadow: var(--shadow-panel);
 }
-/* The wordmark and the credit line at the foot are set to the same
-   measure, so the column has one left edge and one right edge from top
-   to bottom. The sidebar is a container, so the name scales with it
-   rather than being a number that only works at one width. */
+/* The wordmark is sized to the width the credit line takes at the foot
+   of the card, and both are centered. The sidebar is a container, so
+   the name scales with it rather than being a number that only works at
+   one width. */
 .sidebar { container-type: inline-size; }
 .sidebar .wordmark {
-  font-size: 17.6cqi;
+  font-size: 14.2cqi;
   margin-bottom: 1.4rem;
   flex: 0 0 auto;
   white-space: nowrap;
+  text-align: center;
 }
+.sponsor { text-align: center; }
+.sponsor a { justify-content: center; }
 .workspace {
   flex: 1 1 auto;
   min-width: 0;
@@ -194,9 +197,10 @@ h2 { font-size: 1.0625rem; font-weight: 600; margin-bottom: 0.75rem; }
 /* The credit closes the sidebar, under the foot block and the rule that
    ends it - the quiet end of the column rather than a band stuck across
    the page. */
-/* The credit's first line is tracked out to the same measure as the
-   wordmark above it, so the column reads with one edge on each side. */
-.sponsor .said { display: block; letter-spacing: 0.118em; }
+/* The credit sets its own width; the wordmark above is sized to match
+   it, and both sit centered in the card. Stretching the words to fit
+   was the wrong way round - the sentence is the fixed thing. */
+.sponsor .said { display: block; }
 .sponsor {
   flex: 0 0 auto;
   margin: 0.9rem 0 0;
