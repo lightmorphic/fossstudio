@@ -29,6 +29,10 @@
 
     <!-- 2. the login -->
     <section id="stepLogin" hidden>
+      <!-- Shown only when there was no code step in front of this, so
+           the page does not open on a username box that reads like an
+           ordinary login. -->
+      <p id="noOwnerYet" hidden>This studio has no owner yet, and you are at the machine it is running on, so it is yours to claim.</p>
       <p>Choose how you will get back in. You can add a passkey in a moment; the password is what saves you if you ever lose it.</p>
       <div class="field">
         <label for="username">Username</label>

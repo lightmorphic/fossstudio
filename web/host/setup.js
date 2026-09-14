@@ -35,12 +35,13 @@
   // And the studio, not the browser, decides whether a code is wanted:
   // reached on the machine it is running on there is nothing left for
   // one to prove, so the step is removed rather than hidden. Nobody
-  // should have to wonder what a greyed-out box was for.
+  // should have to wonder what a grayed-out box was for.
   fetch("/api/setup/state").then(function (r) { return r.json(); }).then(function (s) {
     if (s.claimed) return void (location.href = "/host/login.html");
     if (s.needsCode) return show("stepCode");
     var step = $("stepCode");
     if (step) step.remove();
+    $("noOwnerYet").hidden = false;
     show("stepLogin");
   });
 

@@ -39,6 +39,26 @@ for (const [label, path, opts] of [
   check(`${label} is not a thing (${res.status})`, res.status === 404);
 }
 
+// The sign-up itself, which happens once in the life of an install.
+// Loopback skips the setup code now (see setup-test), and this is the
+// half of that which must never move: skipping the code is not a way to
+// sign up again. From this machine, with no cookie at all, the screen is
+// a 404 and the route behind it refuses.
+for (const [label, path, opts, want] of [
+  ["the setup screen", "/host/setup.html", {}, 404],
+  ["claiming it again", "/api/setup/claim", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username: "second", password: "plum-lantern-vault-drift-onyx" })
+  }, 409]
+]) {
+  const res = await fetch(`${B}${path}`, { redirect: "manual", ...opts });
+  check(`${label} is refused on a claimed studio, from this machine (${res.status})`,
+    res.status === want);
+}
+const claimed = await (await fetch(`${B}/api/setup/state`)).json();
+check("and it still says it has an owner", claimed.claimed === true);
+
 // And the account file is still one account afterwards
 const before = await (await signedIn("/api/me")).json();
 check("still the same one account", before.username === me.username);

@@ -120,7 +120,7 @@ export function isLoopbackAddress(address) {
     ip.split(".").every((n) => Number(n) <= 255);
 }
 
-// The whole of the decision, in one place, erring towards asking.
+// The whole of the decision, in one place, erring on the side of asking.
 //
 // The address is taken from the socket, never from a header: a header
 // is written by whoever is in front and X-Forwarded-For: 127.0.0.1 costs
