@@ -2271,8 +2271,17 @@
         selfTile.analyser = selfAn;
       }
       applyMirror();
+      // Somebody in the list can leave between the join reply being
+      // written and our getting round to their producers - a guest
+      // closing a tab, or a window stepping aside for a newer one. That
+      // is a tile we will not draw, not a reason to throw away our own
+      // join, so each one is taken on its own and a missing producer is
+      // noted and passed over. peerLeft tidies up behind it.
       for (const p of info.peers) {
-        for (const prod of p.producers) await consumeProducer(p.id, prod.id, prod.source);
+        for (const prod of p.producers) {
+          await consumeProducer(p.id, prod.id, prod.source)
+            .catch((e) => console.warn(`nothing to consume from ${p.name}:`, e.message));
+        }
       }
 
       eventHandlers.peerJoined = (p) => makeTile(p.id, p.name, false, p.tagline, p.role === "host");
@@ -2365,9 +2374,14 @@
         request("connectTransport", { transportId: recvTransport.id, dtlsParameters })
           .then(cb).catch(eb);
       });
+      // As in join(): a peer who left while we were connecting is not a
+      // reason to abandon the clean feed
       for (const p of info.peers) {
         makeTile(p.id, p.name, false, p.tagline, p.role === "host");
-        for (const prod of p.producers) await consumeProducer(p.id, prod.id, prod.source);
+        for (const prod of p.producers) {
+          await consumeProducer(p.id, prod.id, prod.source)
+            .catch((e) => console.warn(`nothing to consume from ${p.name}:`, e.message));
+        }
       }
       eventHandlers.peerJoined = (p) => makeTile(p.id, p.name, false, p.tagline, p.role === "host");
       eventHandlers.peerLeft = ({ peerId }) => removeTile(peerId);
