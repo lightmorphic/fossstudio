@@ -1,13 +1,11 @@
 # Contributing
 
-**FOSSStudio is in public beta. During the beta: bug reports and
-discussion yes, code contributions no.**
+**Bug reports and discussion yes, code contributions not yet.**
 
 ## What we want, and want badly
 
-- **Bug reports.** This is a beta and it will break. Telling us what
-  you did and what happened is worth more to us right now than a patch
-  would be.
+- **Bug reports.** Telling us what you did and what happened is worth
+  more to us than a patch would be.
 - **Security reports.** See `SECURITY.md`. Please report privately.
 - **Ideas and questions.** Open a discussion. Tell us what is missing,
   what is confusing, what you expected to find and did not. We may well
@@ -30,10 +28,10 @@ file.
 If you want to change FOSSStudio for your own use, fork it. The AGPL gives
 you that right and you do not need our permission.
 
-## After the beta
+## What changes, and when
 
-The beta rule is temporary. When FOSSStudio reaches 1.0 proper, one of
-two things will happen here, and this file will say which:
+This rule is temporary. One of two things will happen here, and this
+file will say which:
 
 1. **A contributor agreement.** A short document you sign once, saying
    the code is yours to give and that Lightmorphic may use it under any
@@ -45,13 +43,13 @@ two things will happen here, and this file will say which:
 
 The first keeps the hosted service possible. The second keeps the
 project simpler. Which one it is has not been decided, and it will not
-be decided quietly.
+be decided quietly. Until it is, pull requests stay closed.
 
 ## If you send code anyway
 
 Sometimes people paste a fix into a bug report, or send a patch by
-email. We would rather that did not happen during the beta, but if you
-do send us code, by sending it you agree to the following:
+email. We would rather that did not happen, but if you do send us code,
+by sending it you agree to the following:
 
 > You confirm the code is yours to give, that you wrote it, and that no
 > employer or other party has a claim on it. You give Lightmorphic an

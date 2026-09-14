@@ -16,10 +16,11 @@
 > files: it does not publish a podcast, does not broadcast, does not
 > edit, and has no screen sharing.
 
-Version 0.1.0, a public beta. It is not ready to be relied on: data loss
-and breaking changes are possible, and nobody should put a show or a
-meeting they cannot record again on it yet. Releases are marked as
-pre-release on GitHub.
+Version 1.0.0. The media path has been proven with every browser on one
+machine; two people on different networks is ordinary WebRTC through
+mediasoup with a relay behind it, and should be fine, but has not been
+watched working. As with any studio: record a test session first, and
+keep a second recording running for anything that truly matters.
 
 - Home: https://fossstudio.org/
 - Source and README: https://github.com/lightmorphic/fossstudio

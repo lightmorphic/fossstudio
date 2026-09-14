@@ -2,7 +2,81 @@
 
 All notable changes to FOSSStudio are documented here.
 
-## Unreleased
+## 1.0.0 - 2026-09-14
+
+**The number changes what the words mean.** Until today this said
+beta, and beta meant: install it, break it, and do not put anything you
+cannot lose on it. That warning is gone from the README, the website
+and the runbook, because it is no longer the honest description. What
+has not changed is the advice underneath it - record a test session
+before a real one, and keep a second recording running for anything
+that truly matters. That is not a beta rule; it is what anybody sane
+does with any studio.
+
+One thing is still unproven and is said here rather than left for
+somebody to discover: the media path has only ever been exercised with
+every browser on one machine. Two people in different houses is the
+normal case and it should be fine - it is ordinary WebRTC through
+mediasoup with a relay behind it - but nobody has watched it work.
+
+**One question about formats, and the rest folded away.** The settings
+used to offer one choice with two answers, and the picture was not a
+choice at all. Now the first question is the only one most people have:
+what should the finished video of everyone be - MP4 with H.264, or
+WebM with VP8, VP9 or AV1. Then a plain yes or no: do you want a file
+for each person as well. A new studio says no, so a recording is one
+file; say yes and you pick what the tracks and cameras are, as many
+formats at once as you like, each written at the same time as its own
+file. The sizes are added up in front of you before the show - people,
+hours, a line per format - because the moment to learn that a choice is
+fifty gigabytes is not afterwards.
+
+Every format offered is one a browser writes itself. There is no
+encoder on the server and never will be, so the screen says which
+browsers can write each one rather than presenting the list as a
+judgment of ours. **Whoever hosts decides the video of everyone**: that
+file is drawn and encoded in the host's browser and no guest's browser
+touches it, so an MP4 needs the host on Chrome or Edge, and a host on
+Firefox gets WebM however it is set. The recording says so beside the
+file when that happens, and says whose browser fell short of anything
+else that was asked for.
+
+The sound formats stay two on purpose. A late joiner's track is padded
+with silence so it lines up with everybody else's, done by copying
+bytes rather than encoding them, and that works on raw samples and on
+Opus packets and nothing else. Offering AAC would mean tracks that do
+not line up - the fault the padding exists to prevent.
+
+**MP4 rather than WebM, where the browser can write one.** The video
+used to come back as a WebM box with H.264 inside it, a mix the WebM
+format does not allow and some editors refuse outright.
+
+**Two things were quietly missing from recordings.** The advertising
+banner and the subscribe reminder both played on screen and reached no
+recording at all: the mixer was looking for a name the page had stopped
+using. And the text-only title block threw on every redraw, which took
+the block and every name banner out of the video with it. Both are
+fixed, and both are now checked by reading the actual recorded pixels
+rather than by looking at the page.
+
+**The ad banner is the size it is meant to be.** It was sized against
+the browser window rather than the picture, so a 1200-wide banner
+arrived about 400 wide with text nobody could read. It now takes the
+same share of the video that the recording gives it.
+
+**The logo and title block fits its words.** A short name beside a logo
+sat at one end of a lane of empty background. The box wraps its
+contents now, with the same margin either side whatever is in it, and
+the recording draws it at the shape the screen shows.
+
+**The green room preview starts the right way round.** It was mirrored
+by default, so the picture flipped the moment you joined - a setting
+that reads as a fault. The mirror button still turns it on and the
+choice is still remembered.
+
+**Saved is a tick, not a green box.** Confirmation appears at the card
+that changed, with no background and nothing arriving from elsewhere on
+the page.
 
 **It is for meetings too, and the site now says so from the first
 line.** A podcast and a meeting are the same thing until the end - a

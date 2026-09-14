@@ -143,16 +143,23 @@ export async function probeMedia(page, url, { at = 5, crop = null } = {}) {
       out.at = v.currentTime;
     }
 
-    // A WebM the browser wrote while recording often has no duration in
-    // its header; seeking far past the end makes the browser work it out.
-    if (!isFinite(v.duration)) {
-      await new Promise((resolve) => {
-        v.onseeked = resolve;
-        v.currentTime = 1e6;
-        setTimeout(resolve, 3000);
-      });
-    }
-    out.duration = isFinite(v.duration) ? v.duration : 0;
+    // A WebM the browser wrote while recording carries no duration in
+    // its header - nothing knew the length while it was being written -
+    // and a browser may answer either infinity or the length of the
+    // first chunk it read. Both are wrong, and the second is worse
+    // because it looks like an answer: an eight-second recording came
+    // back claiming two. Seeking far past the end makes the browser
+    // work the real length out, and the longer of the two readings is
+    // the honest one - a seek on a file that does have a duration just
+    // clamps to it.
+    const said = isFinite(v.duration) ? v.duration : 0;
+    await new Promise((resolve) => {
+      v.onseeked = resolve;
+      try { v.currentTime = 1e6; } catch { resolve(); }
+      setTimeout(resolve, 3000);
+    });
+    const seeked = isFinite(v.duration) ? v.duration : 0;
+    out.duration = Math.max(said, seeked);
     v.remove();
     return out;
   }, { url, at, crop });

@@ -230,18 +230,6 @@
   img { max-width: 100%; height: auto; display: block; }
   .wrap { max-width: 72rem; margin: 0 auto; padding: 0 1.4rem; }
 
-  /* ---------- the beta strip ---------- */
-  /* A panel and words, no painted color. First thing on the page,
-     above the desk, because somebody deciding whether to trust this
-     with a show needs it before anything else we have to say. */
-  .beta-strip {
-    background: var(--panel);
-    border-bottom: 1px solid var(--line);
-    padding: 0.8rem 0;
-  }
-  .beta-strip p { margin: 0; font-size: 0.95rem; line-height: 1.55; }
-  .beta-strip .quiet { color: var(--muted); }
-
   /* ---------- top bar: the desk ---------- */
   .desk {
     position: sticky;
@@ -651,16 +639,6 @@
 </head>
 <body>
 <a class="skip" href="#show">Skip to content</a>
-
-<aside class="beta-strip">
-  <div class="wrap">
-    <p><b>FOSSStudio is in public beta and is not ready to be relied
-    on.</b> Data loss and breaking changes are possible, so please do not
-    put a real show or a meeting that matters on it yet.
-    <span class="quiet">Install it, break it, and tell us what happened -
-    that is exactly what we want right now.</span></p>
-  </div>
-</aside>
 
 <div class="desk">
   <div class="desk-in">

@@ -296,6 +296,17 @@
     setTimeout(() => { audio.srcObject = null; }, 1500);
   };
 
+  // What is running, asked of the server rather than typed into the
+  // page. A number written by hand in two places is a number that goes
+  // wrong in one of them.
+  fetch("/version")
+    .then((r) => r.json())
+    .then(({ version }) => {
+      const el = document.getElementById("hpBuild");
+      if (el && version) el.textContent = `Version ${version}`;
+    })
+    .catch(() => {});
+
   // ---------- Mirror ----------
 
   // Off to start with. The mirror is for the preview only, so having it

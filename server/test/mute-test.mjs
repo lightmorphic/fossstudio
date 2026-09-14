@@ -95,14 +95,27 @@ check("Mute all button back to normal",
 await host.click("#hpMuteAllBtn");
 await new Promise((r) => setTimeout(r, 1200));
 
-// Host unmutes Gus from the panel
-await host.$$eval(".hp-guest .mute", (btns) => {
-  const b = btns.find((x) => x.textContent === "Unmute");
+// Host unmutes one guest from the panel. The buttons are icons with
+// tooltips now, so the state is in aria-pressed rather than in a word -
+// which is why this check sat failing: it was looking for the text of a
+// button that had not carried any since the panel was redrawn.
+// The host's own row is first in the panel, so a search for "somebody
+// muted" finds the host before it finds a guest. Skip it.
+await host.$$eval(".hp-guest:not(:first-child) .mute", (btns) => {
+  const b = btns.find((x) => x.getAttribute("aria-pressed") === "true");
   b && b.click();
 });
 await new Promise((r) => setTimeout(r, 1200));
-const unmutedCount = await host.$$eval(".hp-guest .mute", (btns) => btns.filter((b) => b.textContent === "Mute").length);
+const unmutedCount = await host.$$eval(".hp-guest:not(:first-child) .mute",
+  (btns) => btns.filter((b) => b.getAttribute("aria-pressed") === "false").length);
 check(`host unmuted one guest from the panel (${unmutedCount} now unmuted)`, unmutedCount >= 1);
+
+// And the guest's own browser agrees - the panel saying so is not the
+// same as their microphone actually being live again.
+const guestLive = await Promise.all([g1, g2].map((p) =>
+  p.evaluate(() => !document.querySelector("#muteBtn").classList.contains("off"))));
+check(`the guest's own browser is unmuted too (${guestLive.filter(Boolean).length} of 2)`,
+  guestLive.some(Boolean));
 
 console.log(pass ? "ALL PASS" : "SOME CHECKS FAILED");
 await browser.close();

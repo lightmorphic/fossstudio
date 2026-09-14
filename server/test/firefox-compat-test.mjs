@@ -6,7 +6,7 @@
 // with whatever codec Firefox's MediaRecorder actually picks.
 //
 // Usage: node test/firefox-compat-test.mjs <url> <password>
-import { firefox } from "playwright";
+import { chromium, firefox } from "playwright";
 import fs from "node:fs";
 import { studioLogin, makeRoom, STUDIO, probeMedia } from "./helpers.mjs";
 
@@ -78,11 +78,17 @@ const browser = await firefox.launch({ firefoxUserPrefs: FF_PREFS });
   // without ever leaving a broken-looking control or throwing.
   const spk = await page.evaluate(() => ({
     sinkSupported: "setSinkId" in HTMLMediaElement.prototype,
-    disabled: document.getElementById("spkSelect").disabled
+    disabled: document.getElementById("spkSelect").disabled,
+    options: document.getElementById("spkSelect").options.length
   }));
-  console.log(`    Firefox setSinkId support: ${spk.sinkSupported}`);
-  check("speaker selector's enabled state matches this Firefox's actual setSinkId support",
-    spk.disabled === !spk.sinkSupported);
+  console.log(`    Firefox setSinkId support: ${spk.sinkSupported}, ` +
+    `${spk.options} speaker${spk.options === 1 ? "" : "s"} offered`);
+  // A picker with one thing in it is rightly dead whatever the browser
+  // can do - that is not the same as the browser being unable, and
+  // asking only about setSinkId failed this check on a machine with
+  // one speaker.
+  check("speaker selector is enabled exactly when it can do something",
+    spk.disabled === (!spk.sinkSupported || spk.options <= 1));
   // Zoom: getCapabilities().zoom is normally undefined on Firefox -
   // confirm the app treats that as "no hardware zoom" without throwing
   await page.evaluate(() => document.getElementById("zoomSlider").value = "2");
@@ -159,6 +165,18 @@ const browser = await firefox.launch({ firefoxUserPrefs: FF_PREFS });
   check("Firefox supports at least one recordable audio format", mediaRecorderChoice.audio !== "NONE SUPPORTED");
   check("Firefox supports at least one recordable video format", mediaRecorderChoice.video !== "NONE SUPPORTED");
 
+  // This test is about what Firefox can write, so it has to ask for the
+  // parts: a new studio keeps only the video of everyone.
+  const setup = await studioLogin(B, PW);
+  await fetch(`${B}/api/settings`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", Cookie: setup },
+    body: JSON.stringify({
+      showFormat: "vp8", separateFiles: true,
+      audioFormats: ["opus"], cameraFormats: ["vp8"]
+    })
+  });
+
   await host.page.click("#hpRecordBtn");
   await host.page.waitForTimeout(8000);
   await host.page.click("#hpRecordBtn");
@@ -178,12 +196,23 @@ const browser = await firefox.launch({ firefoxUserPrefs: FF_PREFS });
   check(`a track per person came back (${mine.length})`, mine.length >= 1);
 
   if (rec?.status === "ready" && everyone) {
-    // Played in Chromium rather than probed with a media tool: what
-    // matters is that a file recorded in Firefox opens somewhere else.
-    const probe = await probeMedia(host.page,
+    // Played in Chromium, not in Firefox: the point of the check is that
+    // a file Firefox wrote opens somewhere else. It used to be played
+    // back in the same Firefox that made it, which proved nothing about
+    // that and could not read the length of its own headerless WebM.
+    const other = await chromium.launch();
+    const otherCtx = await other.newContext();
+    const otherPage = await otherCtx.newPage();
+    await otherPage.goto(`${B}/host/login.html`);
+    await otherPage.fill("#username", STUDIO.username);
+    await otherPage.fill("#password", PW);
+    await otherPage.click("button[type=submit]");
+    await otherPage.waitForURL("**/host/");
+    const probe = await probeMedia(otherPage,
       `${B}/api/recordings/${rec.id}/files/${encodeURIComponent(everyone)}`);
-    check(`${everyone} from a Firefox source plays and is full length (${probe.duration?.toFixed(1)}s)`,
+    check(`${everyone} from a Firefox source plays in Chromium, full length (${probe.duration?.toFixed(1)}s)`,
       probe.ok && probe.duration > 6);
+    await other.close();
   }
 
   await host.ctx.close();

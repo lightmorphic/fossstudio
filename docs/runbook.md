@@ -1,10 +1,5 @@
 # FOSSStudio Runbook
 
-> **This project is in public beta.** It is not ready to be relied on;
-> data loss and breaking changes are possible. Please do not put a real
-> show on it yet. This document describes the beta as it stands and will
-> change with it.
-
 Plain-language guide for keeping FOSSStudio running. **Almost everything
 lives in the dashboard** - https://YOUR-DOMAIN/host/ → System tab.
 This file is for when the dashboard itself is unreachable.

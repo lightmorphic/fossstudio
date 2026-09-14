@@ -1,18 +1,3 @@
-> ## Public beta. Not ready to be relied on.
->
-> **This is a public beta. It is not ready to be relied on. Data loss
-> and breaking changes are possible. Please do not put a real show, or
-> a meeting that matters, on it yet.**
->
-> We want people to install it, break it and tell us what happened.
-> That is what a beta is for. What we are not ready for is being the
-> only thing standing between you and a recording you cannot make
-> again. Record a test session first, and keep a second recording
-> running for anything that matters.
->
-> Releases are marked as pre-release on GitHub. The current version is
-> `0.1.0`.
-
 # FOSSStudio
 
 Self-hosted video studio for podcasts and meetings. Guests join by link
@@ -25,6 +10,14 @@ differs is what you do with the files: publish them, or keep them.
 Nobody needs an account, there is no charge per seat and no time limit
 on a session, and the recording lands on the server you control and
 goes nowhere else.
+
+**Before a show that matters**, record a test session and check the
+files. That is ordinary studio practice rather than a warning about
+this one, but there is a thing worth knowing: every browser used to
+prove the media path so far has been on a single machine. Two people
+in different houses is ordinary WebRTC through mediasoup with a relay
+behind it and should be fine - it just has not been watched working,
+and the install notes tell you how to check yours before you need it.
 
 ## Free, and staying free
 
@@ -205,15 +198,14 @@ records, and it does not broadcast it.
 ## Reporting a problem
 
 - **Something broken, something confusing, something missing:** open an
-  issue on GitHub. During the beta this is the most useful thing you
-  can do. Tell us what you did, what you expected and what happened.
-  If it is a media problem (people join but see a black screen), run
-  the setup check described below and paste what it says.
+  issue on GitHub. Tell us what you did, what you expected and what
+  happened. If it is a media problem (people join but see a black
+  screen), run the setup check described below and paste what it says.
 - **A security problem:** please report it privately first.
   [SECURITY.md](SECURITY.md) says how.
-- **Code:** we are not merging pull requests during the beta.
-  [CONTRIBUTING.md](CONTRIBUTING.md) explains why in full, and says what
-  changes after the beta.
+- **Code:** we are not merging pull requests yet - a contributor
+  agreement has to be in place first. [CONTRIBUTING.md](CONTRIBUTING.md)
+  explains why in full.
 
 ## License
 
