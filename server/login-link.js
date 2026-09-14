@@ -7,9 +7,19 @@
 // Inside the container: docker compose exec app node login-link.js
 import { ensureAccount } from "./src/account.js";
 import { mintLink } from "./src/loginlinks.js";
-import { config } from "./src/config.js";
+import { config, initConfig } from "./src/config.js";
+import { setSetupDir } from "./src/setup.js";
 
+// The domain is a setting now, so this has to read the studio's own
+// files before it can say where the link points.
+setSetupDir(config.dataDir);
+await initConfig();
 const account = await ensureAccount();
+if (!account) {
+  console.error("This studio has no owner yet, so there is nobody to sign in as.\n" +
+    "Start it and look in its log for the setup code, then claim it in a browser.");
+  process.exit(1);
+}
 const token = await mintLink(account.id);
 const scheme = config.domain === "localhost" ? `http://localhost:${config.httpPort}` : `https://${config.domain}`;
 console.log(`${scheme}/link/${token}`);

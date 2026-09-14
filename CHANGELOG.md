@@ -2,6 +2,106 @@
 
 All notable changes to FOSSStudio are documented here.
 
+## Unreleased
+
+**Every track is the full length of the take.** A guest who joins five
+minutes late used to hand you a track that started at zero along with
+everybody else's, so every word in it sat five minutes early; a guest
+who dropped out for ten seconds came back as a stranger and got a second
+file, because a person was known by their connection and a connection is
+new every time. Now a browser keeps an id for itself and the room and
+presents it on every join, a reconnect continues the same take, and the
+gaps are filled with silence at the end. One file per person, the full
+length of the take, lining up in an editor with nothing to drag.
+
+The silence is manufactured without an encoder, which is the only reason
+it could be done at all: an uncompressed .webm holds the float samples
+themselves, so silence is zeroes and the file is repackaged as a .wav,
+and an Opus .webm holds whole Opus packets, so silence is the three-byte
+packet the standard reserves for it and the file becomes an .ogg.
+Nothing is decoded either way. The finished audio is therefore a .wav or
+an .opus rather than a .webm, which is also what an editor wants:
+Audacity opens both on its own and needs an extra library for anything
+in a .webm.
+
+The id is deliberately not taken from the session link - links get
+shared, and two people on one link have to stay two people. Somebody
+coming back on a different device, or on a browser whose site data was
+cleared, is honestly a new person and gets a second track; the dashboard
+says so beside it rather than leaving the host to wonder.
+
+Cameras are the exception. A picture of nothing still has to be encoded
+and there is no encoder here, so each stretch of camera keeps its own
+file and is told where in the take it starts. The sound beside it is
+still the full length.
+
+**A recording quality setting.** Settings, Recording offers Best quality
+- every sample as the microphone heard it, about 1.4 GB per person per
+hour - or Smaller files, very good for speech at about 54 MB. It never
+says a codec name, because the point is the thing most people have never
+been told: a file ending .webm is a box, and the same box holds either
+of those. Best quality is the default. The choice is pinned when a take
+starts, so a setting changed halfway through cannot leave one person's
+track in a different form from everybody else's. Firefox cannot record
+uncompressed at all - said in one line beside the setting, and marked
+beside any track it happened to.
+
+**Setup happens in the studio, not in a compose file.** The domain, the
+public address, the login and both secrets are gone from it; what is
+left is the image, the ports and the volume, and the one-paste install
+now has nothing in it to fill in. The studio makes its own secrets on
+the first start and keeps them in its data folder, so nobody generates
+one with openssl and nobody pastes one anywhere. The relay is a separate
+container that cannot read the studio's settings, so the studio writes
+the relay's config file for it - same secret, same public address, and
+neither in a file anybody edits.
+
+Claiming the studio had to be closed at the same time, because a setup
+page anybody can reach is a studio the first stranger to find it owns.
+The code that claims it is printed in the log on a start where nobody
+owns it, held in memory for the life of the process, and written
+nowhere: being able to run `docker compose logs app` is the proof that
+the machine is yours.
+
+The password rule is enforced rather than advised. Twelve characters,
+and a check against the ones people actually choose, so password123 is
+refused as "password" with numbers on the end rather than for being a
+character short. No rules about capitals and symbols - they produce
+Password1! and teach nobody anything. A passphrase is offered beside the
+box and one click takes it, and every refusal says what would pass.
+
+**Passkeys.** The browser or phone keeps the private key and the studio
+stores only the public half, so a stolen data folder yields nothing that
+can be used to log in, and there is no password to phish. Verified on
+the server rather than taken on the browser's word: the challenge is the
+one we issued, the domain is ours, and the signature checks out, ES256
+or RS256. A passkey belongs to the domain it was made on, so moving the
+studio kills it - which is why a strong password stays as the way back
+in rather than disappearing. Two-factor is offered in the same minute as
+the password, because nobody comes back to do it later.
+
+An existing install keeps working and is never sent through setup.
+HOST_PASSWORD left in somebody's compose file is still honoured, and the
+log says once where that belongs now.
+
+**A help page inside the studio**, at /help, behind the login, with
+nothing on it fetched from anywhere else - a self-hosted box may have no
+internet, and a website describes whatever is current rather than what
+somebody installed. Each section starts with the question a person is
+actually asking. Why can nobody hear anything; what is really in the
+file; which quality to choose; why HTTPS is not optional and the several
+ways to get a certificate, Caddy being one of them rather than the way;
+how much disk a show takes; the setup code, passkeys and what to do when
+locked out; what happens to a guest who joins late or drops out. Every
+setting that needs explaining has a plain link straight to its own
+section.
+
+Two-factor still shows its secret as text and a link to an authenticator
+app rather than a code to scan. A QR has to be drawn in the page -
+sending the secret to a QR service is not an option - and there was no
+way on this machine to prove a generated one actually scans. A picture
+that might not work is worse than no picture.
+
 ## 0.1.0 - 2026-09-13
 
 The first release, and the number says what it is: a beta.

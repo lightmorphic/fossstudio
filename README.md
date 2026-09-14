@@ -49,8 +49,12 @@ and you never will.
   connections. Choices are remembered for next time.
 - **One account:** an install is one person's studio. One login runs
   the sessions, holds the recordings, sets the look and looks after the
-  box, all from the one dashboard at `/host/`; it can be locked with a
-  second factor. There is no way to make a second account, because a
+  box, all from the one dashboard at `/host/`. You set the password the
+  first time you open the studio - at least twelve characters, and not
+  one of the ones everybody guesses - and can add a passkey, so the
+  private key stays on your own device and a stolen data folder yields
+  nothing to log in with, and a second factor on top. There is no way to
+  make a second account, because a
   second person who wants a studio runs their own copy - the licence is
   there for exactly that. Guests need no account at all, which is the
   whole point of the link. The dashboard can have a domain of its own
@@ -62,15 +66,30 @@ and you never will.
   a subscribe reminder and your own advertising banner - that everyone
   sees and the recording keeps.
 - **Recording:** each person is recorded in their own browser, on their
-  own track, and uploaded as it is made. Nothing here converts anything,
-  so what you download is the file that browser wrote: a `.webm` file
-  per person. **Read this before a long show.** In a Chromium-based
-  browser such as Chrome, Brave or Edge the audio inside is
-  uncompressed, which sounds better and is very large: about **1.4 GB
-  per person per hour**, so a two-hour show with four people is over
-  11 GB. Other browsers record Opus instead, which is a fraction of the
-  size. A camera track is whatever the browser's own encoder makes of
-  the picture.
+  own track, and uploaded as it is made. Nothing on the server ever
+  opens a recording - there is no media tool in the image and nothing
+  decodes a sample - so the box stays quiet however full the room is.
+- **What is in the file, as a choice you make.** A `.webm` is a box, and
+  the name on the box says nothing about what is inside it. Settings,
+  Recording offers **Best quality** - every sample as the microphone
+  heard it, about **1.4 GB per person per hour**, so a two-hour show
+  with four people is over 11 GB - or **Smaller files**, very good for
+  speech at about **54 MB per person per hour**. Best quality is the
+  default. **Read this before a long show.** Firefox cannot record
+  uncompressed at all, so a guest on it comes back compressed whatever
+  you choose, and the Recordings list says so beside their track.
+- **Every track is the full length of the take.** Somebody who joins
+  five minutes late has five minutes of silence at the front of theirs,
+  so it still starts at zero and lines up with everybody else's with
+  nothing to drag. Somebody who drops out and comes back is the same
+  person on the same track, with the time away as silence in the middle
+  of one file rather than a second file. The audio arrives as a `.wav`
+  or an `.opus` - the same audio the browser recorded, repackaged
+  rather than re-encoded, in a form an editor opens without an extra
+  library. A camera track is whatever the browser's own encoder made of
+  the picture, one file per stretch, each told where in the take it
+  starts, because silence can be manufactured without an encoder and a
+  picture of nothing cannot.
 - **One video of the whole thing:** while a take is running, the host's
   browser also draws the show as everyone sees it onto a 1280x720
   canvas, mixes every voice into one track and encodes it. That arrives
@@ -227,27 +246,43 @@ the ranges, so instances never collide.)
 
 **The one-paste install.** Save
 [`quickstart-compose.yml`](quickstart-compose.yml) as
-`docker-compose.yml` anywhere on the server, fill in the five values
-at the top (domain, IP, a password, two random secrets), and:
+`docker-compose.yml` anywhere on the server, and:
 
 ```bash
 docker compose up -d
+docker compose logs app
 ```
 
-Nothing else: no clone, no `.env`, no config files. The app image
-builds straight from this repository (the web pages ship inside it),
-Caddy fetches your HTTPS certificate by itself, and the studio is at
-your domain - sign in as `admin` with the password you set. Change
-either in the dashboard; or change `HOST_PASSWORD` in the compose file
-and restart, because the file is read on every start and wins.
+There is nothing to fill in. The file holds the image, the ports and the
+volume; the domain, the login and the secrets are settings inside the
+studio. It makes its own secrets on the first start and keeps them in
+its data volume, so nobody generates one with `openssl` and nobody
+pastes one anywhere.
+
+The log prints a setup code. Open your domain in a browser, give it the
+code, and the studio asks for the password you want, offers you a
+passkey and two-factor, and asks where it lives. The code proves the
+machine is yours - without it, the first stranger to find the address
+would own your studio - and it is held in memory only, so a restart
+prints a new one and losing it costs nothing.
+
+The password is enforced rather than advised: at least twelve
+characters, and not one of the ones everybody guesses. There are no
+rules about capitals and symbols. A passphrase is offered beside the
+box if you would rather not think of one.
+
+Everything on that screen is in Settings afterwards, and the studio's
+own help page is at `/help` on your install - it works with no internet
+connection and describes the version you have.
 
 **The full checkout** (for hacking on it, or the deploy-from-a-dev-box
 flow): clone the repo, and then
 
 1. On a fresh server, `bash scripts/server-setup.sh` installs Docker,
    sets the firewall and creates the folder layout.
-2. Copy `.env.example` to `.env` and fill it in (domain, public IP,
-   secrets; each value is explained in the file).
+2. Copy `.env.example` to `.env` if you want to change any of the
+   defaults - ports, where the data folder lives, who may reach the web
+   port. There are no secrets in it and the stack runs without one.
 3. Start the stack:
 
 ```bash
@@ -292,12 +327,13 @@ settings make it work:
   `0.0.0.0` or the published port reaches nothing.) The app must never
   be reachable from the open internet directly: cameras and cookies
   only work through the HTTPS front door.
-- `PUBLIC_IP` stays this machine's public IPv4, and the UDP ranges
-  (3478, 40000-40003, 49160-49189) stay open **here**, not on the
-  proxy box - media doesn't follow the proxy.
-- `TURN_HOST` - set it to an address that reaches this machine
-  directly. `DOMAIN` now resolves to the proxy, so without this the
-  relay traffic would knock on the wrong door.
+- **This server's public address** (Settings, Studio address) stays this
+  machine's public IPv4, and the UDP ranges (3478, 40000-40003,
+  49160-49189) stay open **here**, not on the proxy box - media doesn't
+  follow the proxy.
+- **The relay address** (same screen) - set it to an address that
+  reaches this machine directly. The domain now resolves to the proxy,
+  so without this the relay traffic would knock on the wrong door.
 
 The Nginx block below is then identical, with `proxy_pass` pointing
 at this machine's address instead of `127.0.0.1:3000`. Two things Nginx doesn't do automatically that
@@ -345,7 +381,7 @@ server {
 ```
 
 Everything else - the media ports (40000-40003/udp and /tcp), coturn
-(3478 + 49160-49189/udp), `PUBLIC_IP`/`DOMAIN` in `.env` - is
+(3478 + 49160-49189/udp), the domain and public address in Settings - is
 identical to the Caddy path; only the HTTP(S) front door changes.
 
 ### Cloudflare Tunnel
@@ -356,13 +392,14 @@ at `http://127.0.0.1:3000`), with two things to know:
 - **Media cannot go through the tunnel.** WebRTC video/audio is UDP
   straight between guests and your server, so the media ports
   (40000-40003/udp) and coturn ports (3478 + 49160-49189/udp) must
-  still be open to the internet directly, and `PUBLIC_IP` set to your
-  server's real public IP. A tunnel hides the web pages, not the
-  media.
-- **Set `TURN_HOST`.** With Cloudflare in front, `DOMAIN` resolves to
-  Cloudflare's edge, which does not forward the TURN port. Point
-  `TURN_HOST` in `.env` at an unproxied (grey-cloud) hostname or your
-  raw server IP so guests behind strict NATs can still connect.
+  still be open to the internet directly, and the public address in
+  Settings set to your server's real public IP. A tunnel hides the web
+  pages, not the media.
+- **Set the relay address.** With Cloudflare in front, your domain
+  resolves to Cloudflare's edge, which does not forward the TURN port.
+  Put an unproxied (grey-cloud) hostname or your raw server IP in
+  Settings, Studio address, so guests behind strict NATs can still
+  connect.
 
 ### Tailscale (private, no open ports at all)
 
@@ -375,10 +412,11 @@ the internet - leave the `caddy` service commented out and:
 2. Serve it over HTTPS with `tailscale serve` (browsers refuse
    camera/microphone access on plain HTTP):
    `tailscale serve --bg https / http://100.x.y.z:3000`
-3. Set `DOMAIN` to your machine's tailnet name (the
-   `machine.tailnet-name.ts.net` one `tailscale serve` prints) and
-   `PUBLIC_IP` to the Tailscale IP, so the media engine hands out an
-   address every tailnet member can reach.
+3. In Settings, Studio address, set the domain to your machine's
+   tailnet name (the `machine.tailnet-name.ts.net` one `tailscale serve`
+   prints) and the public address to the Tailscale IP, so the media
+   engine hands out an address every tailnet member can reach. Restart
+   the studio afterwards.
 
 Guests then need to be on your tailnet (Tailscale's sharing features
 cover inviting others). Everyone connects directly over the tailnet;
@@ -394,7 +432,9 @@ On a home server, those UDP ranges need forwarding on the router.
 
 Two more that catch people: the page has to reach the browser over
 HTTPS, because browsers refuse camera and microphone access without
-it; and `PUBLIC_IP` has to be an address guests can actually reach.
+it; and the public address in Settings has to be one guests can
+actually reach. The studio's own help page (`/help` on your install)
+says all of this too, in the place somebody hits it.
 
 ## Tests
 
@@ -410,6 +450,10 @@ node test/spotlight-record-test.mjs <url> <password>  # a spotlit session record
 node test/obs-feed-test.mjs              # the view-only output: no controls, invisible, never recorded
 node test/session-block-test.mjs         # blocking a guest, and undoing it
 node test/one-account-test.mjs <url> <password>  # one account, and no road to a second
+node test/setup-test.mjs                         # first run: setup code, password rule, passkey, 2FA
+node test/rejoin-track-test.mjs <url> <password>  # a track is the full length of the take
+node test/quality-test.mjs <url> <password>       # the recording quality setting, both ways
+node test/help-test.mjs <url> <password>          # the help page and every link into it
 node test/fosscast-publish-test.mjs      # publish-to-FOSSCast flow against a stub instance
 node test/ten-guest-fit.mjs              # ten people in one room, every tile the same size
 node test/firefox-compat-test.mjs <url> <password>  # same flows, real Firefox engine
