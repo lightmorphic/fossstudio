@@ -9,12 +9,12 @@
 > view-only output link that works as an OBS browser source; one-paste
 > Docker Compose install. No database, no trackers, no analytics, no
 > crash reporting, no update check, no call to any domain but your own,
-> and nothing on the server that opens a recording. Two things leave
-> only when the operator asks: pressing Publish sends a recording to
-> the operator's own FOSSCast address, and desktop notifications travel
-> through the browser maker's push service. It records people talking
-> and hands you the files: it does not publish a podcast, does not
-> broadcast, does not edit, and has no screen sharing.
+> and nothing on the server that opens a recording. One thing leaves,
+> and only when the operator asks: desktop notifications travel through
+> the browser maker's push service. A recording never does - the studio
+> has nowhere to send one. It records people talking and hands you the
+> files: it does not publish a podcast, does not broadcast, does not
+> edit, and has no screen sharing.
 
 Version 0.1.0, a public beta. It is not ready to be relied on: data loss
 and breaking changes are possible, and nobody should put a show or a

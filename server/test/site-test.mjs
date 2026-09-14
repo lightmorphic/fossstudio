@@ -81,6 +81,13 @@ check(`nothing on the site is missing${missing.length ? `: ${missing.join(", ")}
 // to back that sentence up.
 const home = fs.readFileSync(path.join(DOCS, "index.html"), "utf8");
 check("the home page still says what leaves the server", /What leaves the server\?/.test(home));
+// The answer names its exceptions and counts them, so the count and the
+// list cannot drift apart. There are two - notifications and the
+// certificate - and a recording is not one of them, which is the part
+// worth guarding: the studio has nowhere to send a recording, and the
+// page is entitled to say so flatly.
+check("the answer still counts its exceptions", /Two things leave/.test(home));
+check("a recording is not one of them", /A recording (never leaves|is not on that list)/.test(home));
 check("the home page sells meetings as well as podcasts",
   /meeting/i.test(home) && /podcast/i.test(home));
 

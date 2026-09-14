@@ -107,7 +107,7 @@
    "name": "What leaves the server?",
    "acceptedAnswer": {
     "@type": "Answer",
-    "text": "Nothing, unless you switch it on. No analytics, no tracking, no crash reporting, no update check, no call to any domain but your own - the code and the fonts come from your machine, and so does this website. Audio and video go between the browsers in the session and your server, never through anyone else. Three things leave, each because you asked: Publish sends that recording to the FOSSCast address you typed in Settings, desktop notifications travel through your browser maker's push service as every web notification does, and the certificate block in the compose file asks Let's Encrypt for a certificate."
+    "text": "Nothing, unless you switch it on. No analytics, no tracking, no crash reporting, no update check, no call to any domain but your own - the code and the fonts come from your machine, and so does this website. Audio and video go between the browsers in the session and your server, never through anyone else. Two things leave, each because you asked: desktop notifications travel through your browser maker's push service as every web notification does, and the certificate block in the compose file asks Let's Encrypt for a certificate. A recording never leaves - there is nowhere for the studio to send it."
    }
   },
   {
@@ -830,7 +830,6 @@
       <div class="card"><h3>No database, no media tools</h3><p>Flat JSON files in one folder, and nothing on the server that opens a recording. Back it up, export it as a zip, restore it with a click. Daily backups built in.</p></div>
       <div class="card"><h3>Nothing leaves the machine</h3><p>No analytics, no tracking, no crash reports, no update check, no CDN, no cookies for guests, nothing fetched from another domain. Even the font is served from your own server - this page included. The exceptions are yours to switch on: see <a href="#faq">what leaves the server</a>.</p></div>
       <div class="card"><h3>Your studio, one login</h3><p>An install belongs to one person: one login for the sessions, the recordings, the look and the box itself, lockable with a passkey and a second factor. Guests and colleagues need no account at all.</p></div>
-      <div class="card"><h3>Publish to FOSSCast</h3><p>For the podcast half: one click pushes a finished recording to your own <a href="https://fosscast.org">FOSSCast</a> instance as a draft episode. Nothing is sent unless you press it, and a meeting never needs it.</p></div>
       <div class="card"><h3>Strict-network friendly</h3><p>A built-in relay, running on your own server, gets people through corporate and mobile networks. No third party's relay is ever used.</p></div>
       <div class="card"><h3>Installable dashboard</h3><p>The dashboard installs like an app and can nudge you when a guest arrives or a recording is ready, if you let it. Settings save themselves as you type.</p></div>
       <div class="card"><h3>Operable by humans</h3><p>Daily backups with tested restore, rollback deploys, and a plain-language runbook for the rare terminal case.</p></div>
@@ -974,7 +973,7 @@
       <div class="faq-item">
         <h3>What leaves the server?</h3>
         <p>Nothing, unless you switch it on. No analytics, no tracking, no crash reporting, no update check, no call to any domain but your own: the code and the fonts come from your machine, and so does this website. Audio and video go between the browsers in the session and your server, never through anybody else's.</p>
-        <p style="margin-top:0.6rem">Three things leave, each because you asked. <b>Publish</b> sends that recording to the FOSSCast address you typed in Settings. <b>Desktop notifications</b> travel through your browser maker's push service, as every web notification does - leave them off and nothing is sent. And the certificate block in the compose file asks Let's Encrypt for a certificate, which is how HTTPS works anywhere.</p>
+        <p style="margin-top:0.6rem">Two things leave, each because you asked. <b>Desktop notifications</b> travel through your browser maker's push service, as every web notification does - leave them off and nothing is sent. And the certificate block in the compose file asks Let's Encrypt for a certificate, which is how HTTPS works anywhere. A recording is not on that list and cannot be: the studio has nowhere to send one, and no way to be given one.</p>
       </div>
       <div class="faq-item">
         <h3>How many people can be in a session?</h3>
@@ -1000,8 +999,7 @@
   <div class="wrap foot">
     <p class="sister">This studio records the session and hands you the files. If the session is a
     podcast, <a href="https://fosscast.org" translate="no">FOSSCast</a> is the other half: a separate
-    self-hosted app that publishes it, with its own website and RSS feed. One click sends a finished
-    recording from here to there as a draft episode.</p>
+    self-hosted app that publishes it, with its own website and RSS feed.</p>
     <span class="gpl">Free software &middot; <a href="https://www.gnu.org/licenses/agpl-3.0.html">AGPL-3.0</a> &middot; <a href="https://github.com/lightmorphic/fossstudio">Source</a></span>
   </div>
   <div class="gh-foot">
