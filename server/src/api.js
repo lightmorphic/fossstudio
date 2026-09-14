@@ -24,6 +24,9 @@ import {
 } from "./webauthn.js";
 import { getRoom } from "./rooms.js";
 import {
+  AUDIO_FORMATS, VIDEO_FORMATS, PROGRAM_BYTES_PER_HOUR, CAMERA_BYTES_PER_HOUR
+} from "./formats.js";
+import {
   verifyUploadToken, appendChunk, markPeerDone,
   listRecordings, deleteRecording, deleteRecordingFile, recDir
 } from "./recording/manager.js";
@@ -273,6 +276,15 @@ api.post("/2fa/disable", requireAuth, async (req, res) => {
 // ---------- settings & theme ----------
 
 api.get("/settings", requireAuth, async (req, res) => res.json(await getSettings()));
+
+// The list of formats a recording can be written as, so the settings
+// page reads it from the one place that owns it rather than carrying a
+// second copy that drifts.
+api.get("/formats", requireAuth, (req, res) => res.json({
+  audio: AUDIO_FORMATS, video: VIDEO_FORMATS,
+  programBytesPerHour: PROGRAM_BYTES_PER_HOUR,
+  cameraBytesPerHour: CAMERA_BYTES_PER_HOUR
+}));
 api.put("/settings", requireAuth, async (req, res) => {
   try {
     res.json(await updateSettings(req.body));
@@ -454,7 +466,8 @@ api.post("/rec/chunk", chunkAuth,
     try {
       await appendChunk(
         String(req.query.rec), String(req.query.peer),
-        String(req.query.kind), String(req.query.ext || "webm"), req.body
+        String(req.query.kind), String(req.query.fmt || ""),
+        String(req.query.ext || "webm"), req.body
       );
       res.json({ ok: true });
     } catch (err) {
@@ -506,7 +519,7 @@ api.get("/recordings/:id/zip", requireAuth, async (req, res) => {
   const audioOnly = req.query.audio === "1";
   const dir = path.join(recDir(id), "out");
   const files = (await fs.readdir(dir).catch(() => []))
-    .filter((f) => !audioOnly || /-audio\.(wav|opus|webm|mp4)$/i.test(f));
+    .filter((f) => !audioOnly || /-audio(-[a-z0-9]+)?\.(wav|opus|webm|mp4)$/i.test(f));
   if (files.length === 0) return res.status(404).json({ error: "no files" });
   const stem = (rec.title || `session-${rec.roomId}`)
     .replace(/[^a-zA-Z0-9 _-]/g, "").trim().replace(/\s+/g, "-").slice(0, 60) || id;

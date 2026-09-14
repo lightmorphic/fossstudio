@@ -81,15 +81,18 @@ and you never will.
   own track, and uploaded as it is made. Nothing on the server ever
   opens a recording - there is no media tool in the image and nothing
   decodes a sample - so the box stays quiet however full the room is.
-- **What is in the file, as a choice you make.** A `.webm` is a box, and
-  the name on the box says nothing about what is inside it. Settings,
-  Recording offers **Best quality** - every sample as the microphone
-  heard it, about **1.4 GB per person per hour**, so a two-hour show
-  with four people is over 11 GB - or **Smaller files**, very good for
-  speech at about **54 MB per person per hour**. Best quality is the
-  default. **Read this before a long show.** Firefox cannot record
-  uncompressed at all, so a guest on it comes back compressed whatever
-  you choose, and the Recordings list says so beside their track.
+- **The formats are yours to pick, and they are the browser's.** Settings,
+  Formats lists what a browser can write and lets you tick as many as
+  you want: **WAV**, every sample as the microphone heard it at about
+  **1.4 GB per person per hour**, or **Opus**, very good for speech at
+  about **58 MB**; and for the picture **MP4 (H.264)**, **WebM VP8**,
+  **VP9** or **AV1**. Each tick is another file, written at the same
+  time, and the screen adds up what a show of your size comes to before
+  you record rather than after. Nothing here converts anything, so this
+  is the browser's list, not ours: Firefox writes Opus and VP8 and
+  nothing else, and a guest on it comes back in those whatever you tick,
+  with the Recordings list saying so beside their files. WAV and MP4 are
+  the defaults. **Read this before a long show.**
 - **Every track is the full length of the take.** Somebody who joins
   five minutes late has five minutes of silence at the front of theirs,
   so it still starts at zero and lines up with everybody else's with

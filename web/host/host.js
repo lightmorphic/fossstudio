@@ -3,6 +3,10 @@
   "use strict";
   const $ = (id) => document.getElementById(id);
 
+  // A finished sound track. The tag in the middle is the format the
+  // studio asked for, and it is only there when more than one was.
+  const AUDIO_FILE = /-audio(-[a-z0-9]+)?\.(wav|opus|webm|mp4)$/i;
+
   // Framed inside another application's shell (a hosting panel, a
   // portal): that shell has the wordmark and the way out, so ours are
   // hidden. Set by the sign-in link that brought us here.
@@ -30,7 +34,7 @@
       { id: "library", label: "Library" }
     ] },
     { id: "settings", label: "Settings", subs: [
-      { id: "recording", label: "Audio" },
+      { id: "recording", label: "Formats" },
       { id: "place", label: "Studio address" },
       { id: "themes", label: "Themes" },
       { id: "banner", label: "Ad Banner" },
@@ -372,10 +376,19 @@
         `${when}${mins ? ` · ${mins} min` : ""} · ${(r.files || []).length} files`;
       setStatusBadge(card.querySelector(".badge"), r.status);
       const filesEl = card.querySelector(".files");
+      // Anything the take noticed that belongs to no one file - a format
+      // somebody's browser could not write, so there is nothing to hang
+      // the note on. Said once, at the top, rather than not at all.
+      for (const n of (r.notes || []).filter((n) => !n.file)) {
+        const line = document.createElement("div");
+        line.className = "rec-note rec-note-top";
+        line.textContent = n.text;
+        filesEl.appendChild(line);
+      }
       for (const f of r.files || []) {
         const url = `/api/recordings/${encodeURIComponent(r.id)}/files/${encodeURIComponent(f)}`;
-        const isVideo = !/-audio\.(wav|opus|webm|mp4)$/i.test(f) && /\.(mp4|webm)$/i.test(f);
-        const isAudio = /-audio\.(wav|opus|webm|mp4)$/i.test(f);
+        const isVideo = !AUDIO_FILE.test(f) && /\.(mp4|webm)$/i.test(f);
+        const isAudio = AUDIO_FILE.test(f);
         const fileRow = document.createElement("div");
         fileRow.className = "rec-file";
         const fname = document.createElement("span");
@@ -405,7 +418,7 @@
       const actions = document.createElement("div");
       actions.className = "rec-actions";
       const zipBase = `/api/recordings/${encodeURIComponent(r.id)}/zip`;
-      const hasAudio = (r.files || []).some((f) => /-audio\.(wav|opus|webm|mp4)$/i.test(f));
+      const hasAudio = (r.files || []).some((f) => AUDIO_FILE.test(f));
       if (hasAudio) {
         const dlAudio = downloadLink(`${zipBase}?audio=1`);
         dlAudio.innerHTML = ICO.downloadAudio;
@@ -459,17 +472,147 @@
   }
 
   // ---------- what a recording holds ----------
+  //
+  // A tick is a file. Everything offered is something a browser writes
+  // itself, which is why the rows say which browsers can write each one
+  // rather than presenting the list as a judgment of ours. The running
+  // total underneath is the whole point of the screen: the moment to
+  // find out that four ticks is forty gigabytes is before the show.
 
-  async function saveQuality(value) {
+  let catalog = null;               // what the server says can be written
+  let chosen = { audio: [], video: [] };
+
+  // What this browser, right now, can actually write. The studio's
+  // setting reaches every guest, so a format this machine cannot manage
+  // is still worth ticking - but saying so here saves a host wondering
+  // why their own track never appears.
+  const canHere = (mimes) => (mimes || []).some((m) => {
+    try { return MediaRecorder.isTypeSupported(m); } catch { return false; }
+  });
+
+  function saidSize(bytes) {
+    if (bytes >= 1e9) return `${(bytes / 1e9).toFixed(bytes >= 1e10 ? 0 : 1)} GB`;
+    if (bytes >= 1e6) return `${Math.round(bytes / 1e6)} MB`;
+    return `${Math.round(bytes / 1e3)} KB`;
+  }
+
+  function drawFormats() {
+    if (!catalog) return;
+    for (const [kind, host] of [["audio", $("audioFormats")], ["video", $("videoFormats")]]) {
+      host.textContent = "";
+      for (const f of catalog[kind]) {
+        const row = document.createElement("label");
+        row.className = "fmt-row";
+        const box = document.createElement("input");
+        box.type = "checkbox";
+        box.checked = chosen[kind].includes(f.id);
+        row.classList.toggle("on", box.checked);
+        const size = kind === "audio"
+          ? `${saidSize(f.bytesPerHour)} per person per hour`
+          : `${saidSize(catalog.cameraBytesPerHour)} per person per hour, ` +
+            `plus ${saidSize(catalog.programBytesPerHour)} for the video of everyone`;
+        const body = document.createElement("div");
+        body.className = "fmt-body";
+        const name = document.createElement("div");
+        name.className = "fmt-name";
+        const b = document.createElement("b");
+        b.textContent = f.label;
+        const sizeEl = document.createElement("span");
+        sizeEl.className = "fmt-size";
+        sizeEl.textContent = size;
+        name.append(b, sizeEl);
+        const detail = document.createElement("span");
+        detail.className = "hint";
+        detail.textContent = f.detail;
+        const who = document.createElement("span");
+        who.className = "hint fmt-browsers";
+        // Two separate facts: which browsers in general, and this one in
+        // particular. Run together in one sentence they read as one
+        // claim and neither lands.
+        who.textContent = f.browsers;
+        const here = document.createElement("span");
+        here.className = "hint fmt-here";
+        here.classList.toggle("no", !canHere(f.mimes));
+        here.textContent = canHere(f.mimes)
+          ? "This browser can write it."
+          : "This browser cannot write it, so your own track will not be in it.";
+        body.append(name, detail, who, here);
+        row.append(box, body);
+        box.addEventListener("change", () => {
+          const next = box.checked
+            ? [...chosen[kind], f.id]
+            : chosen[kind].filter((id) => id !== f.id);
+          // Never a browser popup, and never a silent refusal either:
+          // the last one stays ticked and the line underneath says why.
+          if (!next.length) {
+            box.checked = true;
+            say(`A recording has to be written as something, so ${f.label} stays until you pick another.`);
+            return;
+          }
+          chosen[kind] = catalog[kind].map((x) => x.id).filter((id) => next.includes(id));
+          row.classList.toggle("on", box.checked);
+          saveFormats().catch(() => {});
+          sumUp();
+        });
+        host.appendChild(row);
+      }
+    }
+    sumUp();
+  }
+
+  function say(text) {
+    const el = $("qualityMsg");
+    el.textContent = text;
+    el.hidden = false;
+    clearTimeout(el._t);
+    el._t = setTimeout(() => { el.hidden = true; el.textContent = "Saved"; }, 4000);
+  }
+
+  // What the ticks add up to, in the shape of a real show.
+  function sumUp() {
+    if (!catalog) return;
+    const people = Math.max(1, Math.min(10, Number($("sumPeople").value) || 1));
+    const hours = Math.max(1, Math.min(8, Number($("sumHours").value) || 1));
+    const lines = [];
+    let total = 0;
+    for (const f of catalog.audio) {
+      if (!chosen.audio.includes(f.id)) continue;
+      const bytes = f.bytesPerHour * people * hours;
+      total += bytes;
+      lines.push([`${f.label}, ${people} ${people === 1 ? "track" : "tracks"}`, bytes]);
+    }
+    for (const f of catalog.video) {
+      if (!chosen.video.includes(f.id)) continue;
+      const bytes = (catalog.cameraBytesPerHour * people + catalog.programBytesPerHour) * hours;
+      total += bytes;
+      lines.push([`${f.label}, ${people} ${people === 1 ? "camera" : "cameras"} and the show`, bytes]);
+    }
+    $("sumTotal").textContent =
+      `About ${saidSize(total)} for a ${hours}-hour show with ${people} ${people === 1 ? "person" : "people"}`;
+    const ul = $("sumBreak");
+    ul.textContent = "";
+    for (const [what, bytes] of lines) {
+      const li = document.createElement("li");
+      const a = document.createElement("span");
+      a.textContent = what;
+      const c = document.createElement("span");
+      c.textContent = saidSize(bytes);
+      li.append(a, c);
+      ul.appendChild(li);
+    }
+    $("videoWarn").hidden = chosen.video.length < 2;
+  }
+
+  for (const id of ["sumPeople", "sumHours"]) {
+    $(id).addEventListener("input", sumUp);
+  }
+
+  async function saveFormats() {
     await apiFetch("/api/settings", {
       method: "PUT",
-      body: JSON.stringify({ recordingQuality: value })
+      body: JSON.stringify({ audioFormats: chosen.audio, videoFormats: chosen.video })
     });
-    $("qualityMsg").hidden = false;
-    setTimeout(() => { $("qualityMsg").hidden = true; }, 2000);
-  }
-  for (const input of document.querySelectorAll("input[name=recordingQuality]")) {
-    input.addEventListener("change", () => { saveQuality(input.value).catch(() => {}); });
+    say("Saved");
   }
 
   // ---------- passkeys ----------
@@ -589,9 +732,12 @@
 
   async function loadSettings() {
     const s = await apiFetch("/api/settings");
-    const quality = s.recordingQuality === "smaller" ? "smaller" : "best";
-    const chosen = document.querySelector(`input[name=recordingQuality][value="${quality}"]`);
-    if (chosen) chosen.checked = true;
+    catalog = catalog || await apiFetch("/api/formats");
+    chosen = {
+      audio: Array.isArray(s.audioFormats) ? s.audioFormats : ["wav"],
+      video: Array.isArray(s.videoFormats) ? s.videoFormats : ["mp4"]
+    };
+    drawFormats();
     updateWallpaperPreview(s.wallpaper);
     updateLogoPreview(!!s.logo);
     // The note explaining the example only makes sense while the example

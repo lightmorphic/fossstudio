@@ -103,27 +103,30 @@
       <!-- Settings: what a recording holds -->
       <section id="pane-recording" class="stack" hidden>
         <div class="panel">
-          <h2>Audio quality</h2>
-          <p class="hint" style="margin-bottom:0.9rem">What each person's own track holds. It applies to the next recording you start; a take already running keeps the setting it began with.</p>
-          <div class="choice">
-            <label class="choice-row">
-              <input type="radio" name="recordingQuality" value="best" checked>
-              <span>
-                <b>Best quality</b>
-                <span class="hint">Every sample as the microphone heard it. About 1.4 GB per person per hour.</span>
-              </span>
-            </label>
-            <label class="choice-row">
-              <input type="radio" name="recordingQuality" value="smaller">
-              <span>
-                <b>Smaller files</b>
-                <span class="hint">Very good for speech, and about 54 MB per person per hour.</span>
-              </span>
-            </label>
+          <h2>Recording formats</h2>
+          <p class="hint">Every recording is written by the browser it was made in. Nothing on this server opens, converts or re-encodes a file, so this is not our list of what is good - it is the list of what browsers can hand us. Tick as many as you want. Each one is a separate file, written at the same time, and the sizes below say what that costs before you find out afterwards.</p>
+
+          <h3 class="fmt-head">Sound, one file per person</h3>
+          <div class="fmt-list" id="audioFormats"></div>
+
+          <h3 class="fmt-head">Picture</h3>
+          <p class="hint" style="margin-bottom:0.7rem">Each of these is written for every person's camera and for the video of everyone, so one tick is one more file per person plus one more of the whole show.</p>
+          <div class="fmt-list" id="videoFormats"></div>
+          <p class="hint fmt-warn" id="videoWarn" hidden>More than one picture format means the host's browser encodes the show that many times over and sends every copy up the host's own connection while the show is running. On a slow connection that bites long before the disk does.</p>
+
+          <div class="fmt-sum" id="formatSum">
+            <div class="fmt-sum-line">
+              <label>People <input type="number" id="sumPeople" min="1" max="10" value="4"></label>
+              <label>Hours <input type="number" id="sumHours" min="1" max="8" value="2"></label>
+            </div>
+            <p class="fmt-total"><span id="sumTotal">-</span></p>
+            <ul class="fmt-break" id="sumBreak"></ul>
+            <p class="hint">An upper limit, not a promise: the picture is recorded at a fixed rate and a still room comes in well under it. Sound is exact.</p>
           </div>
-          <span class="msg ok" id="qualityMsg" hidden>✓ Saved</span>
-          <p class="hint" style="margin-top:1rem">A file with <code>.webm</code> on the end is a box, and the name on the box does not tell you what is inside it. The same box holds either every sample your microphone heard or about a twenty-fifth of that, and until you open it in an editor the two look alike. That is the whole of this choice: the box stays the same, the contents do not. Best quality keeps everything, which matters if the recording will be cleaned up, levelled or repaired afterwards. Smaller files throws away what the ear does not miss on speech, and a two-hour session with four people becomes a few hundred megabytes instead of eleven gigabytes.</p>
-          <p class="hint" style="margin-top:0.7rem">Firefox cannot record uncompressed audio at all. A guest on Firefox comes back compressed whatever this is set to, and the Recordings list says so beside their track. <a class="helplink" href="#help/recording-quality">More about what is in the file</a></p>
+
+          <span class="msg ok" id="qualityMsg" hidden>Saved</span>
+          <p class="hint" style="margin-top:1rem">A setting applies to the next recording you start. A take already running keeps what it began with, so nobody ends up with one person's track in a format of its own.</p>
+          <p class="hint" style="margin-top:0.7rem">A person whose browser cannot write something you asked for is simply not recorded in it, and the Recordings list says whose browser it was beside the files that did arrive. <a class="helplink" href="#help/recording-quality">More about what is in the file</a></p>
         </div>
       </section>
 
@@ -292,17 +295,17 @@
             <div class="help-prose">
               <p>A file ending in <code>.webm</code> is a box. The name on the box tells you how it is packed and nothing at all about what is inside, and the same box can hold two things that differ by a factor of twenty-five.</p>
               <p>One is every sample your microphone heard, kept exactly as it arrived. The other is a compressed version of it, which throws away what the ear does not miss and is perfectly good for speech. Open them side by side in a player and they sound alike.</p>
-              <p>That is why the studio does not ask you to choose a codec. It asks whether you want <b>Best quality</b> or <b>Smaller files</b>, and it says the sizes.</p>
+              <p>So the Formats screen names the formats and says what each one costs an hour, and adds up what you have ticked before you record rather than after. Tick as many as you want: each is written at the same time, as its own file.</p>
             </div>
             <div class="help-side">
               <div class="table-wrap">
                 <table>
                   <thead>
-                    <tr><th>Setting</th><th>Per person, per hour</th><th>Four people, two hours</th></tr>
+                    <tr><th>Format</th><th>Per person, per hour</th><th>Four people, two hours</th></tr>
                   </thead>
                   <tbody>
-                    <tr><td><b>Best quality</b></td><td>about 1.4 GB</td><td>about 11 GB</td></tr>
-                    <tr><td><b>Smaller files</b></td><td>about 54 MB</td><td>about 430 MB</td></tr>
+                    <tr><td><b>WAV</b></td><td>about 1.4 GB</td><td>about 11 GB</td></tr>
+                    <tr><td><b>Opus</b></td><td>about 58 MB</td><td>about 460 MB</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -315,22 +318,24 @@
         </div>
 
         <div class="panel help-sec" id="recording-quality">
-          <h2>Which recording quality should I choose?</h2>
+          <h2>Which formats should I choose?</h2>
           <div class="help-cols">
             <div class="help-prose">
-              <p><b>Best quality</b> if the recording is going to be worked on afterwards - levelled, cleaned up, noise removed, a bad patch repaired. Every one of those jobs is better done on the real samples, and compressing once at the end is better than compressing twice.</p>
-              <p><b>Smaller files</b> if it is two people talking and it goes out more or less as recorded. A two-hour session with four people is a few hundred megabytes instead of eleven gigabytes.</p>
+              <p><b>WAV</b> if the recording is going to be worked on afterwards - levelled, cleaned up, noise removed, a bad patch repaired. Every one of those jobs is better done on the real samples, and compressing once at the end is better than compressing twice.</p>
+              <p><b>Opus</b> if it is two people talking and it goes out more or less as recorded. A two-hour session with four people is a few hundred megabytes instead of eleven gigabytes.</p>
+              <p>For the picture, <b>MP4</b> is the file almost every editor opens without argument, and <b>WebM, VP8</b> is the one format every browser here can write. VP9 and AV1 look better for the same room on disk and are heavier to make.</p>
+              <p>Ticking more than one is allowed and costs what the screen says: every extra picture format is another encode in the host's browser and another upload while the show is running, which bites on a slow connection long before the disk does.</p>
               <p>You can change it between sessions. A recording already running keeps whatever it started with, so one person's track can never come back in a different form from everybody else's.</p>
               <div class="note">
-                <b>Firefox cannot record uncompressed audio at all</b>
-                Nothing can be done about that from here. A guest using Firefox comes back compressed however this is set, and the Recordings list says so beside their track rather than leaving you to notice the file is small.
+                <b>These are the browser's formats, not ours</b>
+                Nothing on this server opens or converts a recording, so the list is whatever browsers can write. Firefox writes Opus and WebM VP8 and nothing else - no uncompressed audio, no MP4 - so a guest on Firefox comes back in those whatever you tick, and the Recordings list says so beside their files.
               </div>
             </div>
             <div class="help-side">
               <figure class="shot">
-                <img src="/img/help/settings-quality.jpg" width="1400" height="494" loading="lazy"
-                     alt="The Audio quality screen in Settings, with two radio buttons: Best quality, described as every sample as the microphone heard it at about 1.4 GB per person per hour, and Smaller files at about 54 MB per person per hour.">
-                <figcaption>Settings, Audio. The two choices, with the sizes beside them. It applies to the next take you start.</figcaption>
+                <img src="/img/help/settings-quality.jpg" width="1400" height="804" loading="lazy"
+                     alt="The Recording formats screen in Settings: tick boxes for WAV and Opus sound and for MP4, WebM VP8, VP9 and AV1 pictures, each with what it costs per person per hour, and a running total underneath.">
+                <figcaption>Settings, Formats. Tick what you want; the total underneath says what a show of that size comes to.</figcaption>
               </figure>
             </div>
           </div>
@@ -340,9 +345,9 @@
           <h2>Why is my recording eleven gigabytes?</h2>
           <div class="help-cols">
             <div class="help-prose">
-              <p>Because at best quality every person in the room is producing about 1.4 GB an hour of their own audio, plus their camera, plus the one video of everyone that your browser draws. Four people for two hours is over 11 GB, and it lands on this server.</p>
+              <p>Because with WAV ticked every person in the room is producing about 1.4 GB an hour of their own audio, plus their camera, plus the one video of everyone that your browser draws. Four people for two hours is over 11 GB, and it lands on this server.</p>
               <p>The studio never opens a recording to shrink it - there is no media tool in it and nothing on the server decodes a single sample, which is why a full room does not need a powerful machine. The price of that is disk.</p>
-              <p>Download what you want and delete the rest; a recording deleted here is gone. If disk is the tighter constraint, that is what Smaller files is for.</p>
+              <p>Download what you want and delete the rest; a recording deleted here is gone. If disk is the tighter constraint, untick WAV and leave Opus, and the running total on the Formats screen will show you what that saves before you record.</p>
             </div>
             <div class="help-side">
               <figure class="shot">

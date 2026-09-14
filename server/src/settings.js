@@ -6,6 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { config } from "./config.js";
 import { readJson, writeJson } from "./storage.js";
+import { AUDIO_IDS, VIDEO_IDS } from "./formats.js";
 import { legacyAccountSettings } from "./account.js";
 
 const FILE = "settings.json";
@@ -22,18 +23,26 @@ const FILE = "settings.json";
 const EXAMPLE_AD = "ad.png";
 const EXAMPLE_AD_SOURCE = fileURLToPath(new URL("../assets/example-ad.png", import.meta.url));
 
-// What a recording holds. "best" is every sample the microphone heard,
-// "smaller" is Opus - very good for speech and a twenty-sixth of the
-// size. Best is the default: a studio's job is to keep what was said,
-// and disk is cheaper than a take nobody can improve on afterwards.
-export const QUALITIES = ["best", "smaller"];
-
+// What a recording is written as. Both lists are what to ask each
+// browser for; a browser that cannot write one of them simply does not.
+// The defaults are what the studio did before this was a choice: every
+// sample the microphone heard, and one video file that opens anywhere.
 export const SETTINGS_DEFAULTS = {
   wallpaper: null,
   bg: null,
   logo: null,
-  recordingQuality: "best"
+  audioFormats: ["wav"],
+  videoFormats: ["mp4"]
 };
+
+// A list of format ids, cleaned: known ones only, in catalog order, no
+// repeats, and never empty - a recording with nothing to write is not a
+// setting anybody meant to choose.
+function cleanFormats(value, known, fallback) {
+  if (!Array.isArray(value)) return null;
+  const kept = known.filter((id) => value.includes(id));
+  return kept.length ? kept : fallback;
+}
 
 // Run once at startup, before anything reads the settings.
 //
@@ -53,6 +62,21 @@ export async function migrateSettings() {
   const old = current ? null : await legacyAccountSettings();
   const next = { ...SETTINGS_DEFAULTS, ...(old || {}), ...(current || {}) };
   let changed = !current;
+
+  // The old single choice becomes a list of one. "best" was every
+  // sample the microphone heard, "smaller" was Opus; the picture was
+  // never a choice, so it becomes the one format the studio wrote.
+  // Read from what is actually stored, not from the merged object: the
+  // defaults put audioFormats there, so asking the merged one whether
+  // it has any always said yes and the migration never ran. A studio
+  // that had chosen the small files would have woken up writing
+  // twenty-four times as much to disk without being told.
+  if (current?.recordingQuality && !current.audioFormats) {
+    next.audioFormats = current.recordingQuality === "smaller" ? ["opus"] : ["wav"];
+    next.videoFormats = ["mp4"];
+    changed = true;
+  }
+  delete next.recordingQuality;
 
   if (!next.exampleAdOffered && !next.adBanner) {
     next.exampleAdOffered = true;
@@ -90,7 +114,7 @@ async function copyExampleAd() {
 // any more. They stay on disk - somebody's file is not ours to rewrite -
 // but they are not handed back out, so a dead secret does not keep
 // arriving in a browser for no reason.
-const FORGOTTEN = ["fosscastUrl", "fosscastToken"];
+const FORGOTTEN = ["fosscastUrl", "fosscastToken", "recordingQuality"];
 
 export async function getSettings() {
   const stored = { ...SETTINGS_DEFAULTS, ...(await readJson(FILE, {})) };
@@ -118,9 +142,10 @@ export async function updateSettings(patch) {
   if (patch.adBannerIsExample === false) {
     clean.adBannerIsExample = false;
   }
-  if (QUALITIES.includes(patch.recordingQuality)) {
-    clean.recordingQuality = patch.recordingQuality;
-  }
+  const audio = cleanFormats(patch.audioFormats, AUDIO_IDS, null);
+  if (audio) clean.audioFormats = audio;
+  const video = cleanFormats(patch.videoFormats, VIDEO_IDS, null);
+  if (video) clean.videoFormats = video;
   const next = { ...(await getSettings()), ...clean };
   await writeJson(FILE, next);
   return next;

@@ -67,7 +67,7 @@ for (const [name, engine] of [["Chromium", chromium], ["Firefox", firefox]]) {
 const setQuality = (value) => fetch(`${B}/api/settings`, {
   method: "PUT",
   headers: { "Content-Type": "application/json", Cookie: cookie },
-  body: JSON.stringify({ recordingQuality: value })
+  body: JSON.stringify({ audioFormats: [value] })
 }).then((r) => r.json());
 
 const browser = await chromium.launch({
@@ -78,9 +78,10 @@ const browser = await chromium.launch({
 const TAKE_MS = 14000;
 const sizes = {};
 
-for (const [value, expectExt] of [["best", "wav"], ["smaller", "opus"]]) {
+for (const [value, expectExt] of [["wav", "wav"], ["opus", "opus"]]) {
   const saved = await setQuality(value);
-  check(`the dashboard stores "${value}" (${saved.recordingQuality})`, saved.recordingQuality === value);
+  check(`the dashboard stores "${value}" (${(saved.audioFormats || []).join(", ")})`,
+    (saved.audioFormats || []).join() === value);
   const room = await makeRoom(B, PW, `Quality ${value}`);
 
   const ctx = await browser.newContext({ permissions: ["camera", "microphone"], viewport: { width: 1280, height: 800 } });
@@ -142,7 +143,7 @@ for (const [value, expectExt] of [["best", "wav"], ["smaller", "opus"]]) {
   const rates = await page.evaluate(async () => {
     const ac = new AudioContext({ sampleRate: 48000 });
     const out = {};
-    for (const [name, mime] of [["best", "audio/webm;codecs=pcm"], ["smaller", "audio/webm;codecs=opus"]]) {
+    for (const [name, mime] of [["wav", "audio/webm;codecs=pcm"], ["opus", "audio/webm;codecs=opus"]]) {
       const dest = ac.createMediaStreamDestination();
       // Speech is not a sine wave, and a sine wave is not what the
       // figure was measured on, so this is noise through a voice-shaped
@@ -174,19 +175,27 @@ for (const [value, expectExt] of [["best", "wav"], ["smaller", "opus"]]) {
   });
   await ctx.close();
   const perHour = (v) => rates[v] * 3600;
-  console.log(`    measured on real signal: best quality ${(perHour("best") / 1e9).toFixed(2)} GB ` +
-    `per person per hour, smaller files ${(perHour("smaller") / 1e6).toFixed(0)} MB, ` +
-    `a factor of ${(perHour("best") / perHour("smaller")).toFixed(0)}`);
-  // Held to the order of magnitude, not the digits: a browser may change
-  // its bitrate and the sentence beside the setting would still be true.
-  check(`best quality is about 1.4 GB per person per hour (${(perHour("best") / 1e9).toFixed(2)} GB)`,
-    perHour("best") > 1.1e9 && perHour("best") < 1.8e9);
-  check(`smaller files is about 54 MB per person per hour (${(perHour("smaller") / 1e6).toFixed(0)} MB)`,
-    perHour("smaller") > 25e6 && perHour("smaller") < 110e6);
+  console.log(`    measured on real signal: WAV ${(perHour("wav") / 1e9).toFixed(2)} GB ` +
+    `per person per hour, Opus ${(perHour("opus") / 1e6).toFixed(0)} MB, ` +
+    `a factor of ${(perHour("wav") / perHour("opus")).toFixed(0)}`);
+
+  // The figures the Formats page adds up in front of a host come from
+  // the server's own catalog, so they are checked against a real
+  // measurement rather than against a number typed beside them. Held to
+  // the order of magnitude, not the digits: a browser may change its
+  // bitrate and the sentence on screen would still be true.
+  const catalog = await fetch(`${B}/api/formats`, { headers: { Cookie: cookie } }).then((r) => r.json());
+  for (const id of ["wav", "opus"]) {
+    const said = catalog.audio.find((f) => f.id === id).bytesPerHour;
+    const got = perHour(id);
+    check(`the ${id} figure the page shows (${(said / 1e6).toFixed(0)} MB an hour) matches ` +
+      `what a browser really writes (${(got / 1e6).toFixed(0)} MB)`,
+      got > said / 2 && got < said * 2);
+  }
 }
 
 fs.rmSync(DOWNLOADS, { recursive: true, force: true });
-await setQuality("best");
+await setQuality("wav");
 console.log(pass ? "ALL PASS" : "SOME CHECKS FAILED");
 await browser.close();
 process.exit(pass ? 0 : 1);

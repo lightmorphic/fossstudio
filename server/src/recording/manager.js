@@ -24,6 +24,9 @@ import path from "node:path";
 import { config } from "../config.js";
 import { readJson, writeJson } from "../storage.js";
 import { assembleTrack } from "./splice.js";
+import { recipe, AUDIO_IDS, VIDEO_IDS, formatLabel } from "../formats.js";
+
+const FORMAT_IDS = new Set([...AUDIO_IDS, ...VIDEO_IDS]);
 
 const active = new Map(); // roomId -> rec
 
@@ -59,7 +62,8 @@ async function saveSnapshot(rec) {
   try {
     const snap = {
       id: rec.id, roomId: rec.roomId,
-      title: rec.title, startedAt: rec.startedAt, quality: rec.quality,
+      title: rec.title, startedAt: rec.startedAt,
+      audioFormats: rec.audioFormats, videoFormats: rec.videoFormats,
       people: Object.fromEntries(rec.people)
     };
     // writeJson: atomic (temp file + rename) and owner-only (0600), same
@@ -78,7 +82,10 @@ export function uploadCreds(rec, peer) {
   const personId = personOf(peer);
   return {
     recId: rec.id, peerId: personId, token: uploadToken(rec.id, personId),
-    quality: rec.quality || "best"
+    // The exact strings this browser should try, worked out from the
+    // studio's settings when the take began. A browser is never asked
+    // to decide what a format is called.
+    recipe: recipe(rec.audioFormats, rec.videoFormats)
   };
 }
 
@@ -93,7 +100,7 @@ export async function listRecordings() {
   return readJson("recordings.json", []);
 }
 
-export async function startRecording(room, quality = "best") {
+export async function startRecording(room, audioFormats = ["wav"], videoFormats = ["mp4"]) {
   if (active.has(room.id)) throw new Error("already recording");
   const recId = `${room.id}-${new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19)}`;
   const rec = {
@@ -104,7 +111,8 @@ export async function startRecording(room, quality = "best") {
     // Pinned for the life of the take: a setting changed halfway through
     // must not leave one person's track in a different format from
     // everybody else's.
-    quality,
+    audioFormats,
+    videoFormats,
     // personId -> one person's whole take: who they are, the stretches
     // they recorded, and what their microphone lost. Keyed by the person
     // rather than the connection, so a reconnect continues a take
@@ -182,7 +190,12 @@ export function notePeerGone(rec, peer) {
 const KINDS = new Set(["audio", "video", "programme"]);
 const EXTS = new Set(["webm", "mp4"]);
 
-export async function appendChunk(recId, personId, kind, ext, buf) {
+// A browser may be writing the same take in more than one format at
+// once, so what a stretch belongs to is the kind and the format
+// together. Anything else shares a file with something it is not.
+function slot(kind, fmt) { return `${kind}:${fmt}`; }
+
+export async function appendChunk(recId, personId, kind, fmt, ext, buf) {
   const rec = [...active.values()].find((r) => r.id === recId);
   if (!rec) throw new Error("no such recording");
   const p = rec.people.get(personId);
@@ -191,7 +204,9 @@ export async function appendChunk(recId, personId, kind, ext, buf) {
   // mixed sound, already drawn and encoded there.
   if (!KINDS.has(kind)) throw new Error("bad kind");
   if (!EXTS.has(ext)) throw new Error("bad container");
-  const list = p.parts[kind] || (p.parts[kind] = []);
+  if (!FORMAT_IDS.has(fmt)) throw new Error("bad format");
+  const key = slot(kind, fmt);
+  const list = p.parts[key] || (p.parts[key] = []);
   let part = list[list.length - 1];
   // Chunks from one recorder append into one file, which is valid
   // because they are the continuation the browser meant them to be.
@@ -199,7 +214,10 @@ export async function appendChunk(recId, personId, kind, ext, buf) {
   // together are not one recording, they are one file with a second
   // header in the middle of it.
   if (!part || part.part !== p.part) {
-    part = { part: p.part, offsetMs: p.partOffsetMs, file: `${personId}-${kind}-${p.part}.${ext}`, bytes: 0 };
+    part = {
+      part: p.part, offsetMs: p.partOffsetMs, bytes: 0,
+      file: `${personId}-${kind}-${fmt}-${p.part}.${ext}`
+    };
     list.push(part);
   }
   part.bytes += buf.length;
@@ -295,42 +313,63 @@ async function finalize(rec) {
   for (const p of rec.people.values()) {
     const who = safeName(p.name, used);
 
-    const audio = p.parts.audio || [];
-    if (audio.length) {
-      const built = await assembleTrack(fs, audio.map((a) => ({ ...a, file: path.join(raw, a.file) })),
-        path.join(out, `${who}-audio.pending`))
+    // One finished track per sound format asked for. The tag only goes
+    // in the name when more than one was asked for, so a studio that
+    // wants one file still gets the plain name it always had.
+    const audioAsked = rec.audioFormats || ["wav"];
+    const tagAudio = audioAsked.length > 1;
+    for (const fmt of audioAsked) {
+      const audio = p.parts[`audio:${fmt}`] || [];
+      if (!audio.length) continue;
+      const pending = path.join(out, `${who}-audio-${fmt}.pending`);
+      const built = await assembleTrack(fs, audio.map((a) => ({ ...a, file: path.join(raw, a.file) })), pending)
         .catch((err) => { console.error(`joining ${p.name}'s track failed:`, err.message); return null; });
-      if (built) {
-        const name = `${who}-audio.${built.format}`;
-        await fs.rename(path.join(out, `${who}-audio.pending`), path.join(out, name));
-        files.push(name);
-        for (const a of audio) await fs.rm(path.join(raw, a.file), { force: true });
-        const note = trackNote(p, built, audio, rec.quality || "best");
-        if (note) notes.push({ file: name, text: note });
-        if (names.get(p.name) > 1) {
-          notes.push({ file: name, text: `There is more than one track under the name ${p.name}. ` +
-            `Somebody rejoining on a different browser, or after clearing their site data, ` +
-            `comes back as a new person and gets a track of their own.` });
-        }
+      if (!built) continue;
+      const stem = tagAudio ? `${who}-audio-${fmt}` : `${who}-audio`;
+      const name = free(files, stem, `.${built.format}`);
+      await fs.rename(pending, path.join(out, name));
+      files.push(name);
+      for (const a of audio) await fs.rm(path.join(raw, a.file), { force: true });
+      const note = trackNote(p, built, audio, fmt);
+      if (note) notes.push({ file: name, text: note });
+      if (names.get(p.name) > 1) {
+        notes.push({ file: name, text: `There is more than one track under the name ${p.name}. ` +
+          `Somebody rejoining on a different browser, or after clearing their site data, ` +
+          `comes back as a new person and gets a track of their own.` });
       }
     }
 
     // Video cannot be padded the same way: a picture of nothing still
     // has to be encoded, and there is no encoder here. So each stretch
     // keeps its own file and is told where in the take it starts.
+    const videoAsked = rec.videoFormats || ["mp4"];
+    const tagVideo = videoAsked.length > 1;
     for (const kind of ["video", "programme"]) {
-      const parts = p.parts[kind] || [];
-      for (let i = 0; i < parts.length; i++) {
-        const ext = path.extname(parts[i].file);
-        const stem = kind === "programme" ? "everyone" : `${who}-video`;
-        const name = i === 0 ? `${stem}${ext}` : `${stem}-${i + 1}${ext}`;
-        await fs.rename(path.join(raw, parts[i].file), path.join(out, name))
-          .then(() => files.push(name))
-          .catch((err) => console.error(`filing ${parts[i].file} failed:`, err.message));
-        if (parts.length > 1 || parts[i].offsetMs > 1500) {
-          notes.push({ file: name, text: `This picture starts ${plainSeconds(parts[i].offsetMs)} ` +
-            `into the take. The sound track beside it is the full length and needs no shifting.` });
+      for (const fmt of videoAsked) {
+        const parts = p.parts[`${kind}:${fmt}`] || [];
+        for (let i = 0; i < parts.length; i++) {
+          const ext = path.extname(parts[i].file);
+          const base = kind === "programme" ? "everyone" : `${who}-video`;
+          const stem = tagVideo ? `${base}-${fmt}` : base;
+          const name = free(files, i === 0 ? stem : `${stem}-${i + 1}`, ext);
+          await fs.rename(path.join(raw, parts[i].file), path.join(out, name))
+            .then(() => files.push(name))
+            .catch((err) => console.error(`filing ${parts[i].file} failed:`, err.message));
+          if (parts.length > 1 || parts[i].offsetMs > 1500) {
+            notes.push({ file: name, text: `This picture starts ${plainSeconds(parts[i].offsetMs)} ` +
+              `into the take. The sound track beside it is the full length and needs no shifting.` });
+          }
         }
+      }
+    }
+
+    // A format nobody's browser could write is not a failure to hide.
+    // Say which person and which format, so the missing file is
+    // explained before it is noticed.
+    for (const fmt of audioAsked) {
+      if (!(p.parts[`audio:${fmt}`] || []).length) {
+        notes.push({ file: "", text: `${p.name}'s browser cannot record ${formatLabel(fmt)}, ` +
+          `so there is no ${formatLabel(fmt)} track for them.` });
       }
     }
   }
@@ -345,6 +384,15 @@ async function finalize(rec) {
     `Session ${rec.roomId} is done - ${files.length} files to download.`).catch(() => {});
 }
 
+// A name no other file in this recording has. Two formats can arrive in
+// the same box - a browser that cannot record uncompressed gives Opus
+// for both choices - and the second one must not land on the first.
+function free(files, stem, ext) {
+  let name = `${stem}${ext}`;
+  for (let n = 2; files.includes(name); n++) name = `${stem}-${n}${ext}`;
+  return name;
+}
+
 // A length in words, rounded the way a person would say it.
 function plainSeconds(ms) {
   const secs = Math.round(ms / 1000);
@@ -354,14 +402,14 @@ function plainSeconds(ms) {
 
 // The sentence beside a finished track: what was made up and why, and
 // what the microphone lost, in one place rather than two.
-function trackNote(p, built, parts, quality) {
+function trackNote(p, built, parts, fmt) {
   const lines = [];
   // Firefox cannot record uncompressed at all, so a guest on it comes
   // back compressed however the studio is set. Say which track it was,
   // rather than leaving the host to notice the file is small.
-  if (quality === "best" && built.format !== "wav") {
+  if (fmt === "wav" && built.format !== "wav") {
     lines.push(`${p.name}'s browser cannot record uncompressed audio, so this track is ` +
-      `compressed even though the studio is set to best quality. Firefox is the usual reason. ` +
+      `compressed even though the studio asked for WAV. Firefox is the usual reason. ` +
       `It is very good for speech; it is not every sample the microphone heard.`);
   }
   const lead = built.gaps.find((g) => g.atMs === 0);

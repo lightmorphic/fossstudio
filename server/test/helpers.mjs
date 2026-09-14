@@ -185,10 +185,20 @@ export function mediaSeconds(file) {
     ["-v", "error", "-show_entries", "format=duration", "-of", "default=nw=1:nk=1", file],
     { encoding: "utf8" });
   const text = (run.stdout || "").trim();
-  if (run.status !== 0 || !text || Number.isNaN(Number(text))) {
-    throw new Error(`ffprobe could not measure ${file}: ${(run.stderr || "it said nothing").trim()}`);
-  }
-  return Number(text);
+  if (run.status === 0 && text && !Number.isNaN(Number(text))) return Number(text);
+
+  // A WebM written live by a browser carries no length in its header -
+  // nothing knew the length while it was being written - so ffprobe
+  // answers "N/A". Reading the timestamp on the last packet is the real
+  // length and costs no decoding.
+  const walk = spawnSync("ffprobe",
+    ["-v", "error", "-select_streams", "v:0", "-show_entries", "packet=pts_time",
+      "-of", "csv=p=0", file], { encoding: "utf8" });
+  const stamps = (walk.stdout || "").trim().split("\n").filter(Boolean);
+  const last = Number(stamps[stamps.length - 1]);
+  if (walk.status === 0 && stamps.length && !Number.isNaN(last)) return last;
+
+  throw new Error(`ffprobe could not measure ${file}: ${(run.stderr || "it said nothing").trim()}`);
 }
 
 // ---------- Screenshots ----------

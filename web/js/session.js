@@ -1890,6 +1890,10 @@
 
   function startSelfRecording(upload) {
     recUpload = upload;
+    // What the studio asked for, decided on the server when the take
+    // began and pinned for its whole length. The browser is told the
+    // exact strings to try and never decides what a format is called.
+    const recipe = upload.recipe || { audio: [], video: [] };
     // Where this stretch of recording begins. The server stamps it the
     // instant the first recorder here reports it is running, and pads
     // the front of the track with that much silence, so a late joiner's
@@ -1907,10 +1911,16 @@
     // right extension instead of assuming
     const extOf = (mime) => (mime.startsWith("video/mp4") || mime.startsWith("audio/mp4") ? "mp4" : "webm");
 
-    const startOne = (track, kind, mime, bitrate) => {
-      if (!track) return;
-      let type = mime.find((m) => MediaRecorder.isTypeSupported(m));
-      if (!type) return;
+    // The studio asked for a list of formats; this browser writes the
+    // ones it can and quietly skips the rest, and the finished
+    // recording says which person's browser fell short. Two formats
+    // that come down to the same thing here - a browser with no
+    // uncompressed recording gives Opus for both choices - are recorded
+    // once, not twice.
+    const pick = (mimes) => (mimes || []).find((m) => MediaRecorder.isTypeSupported(m)) || null;
+
+    const startOne = (track, kind, fmt, type, bitrate) => {
+      if (!track || !type) return;
       const recorder = new MediaRecorder(new MediaStream([track]), {
         mimeType: type,
         ...(bitrate ? { videoBitsPerSecond: bitrate } : {})
@@ -1922,7 +1932,8 @@
         const n = seq++;
         // Chunks must land in order - chain the uploads
         queue = queue.then(() =>
-          fetch(`${base}&kind=${kind}&ext=${extOf(type)}&seq=${n}`, { method: "POST", body: e.data })
+          fetch(`${base}&kind=${kind}&fmt=${fmt}&ext=${extOf(type)}&seq=${n}`,
+            { method: "POST", body: e.data })
         ).catch(() => {});
       };
       recorder.onstart = sayStarted;
@@ -1942,16 +1953,18 @@
         micBus.gain.value = micProducer.paused ? 0 : 1;
         ctx.createMediaStreamSource(new MediaStream([micProducer.track])).connect(micBus).connect(m.audioDest);
       }
-      // MP4 first, because that is the file everything opens. Chrome and
-      // Edge record it directly; H.264 with AAC where the browser has an
-      // AAC encoder, H.264 with Opus where it does not. Firefox records
-      // no MP4 at all, so it falls through to WebM and the file is still
-      // a finished show - just in the container Firefox can write.
-      const mimes = ["video/mp4;codecs=avc1,mp4a.40.2", "video/mp4;codecs=avc1,opus",
-        "video/mp4;codecs=avc1", "video/webm;codecs=h264,opus",
-        "video/webm;codecs=avc1,opus", "video/webm;codecs=vp8,opus", "video/webm"];
-      const type = mimes.find((t) => MediaRecorder.isTypeSupported(t));
-      if (type) {
+      // One encode of the show per picture format the studio asked for.
+      // Each extra one is a second full encode here and a second upload
+      // over this connection while the show is running, which the
+      // settings page says plainly before anybody ticks it.
+      const seen = new Set();
+      let any = false;
+      for (const want of recipe.video) {
+        const type = pick(want.mimes);
+        if (!type || seen.has(type)) continue;
+        seen.add(type);
+        any = true;
+        const fmt = want.id;
         const recorder = new MediaRecorder(stream, { mimeType: type, videoBitsPerSecond: 3_000_000 });
         let seq = 0;
         let queue = Promise.resolve();
@@ -1959,32 +1972,44 @@
           if (!e.data.size) return;
           const n = seq++;
           queue = queue.then(() =>
-            fetch(`${base}&kind=programme&ext=${extOf(type)}&seq=${n}`, { method: "POST", body: e.data })
+            fetch(`${base}&kind=programme&fmt=${fmt}&ext=${extOf(type)}&seq=${n}`,
+              { method: "POST", body: e.data })
           ).catch(() => {});
         };
         recorder.start(5000);
         recorders.push({ recorder, getQueue: () => queue, kind: "programme" });
-      } else {
-        console.warn("this browser records no video at all; only the per-person tracks will arrive");
+      }
+      if (!any) {
+        console.warn("this browser records none of the chosen picture formats; " +
+          "only the per-person tracks will arrive");
       }
     }
 
-    // What goes in the file is the studio's choice, made in Settings
-    // and pinned for this take. Best quality is every sample the
-    // microphone heard; smaller files is Opus. Firefox cannot record
-    // uncompressed at all, so a guest on it falls through to Opus and
-    // the dashboard says which track that was.
+    // The sound formats the studio asked for, one file each. Firefox
+    // cannot record uncompressed at all, so a guest on it writes Opus
+    // whatever was asked for - and if Opus was also asked for, that is
+    // the same recording twice, so it is made once.
     //
     // The microphone goes through steadyTrack so a stalled device leaves
     // silence in the file rather than shortening it, and through
     // watchMicDelivery so the host is told when that happens.
-    const audioTypes = upload.quality === "smaller"
-      ? ["audio/webm;codecs=opus", "audio/webm"]
-      : ["audio/webm;codecs=pcm", "audio/webm;codecs=opus", "audio/webm"];
-    startOne(micProducer?.track && steadyTrack(micProducer.track), "audio", audioTypes);
+    const mic = micProducer?.track && steadyTrack(micProducer.track);
+    const heard = new Set();
+    for (const want of recipe.audio) {
+      const type = pick(want.mimes);
+      if (!type || heard.has(type)) continue;
+      heard.add(type);
+      startOne(mic, "audio", want.id, type);
+    }
     watchMicDelivery();
-    startOne(camProducer?.track, "video",
-      ["video/mp4;codecs=avc1", "video/webm;codecs=vp8", "video/webm"], 2_500_000);
+
+    const shot = new Set();
+    for (const want of recipe.video) {
+      const type = pick(want.camMimes);
+      if (!type || shot.has(type)) continue;
+      shot.add(type);
+      startOne(camProducer?.track, "video", want.id, type, 2_500_000);
+    }
     setRecIndicator(true);
   }
 

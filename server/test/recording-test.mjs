@@ -25,6 +25,13 @@ await dash.fill("#username", "admin");
 await dash.fill("#password", "testpass123");
 await dash.click("button[type=submit]");
 await dash.waitForURL("**/host/");
+// The formats this test expects, said out loud rather than inherited
+// from whatever ran before it.
+await dash.evaluate(() => fetch("/api/settings", {
+  method: "PUT",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ audioFormats: ["wav"], videoFormats: ["mp4"] })
+}));
 
 
 async function join(ctx, name, asHost) {
