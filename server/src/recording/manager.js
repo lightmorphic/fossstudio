@@ -24,7 +24,7 @@ import path from "node:path";
 import { config } from "../config.js";
 import { readJson, writeJson } from "../storage.js";
 import { assembleTrack } from "./splice.js";
-import { recipe, AUDIO_IDS, VIDEO_IDS, formatLabel } from "../formats.js";
+import { recipe, AUDIO_IDS, VIDEO_IDS, formatLabel, formatExt } from "../formats.js";
 
 const FORMAT_IDS = new Set([...AUDIO_IDS, ...VIDEO_IDS]);
 
@@ -63,7 +63,8 @@ async function saveSnapshot(rec) {
     const snap = {
       id: rec.id, roomId: rec.roomId,
       title: rec.title, startedAt: rec.startedAt,
-      audioFormats: rec.audioFormats, videoFormats: rec.videoFormats,
+      showFormat: rec.showFormat, separateFiles: rec.separateFiles,
+      audioFormats: rec.audioFormats, cameraFormats: rec.cameraFormats,
       people: Object.fromEntries(rec.people)
     };
     // writeJson: atomic (temp file + rename) and owner-only (0600), same
@@ -85,7 +86,7 @@ export function uploadCreds(rec, peer) {
     // The exact strings this browser should try, worked out from the
     // studio's settings when the take began. A browser is never asked
     // to decide what a format is called.
-    recipe: recipe(rec.audioFormats, rec.videoFormats)
+    recipe: recipe(rec.showFormat, rec.separateFiles, rec.audioFormats, rec.cameraFormats)
   };
 }
 
@@ -100,7 +101,11 @@ export async function listRecordings() {
   return readJson("recordings.json", []);
 }
 
-export async function startRecording(room, audioFormats = ["wav"], videoFormats = ["mp4"]) {
+export async function startRecording(room, want = {}) {
+  const {
+    showFormat = "mp4", separateFiles = true,
+    audioFormats = ["wav"], cameraFormats = ["mp4"]
+  } = want;
   if (active.has(room.id)) throw new Error("already recording");
   const recId = `${room.id}-${new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19)}`;
   const rec = {
@@ -111,8 +116,10 @@ export async function startRecording(room, audioFormats = ["wav"], videoFormats 
     // Pinned for the life of the take: a setting changed halfway through
     // must not leave one person's track in a different format from
     // everybody else's.
-    audioFormats,
-    videoFormats,
+    showFormat,
+    separateFiles,
+    audioFormats: separateFiles ? audioFormats : [],
+    cameraFormats: separateFiles ? cameraFormats : [],
     // personId -> one person's whole take: who they are, the stretches
     // they recorded, and what their microphone lost. Keyed by the person
     // rather than the connection, so a reconnect continues a take
@@ -342,15 +349,17 @@ async function finalize(rec) {
     // Video cannot be padded the same way: a picture of nothing still
     // has to be encoded, and there is no encoder here. So each stretch
     // keeps its own file and is told where in the take it starts.
-    const videoAsked = rec.videoFormats || ["mp4"];
-    const tagVideo = videoAsked.length > 1;
-    for (const kind of ["video", "programme"]) {
-      for (const fmt of videoAsked) {
+    const camerasAsked = rec.cameraFormats || [];
+    const tagCamera = camerasAsked.length > 1;
+    for (const [kind, asked] of [["video", camerasAsked], ["programme", [rec.showFormat || "mp4"]]]) {
+      for (const fmt of asked) {
         const parts = p.parts[`${kind}:${fmt}`] || [];
         for (let i = 0; i < parts.length; i++) {
           const ext = path.extname(parts[i].file);
           const base = kind === "programme" ? "everyone" : `${who}-video`;
-          const stem = tagVideo ? `${base}-${fmt}` : base;
+          // The show is one file and never needs telling apart; a
+          // camera does, but only when more than one was asked for.
+          const stem = kind === "video" && tagCamera ? `${base}-${fmt}` : base;
           const name = free(files, i === 0 ? stem : `${stem}-${i + 1}`, ext);
           await fs.rename(path.join(raw, parts[i].file), path.join(out, name))
             .then(() => files.push(name))
@@ -358,6 +367,15 @@ async function finalize(rec) {
           if (parts.length > 1 || parts[i].offsetMs > 1500) {
             notes.push({ file: name, text: `This picture starts ${plainSeconds(parts[i].offsetMs)} ` +
               `into the take. The sound track beside it is the full length and needs no shifting.` });
+          }
+          // The show is made by the host's browser and nobody else's. A
+          // host on Firefox cannot write an MP4 however the studio is
+          // set, so the file that arrives says so rather than leaving
+          // somebody to wonder why they asked for one and got another.
+          if (kind === "programme" && ext !== `.${formatExt(fmt)}`) {
+            notes.push({ file: name, text: `The studio asked for ${formatLabel(fmt)}, but the ` +
+              `host's browser cannot write it, so the video of everyone is a ${ext.slice(1)} ` +
+              `instead. Whoever hosts decides this one - nobody else's browser touches it.` });
           }
         }
       }

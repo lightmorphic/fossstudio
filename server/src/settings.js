@@ -31,8 +31,15 @@ export const SETTINGS_DEFAULTS = {
   wallpaper: null,
   bg: null,
   logo: null,
+  // The one question most people have: what the finished video of
+  // everyone should be. The rest only applies when the separate files
+  // per person are wanted too, which they are by default - that is what
+  // the studio is for - but plenty of people want one file to upload
+  // and nothing else.
+  showFormat: "mp4",
+  separateFiles: true,
   audioFormats: ["wav"],
-  videoFormats: ["mp4"]
+  cameraFormats: ["mp4"]
 };
 
 // A list of format ids, cleaned: known ones only, in catalog order, no
@@ -73,10 +80,21 @@ export async function migrateSettings() {
   // twenty-four times as much to disk without being told.
   if (current?.recordingQuality && !current.audioFormats) {
     next.audioFormats = current.recordingQuality === "smaller" ? ["opus"] : ["wav"];
-    next.videoFormats = ["mp4"];
     changed = true;
   }
   delete next.recordingQuality;
+
+  // The picture was one list for both the show and the cameras for about
+  // an hour. It is two questions now, because they are two questions:
+  // the show is one file the host's browser makes, the cameras are one
+  // file each and only for people who want the parts.
+  if (Array.isArray(current?.videoFormats)) {
+    next.showFormat = current.videoFormats[0] || "mp4";
+    next.cameraFormats = current.videoFormats;
+    next.separateFiles = true;
+    changed = true;
+  }
+  delete next.videoFormats;
 
   if (!next.exampleAdOffered && !next.adBanner) {
     next.exampleAdOffered = true;
@@ -114,7 +132,7 @@ async function copyExampleAd() {
 // any more. They stay on disk - somebody's file is not ours to rewrite -
 // but they are not handed back out, so a dead secret does not keep
 // arriving in a browser for no reason.
-const FORGOTTEN = ["fosscastUrl", "fosscastToken", "recordingQuality"];
+const FORGOTTEN = ["fosscastUrl", "fosscastToken", "recordingQuality", "videoFormats"];
 
 export async function getSettings() {
   const stored = { ...SETTINGS_DEFAULTS, ...(await readJson(FILE, {})) };
@@ -142,10 +160,12 @@ export async function updateSettings(patch) {
   if (patch.adBannerIsExample === false) {
     clean.adBannerIsExample = false;
   }
+  if (VIDEO_IDS.includes(patch.showFormat)) clean.showFormat = patch.showFormat;
+  if (typeof patch.separateFiles === "boolean") clean.separateFiles = patch.separateFiles;
   const audio = cleanFormats(patch.audioFormats, AUDIO_IDS, null);
   if (audio) clean.audioFormats = audio;
-  const video = cleanFormats(patch.videoFormats, VIDEO_IDS, null);
-  if (video) clean.videoFormats = video;
+  const camera = cleanFormats(patch.cameraFormats, VIDEO_IDS, null);
+  if (camera) clean.cameraFormats = camera;
   const next = { ...(await getSettings()), ...clean };
   await writeJson(FILE, next);
   return next;

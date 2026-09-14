@@ -473,19 +473,24 @@
 
   // ---------- what a recording holds ----------
   //
-  // A tick is a file. Everything offered is something a browser writes
-  // itself, which is why the rows say which browsers can write each one
-  // rather than presenting the list as a judgment of ours. The running
-  // total underneath is the whole point of the screen: the moment to
-  // find out that four ticks is forty gigabytes is before the show.
+  // One question first, because it is the only one most people have:
+  // what should the finished video of everyone be. Everything else -
+  // a track and a camera per person, and what those are written as -
+  // is behind a yes or no, and stays out of sight when the answer is no.
+  //
+  // Nothing here is our judgment of what is good. Every format offered
+  // is one a browser writes itself, which is why each row says which
+  // browsers can write it. The running total is the point of the
+  // screen: the moment to find out that a choice is forty gigabytes is
+  // before the show.
 
-  let catalog = null;               // what the server says can be written
-  let chosen = { audio: [], video: [] };
+  let catalog = null;
+  let chosen = { showFormat: "mp4", separateFiles: true, audio: [], camera: [] };
 
-  // What this browser, right now, can actually write. The studio's
-  // setting reaches every guest, so a format this machine cannot manage
-  // is still worth ticking - but saying so here saves a host wondering
-  // why their own track never appears.
+  // What this browser, right now, can write. The setting reaches every
+  // guest, so a format this machine cannot manage is still worth
+  // picking - but the show itself is made here, so for that row it is
+  // the whole answer.
   const canHere = (mimes) => (mimes || []).some((m) => {
     try { return MediaRecorder.isTypeSupported(m); } catch { return false; }
   });
@@ -496,68 +501,115 @@
     return `${Math.round(bytes / 1e3)} KB`;
   }
 
+  // One row. `pickOne` makes it a radio - the show is one file - and
+  // anything else is a tick box.
+  function formatRow(f, { pickOne, size, on, onPick }) {
+    const row = document.createElement("label");
+    row.className = "fmt-row";
+    const box = document.createElement("input");
+    box.type = pickOne ? "radio" : "checkbox";
+    if (pickOne) box.name = "showFormatPick";
+    box.checked = on;
+    row.classList.toggle("on", on);
+    const body = document.createElement("div");
+    body.className = "fmt-body";
+    const name = document.createElement("div");
+    name.className = "fmt-name";
+    const b = document.createElement("b");
+    b.textContent = f.label;
+    const sizeEl = document.createElement("span");
+    sizeEl.className = "fmt-size";
+    sizeEl.textContent = size;
+    name.append(b, sizeEl);
+    const detail = document.createElement("span");
+    detail.className = "hint";
+    detail.textContent = f.detail;
+    // Two separate facts: which browsers in general, and this one in
+    // particular. Run together in one sentence they read as one claim
+    // and neither lands.
+    const who = document.createElement("span");
+    who.className = "hint fmt-browsers";
+    who.textContent = f.browsers;
+    const here = document.createElement("span");
+    here.className = "hint fmt-here";
+    const able = canHere(f.mimes);
+    here.classList.toggle("no", !able);
+    here.textContent = able ? "This browser can write it."
+      : pickOne ? "This browser cannot write it, so hosting from here would give you WebM instead."
+        : "This browser cannot write it, so your own file will not be in it.";
+    body.append(name, detail, who, here);
+    row.append(box, body);
+    box.addEventListener("change", () => onPick(box, row));
+    return row;
+  }
+
   function drawFormats() {
     if (!catalog) return;
-    for (const [kind, host] of [["audio", $("audioFormats")], ["video", $("videoFormats")]]) {
-      host.textContent = "";
-      for (const f of catalog[kind]) {
-        const row = document.createElement("label");
-        row.className = "fmt-row";
-        const box = document.createElement("input");
-        box.type = "checkbox";
-        box.checked = chosen[kind].includes(f.id);
-        row.classList.toggle("on", box.checked);
-        const size = kind === "audio"
-          ? `${saidSize(f.bytesPerHour)} per person per hour`
-          : `${saidSize(catalog.cameraBytesPerHour)} per person per hour, ` +
-            `plus ${saidSize(catalog.programBytesPerHour)} for the video of everyone`;
-        const body = document.createElement("div");
-        body.className = "fmt-body";
-        const name = document.createElement("div");
-        name.className = "fmt-name";
-        const b = document.createElement("b");
-        b.textContent = f.label;
-        const sizeEl = document.createElement("span");
-        sizeEl.className = "fmt-size";
-        sizeEl.textContent = size;
-        name.append(b, sizeEl);
-        const detail = document.createElement("span");
-        detail.className = "hint";
-        detail.textContent = f.detail;
-        const who = document.createElement("span");
-        who.className = "hint fmt-browsers";
-        // Two separate facts: which browsers in general, and this one in
-        // particular. Run together in one sentence they read as one
-        // claim and neither lands.
-        who.textContent = f.browsers;
-        const here = document.createElement("span");
-        here.className = "hint fmt-here";
-        here.classList.toggle("no", !canHere(f.mimes));
-        here.textContent = canHere(f.mimes)
-          ? "This browser can write it."
-          : "This browser cannot write it, so your own track will not be in it.";
-        body.append(name, detail, who, here);
-        row.append(box, body);
-        box.addEventListener("change", () => {
-          const next = box.checked
-            ? [...chosen[kind], f.id]
-            : chosen[kind].filter((id) => id !== f.id);
-          // Never a browser popup, and never a silent refusal either:
-          // the last one stays ticked and the line underneath says why.
-          if (!next.length) {
-            box.checked = true;
-            say(`A recording has to be written as something, so ${f.label} stays until you pick another.`);
-            return;
-          }
-          chosen[kind] = catalog[kind].map((x) => x.id).filter((id) => next.includes(id));
-          row.classList.toggle("on", box.checked);
-          saveFormats().catch(() => {});
-          sumUp();
-        });
-        host.appendChild(row);
-      }
+
+    const showHost = $("showFormat");
+    showHost.textContent = "";
+    for (const f of catalog.video) {
+      showHost.appendChild(formatRow(f, {
+        pickOne: true,
+        size: `${saidSize(catalog.programBytesPerHour)} an hour`,
+        on: chosen.showFormat === f.id,
+        onPick: () => {
+          chosen.showFormat = f.id;
+          drawFormats();
+          save().catch(() => {});
+        }
+      }));
     }
+
+    for (const [key, host, warn] of [
+      ["audio", $("audioFormats"), null],
+      ["camera", $("cameraFormats"), $("cameraWarn")]
+    ]) {
+      host.textContent = "";
+      const list = key === "audio" ? catalog.audio : catalog.video;
+      for (const f of list) {
+        host.appendChild(formatRow(f, {
+          pickOne: false,
+          size: key === "audio"
+            ? `${saidSize(f.bytesPerHour)} per person per hour`
+            : `${saidSize(catalog.cameraBytesPerHour)} per person per hour`,
+          on: chosen[key].includes(f.id),
+          onPick: (box, row) => {
+            const next = box.checked
+              ? [...chosen[key], f.id]
+              : chosen[key].filter((id) => id !== f.id);
+            // Never a browser popup, and never a silent refusal either:
+            // the last one stays ticked and the line below says why.
+            if (!next.length) {
+              box.checked = true;
+              say(`Keeping the parts means keeping something, so ${f.label} stays ` +
+                `until you pick another. Answer No above if you only want the video of everyone.`);
+              return;
+            }
+            chosen[key] = list.map((x) => x.id).filter((id) => next.includes(id));
+            row.classList.toggle("on", box.checked);
+            save().catch(() => {});
+            sumUp();
+          }
+        }));
+      }
+      if (warn) warn.hidden = chosen[key].length < 2;
+    }
+
+    for (const input of document.querySelectorAll("input[name=separateFiles]")) {
+      input.checked = input.value === (chosen.separateFiles ? "yes" : "no");
+    }
+    $("partsPanel").hidden = !chosen.separateFiles;
     sumUp();
+  }
+
+  for (const input of document.querySelectorAll("input[name=separateFiles]")) {
+    input.addEventListener("change", () => {
+      chosen.separateFiles = input.value === "yes";
+      $("partsPanel").hidden = !chosen.separateFiles;
+      save().catch(() => {});
+      sumUp();
+    });
   }
 
   function say(text) {
@@ -565,27 +617,35 @@
     el.textContent = text;
     el.hidden = false;
     clearTimeout(el._t);
-    el._t = setTimeout(() => { el.hidden = true; el.textContent = "Saved"; }, 4000);
+    el._t = setTimeout(() => { el.hidden = true; el.textContent = "Saved"; }, 5000);
   }
 
-  // What the ticks add up to, in the shape of a real show.
+  // What the answers add up to, in the shape of a real show.
   function sumUp() {
     if (!catalog) return;
     const people = Math.max(1, Math.min(10, Number($("sumPeople").value) || 1));
     const hours = Math.max(1, Math.min(8, Number($("sumHours").value) || 1));
     const lines = [];
     let total = 0;
-    for (const f of catalog.audio) {
-      if (!chosen.audio.includes(f.id)) continue;
-      const bytes = f.bytesPerHour * people * hours;
+    const show = catalog.video.find((f) => f.id === chosen.showFormat);
+    if (show) {
+      const bytes = catalog.programBytesPerHour * hours;
       total += bytes;
-      lines.push([`${f.label}, ${people} ${people === 1 ? "track" : "tracks"}`, bytes]);
+      lines.push([`The video of everyone, ${show.label}`, bytes]);
     }
-    for (const f of catalog.video) {
-      if (!chosen.video.includes(f.id)) continue;
-      const bytes = (catalog.cameraBytesPerHour * people + catalog.programBytesPerHour) * hours;
-      total += bytes;
-      lines.push([`${f.label}, ${people} ${people === 1 ? "camera" : "cameras"} and the show`, bytes]);
+    if (chosen.separateFiles) {
+      for (const f of catalog.audio) {
+        if (!chosen.audio.includes(f.id)) continue;
+        const bytes = f.bytesPerHour * people * hours;
+        total += bytes;
+        lines.push([`${f.label}, ${people} ${people === 1 ? "track" : "tracks"}`, bytes]);
+      }
+      for (const f of catalog.video) {
+        if (!chosen.camera.includes(f.id)) continue;
+        const bytes = catalog.cameraBytesPerHour * people * hours;
+        total += bytes;
+        lines.push([`${f.label}, ${people} ${people === 1 ? "camera" : "cameras"}`, bytes]);
+      }
     }
     $("sumTotal").textContent =
       `About ${saidSize(total)} for a ${hours}-hour show with ${people} ${people === 1 ? "person" : "people"}`;
@@ -600,17 +660,21 @@
       li.append(a, c);
       ul.appendChild(li);
     }
-    $("videoWarn").hidden = chosen.video.length < 2;
   }
 
   for (const id of ["sumPeople", "sumHours"]) {
     $(id).addEventListener("input", sumUp);
   }
 
-  async function saveFormats() {
+  async function save() {
     await apiFetch("/api/settings", {
       method: "PUT",
-      body: JSON.stringify({ audioFormats: chosen.audio, videoFormats: chosen.video })
+      body: JSON.stringify({
+        showFormat: chosen.showFormat,
+        separateFiles: chosen.separateFiles,
+        audioFormats: chosen.audio,
+        cameraFormats: chosen.camera
+      })
     });
     say("Saved");
   }
@@ -734,8 +798,10 @@
     const s = await apiFetch("/api/settings");
     catalog = catalog || await apiFetch("/api/formats");
     chosen = {
-      audio: Array.isArray(s.audioFormats) ? s.audioFormats : ["wav"],
-      video: Array.isArray(s.videoFormats) ? s.videoFormats : ["mp4"]
+      showFormat: s.showFormat || "mp4",
+      separateFiles: s.separateFiles !== false,
+      audio: Array.isArray(s.audioFormats) && s.audioFormats.length ? s.audioFormats : ["wav"],
+      camera: Array.isArray(s.cameraFormats) && s.cameraFormats.length ? s.cameraFormats : ["mp4"]
     };
     drawFormats();
     updateWallpaperPreview(s.wallpaper);

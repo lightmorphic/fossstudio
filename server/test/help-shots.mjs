@@ -132,17 +132,17 @@ await dash.fill("#placePublicIp", "203.0.113.10");
 await dash.waitForTimeout(200);
 await (await dash.$(".content section:not([hidden])")).screenshot({ path: keep("settings-address") });
 
-// The formats, cut under the sound rows and the first picture row: the
-// running total below has its own words on the page, and a screenshot
-// shrunk into a column is only worth having if it can still be read.
+// The formats, cut under the first question and the top of the second:
+// that is the shape of the screen, and a screenshot shrunk into a
+// column is only worth having if the words in it can still be read.
 await dash.goto(`${B}/host/#settings/recording`);
 await dash.waitForTimeout(800);
 await dash.screenshot({
   path: keep("settings-quality"),
   clip: await dash.evaluate(() => {
     const panel = document.querySelector("#pane-recording .panel").getBoundingClientRect();
-    const rows = document.querySelectorAll("#videoFormats .fmt-row");
-    const cut = rows[0].getBoundingClientRect().bottom;
+    const rows = document.querySelectorAll("#showFormat .fmt-row");
+    const cut = rows[1].getBoundingClientRect().bottom;
     return { x: panel.x, y: panel.y, width: panel.width, height: cut + 20 - panel.y };
   })
 });

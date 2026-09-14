@@ -1893,12 +1893,16 @@
     // What the studio asked for, decided on the server when the take
     // began and pinned for its whole length. The browser is told the
     // exact strings to try and never decides what a format is called.
-    const recipe = upload.recipe || { audio: [], video: [] };
+    const recipe = upload.recipe || { show: { id: "mp4", mimes: [] }, audio: [], camera: [] };
     // Where this stretch of recording begins. The server stamps it the
     // instant the first recorder here reports it is running, and pads
     // the front of the track with that much silence, so a late joiner's
     // file still starts at zero alongside everybody else's.
     let toldServer = false;
+    // Somebody recording nothing still joined the take, and the server
+    // stamps the start from the first word it hears. Said here for a
+    // guest with no recorder of their own, and by the first recorder
+    // to run for everybody else.
     const sayStarted = () => {
       if (toldServer) return;
       toldServer = true;
@@ -1957,14 +1961,12 @@
       // Each extra one is a second full encode here and a second upload
       // over this connection while the show is running, which the
       // settings page says plainly before anybody ticks it.
-      const seen = new Set();
-      let any = false;
-      for (const want of recipe.video) {
-        const type = pick(want.mimes);
-        if (!type || seen.has(type)) continue;
-        seen.add(type);
-        any = true;
-        const fmt = want.id;
+      // One encode of the show, in the format the studio asked for, or
+      // the nearest this browser can manage. Whoever hosts decides what
+      // the finished video is: nobody else's browser touches it.
+      const fmt = recipe.show.id;
+      const type = pick(recipe.show.mimes) || pick(["video/webm;codecs=vp8,opus", "video/webm"]);
+      if (type) {
         const recorder = new MediaRecorder(stream, { mimeType: type, videoBitsPerSecond: 3_000_000 });
         let seq = 0;
         let queue = Promise.resolve();
@@ -1978,10 +1980,9 @@
         };
         recorder.start(5000);
         recorders.push({ recorder, getQueue: () => queue, kind: "programme" });
-      }
-      if (!any) {
-        console.warn("this browser records none of the chosen picture formats; " +
-          "only the per-person tracks will arrive");
+      } else {
+        console.warn("this browser records no video at all; " +
+          "there will be no video of everyone");
       }
     }
 
@@ -1993,23 +1994,31 @@
     // The microphone goes through steadyTrack so a stalled device leaves
     // silence in the file rather than shortening it, and through
     // watchMicDelivery so the host is told when that happens.
-    const mic = micProducer?.track && steadyTrack(micProducer.track);
+    // Made only if something is going to record it: the steady track
+    // runs an audio graph of its own, and there is no reason to build
+    // one for a studio that only wants the video of everyone.
+    let mic = null;
     const heard = new Set();
     for (const want of recipe.audio) {
       const type = pick(want.mimes);
       if (!type || heard.has(type)) continue;
       heard.add(type);
+      if (!mic) mic = micProducer?.track && steadyTrack(micProducer.track);
       startOne(mic, "audio", want.id, type);
     }
-    watchMicDelivery();
+    if (mic) watchMicDelivery();
 
     const shot = new Set();
-    for (const want of recipe.video) {
-      const type = pick(want.camMimes);
+    for (const want of recipe.camera) {
+      const type = pick(want.mimes);
       if (!type || shot.has(type)) continue;
       shot.add(type);
       startOne(camProducer?.track, "video", want.id, type, 2_500_000);
     }
+    // Nothing to record here - the studio only wants the video of
+    // everyone, and this is not the host. The take still has to know
+    // this person was in it, and when they arrived.
+    if (!recorders.length) sayStarted();
     setRecIndicator(true);
   }
 
@@ -2340,8 +2349,13 @@
         if (upload) startSelfRecording(upload);
         else setRecIndicator(true);
       };
+      // Even somebody who recorded nothing has to say they are done.
+      // When the studio only wants the video of everyone, a guest runs
+      // no recorder at all, and a take that waits for their marker sits
+      // out its full twenty-second timeout before it is filed.
       eventHandlers.recordingStopped = () => {
-        recorders.length ? stopSelfRecording() : setRecIndicator(false);
+        if (recorders.length || recUpload) stopSelfRecording();
+        else setRecIndicator(false);
       };
       // Somebody's microphone is losing audio. Say so now, by name, in
       // the host's own panel: the padding keeps the file usable but the

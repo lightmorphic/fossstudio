@@ -30,7 +30,10 @@ await dash.waitForURL("**/host/");
 await dash.evaluate(() => fetch("/api/settings", {
   method: "PUT",
   headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ audioFormats: ["wav"], videoFormats: ["mp4"] })
+  body: JSON.stringify({
+    showFormat: "mp4", separateFiles: true,
+    audioFormats: ["wav"], cameraFormats: ["mp4"]
+  })
 }));
 
 

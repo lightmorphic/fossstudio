@@ -103,17 +103,46 @@
       <!-- Settings: what a recording holds -->
       <section id="pane-recording" class="stack" hidden>
         <div class="panel">
-          <h2>Recording formats</h2>
-          <p class="hint">Every recording is written by the browser it was made in. Nothing on this server opens, converts or re-encodes a file, so this is not our list of what is good - it is the list of what browsers can hand us. Tick as many as you want. Each one is a separate file, written at the same time, and the sizes below say what that costs before you find out afterwards.</p>
+          <h2>The video of everyone</h2>
+          <p class="hint">One finished video of the whole show, the way it looked on screen - the file most people upload somewhere and never think about again. Pick what you want it to be.</p>
+          <div class="fmt-list" id="showFormat"></div>
+          <p class="hint fmt-warn">Whoever hosts makes this file: their browser draws the show and encodes it, and nobody else's browser touches it. So an MP4 needs the host on Chrome or Edge. A host on Firefox gets WebM whatever is picked here, and the recording says so beside the file.</p>
+        </div>
+
+        <div class="panel">
+          <h2>A file for each person as well</h2>
+          <p class="hint">Every person's own microphone and their own camera, as separate files, each the full length of the take. This is what you want if the show is going to be edited - levelled, cleaned up, a bad patch repaired - and what you do not need if the video of everyone is the finished thing.</p>
+          <div class="choice" id="separateChoice">
+            <label class="choice-row">
+              <input type="radio" name="separateFiles" value="yes">
+              <span>
+                <b>Yes, keep the parts</b>
+                <span class="hint">A track and a camera for each person, in the formats you pick below.</span>
+              </span>
+            </label>
+            <label class="choice-row">
+              <input type="radio" name="separateFiles" value="no">
+              <span>
+                <b>No, just the video of everyone</b>
+                <span class="hint">One file per recording. Nothing to sort through, and a fraction of the disk.</span>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div class="panel" id="partsPanel" hidden>
+          <h2>What the parts are written as</h2>
+          <p class="hint">Everything here is written by the browser it was recorded in. Nothing on this server opens, converts or re-encodes a file, so this is not our list of what is good - it is the list of what browsers can hand us. Tick as many as you want; each is a separate file, written at the same time.</p>
 
           <h3 class="fmt-head">Sound, one file per person</h3>
           <div class="fmt-list" id="audioFormats"></div>
 
-          <h3 class="fmt-head">Picture</h3>
-          <p class="hint" style="margin-bottom:0.7rem">Each of these is written for every person's camera and for the video of everyone, so one tick is one more file per person plus one more of the whole show.</p>
-          <div class="fmt-list" id="videoFormats"></div>
-          <p class="hint fmt-warn" id="videoWarn" hidden>More than one picture format means the host's browser encodes the show that many times over and sends every copy up the host's own connection while the show is running. On a slow connection that bites long before the disk does.</p>
+          <h3 class="fmt-head">Cameras, one file per person</h3>
+          <div class="fmt-list" id="cameraFormats"></div>
+          <p class="hint fmt-warn" id="cameraWarn" hidden>More than one camera format means every person's browser encodes their camera that many times over and sends every copy up their own connection while the show is running. On a slow connection that bites long before the disk does.</p>
+        </div>
 
+        <div class="panel">
           <div class="fmt-sum" id="formatSum">
             <div class="fmt-sum-line">
               <label>People <input type="number" id="sumPeople" min="1" max="10" value="4"></label>
@@ -123,10 +152,8 @@
             <ul class="fmt-break" id="sumBreak"></ul>
             <p class="hint">An upper limit, not a promise: the picture is recorded at a fixed rate and a still room comes in well under it. Sound is exact.</p>
           </div>
-
           <span class="msg ok" id="qualityMsg" hidden>Saved</span>
-          <p class="hint" style="margin-top:1rem">A setting applies to the next recording you start. A take already running keeps what it began with, so nobody ends up with one person's track in a format of its own.</p>
-          <p class="hint" style="margin-top:0.7rem">A person whose browser cannot write something you asked for is simply not recorded in it, and the Recordings list says whose browser it was beside the files that did arrive. <a class="helplink" href="#help/recording-quality">More about what is in the file</a></p>
+          <p class="hint" style="margin-top:1rem">A setting applies to the next recording you start. A take already running keeps what it began with, so nobody ends up with one person's track in a format of its own. <a class="helplink" href="#help/recording-quality">More about what is in the file</a></p>
         </div>
       </section>
 
@@ -295,7 +322,7 @@
             <div class="help-prose">
               <p>A file ending in <code>.webm</code> is a box. The name on the box tells you how it is packed and nothing at all about what is inside, and the same box can hold two things that differ by a factor of twenty-five.</p>
               <p>One is every sample your microphone heard, kept exactly as it arrived. The other is a compressed version of it, which throws away what the ear does not miss and is perfectly good for speech. Open them side by side in a player and they sound alike.</p>
-              <p>So the Formats screen names the formats and says what each one costs an hour, and adds up what you have ticked before you record rather than after. Tick as many as you want: each is written at the same time, as its own file.</p>
+              <p>So the Formats screen asks the plain question first - what do you want the finished video of everyone to be - and only then, if you say you want the separate files as well, what those should be. It says what each costs an hour and adds it up before you record rather than after.</p>
             </div>
             <div class="help-side">
               <div class="table-wrap">
@@ -321,10 +348,10 @@
           <h2>Which formats should I choose?</h2>
           <div class="help-cols">
             <div class="help-prose">
-              <p><b>WAV</b> if the recording is going to be worked on afterwards - levelled, cleaned up, noise removed, a bad patch repaired. Every one of those jobs is better done on the real samples, and compressing once at the end is better than compressing twice.</p>
-              <p><b>Opus</b> if it is two people talking and it goes out more or less as recorded. A two-hour session with four people is a few hundred megabytes instead of eleven gigabytes.</p>
-              <p>For the picture, <b>MP4</b> is the file almost every editor opens without argument, and <b>WebM, VP8</b> is the one format every browser here can write. VP9 and AV1 look better for the same room on disk and are heavier to make.</p>
-              <p>Ticking more than one is allowed and costs what the screen says: every extra picture format is another encode in the host's browser and another upload while the show is running, which bites on a slow connection long before the disk does.</p>
+              <p>For the video of everyone, <b>MP4</b> is the file almost every editor and every website takes without argument. <b>WebM, VP8</b> is the one format every browser here can write. VP9 and AV1 look better for the same room on disk and are heavier on the machine making them.</p>
+              <p><b>Whoever hosts makes that file.</b> Their browser draws the show and encodes it, and no guest's browser touches it - so an MP4 needs the host on Chrome or Edge, and a host on Firefox gets WebM whatever is picked. The recording says so beside the file when that happens.</p>
+              <p>Say <b>no</b> to the separate files if the video of everyone is the finished thing: one file a recording, nothing to sort through, a fraction of the disk.</p>
+              <p>Say <b>yes</b> if it is going to be edited. Then, for sound, <b>WAV</b> if it will be levelled, cleaned up or repaired - every one of those jobs is better done on the real samples, and compressing once at the end beats compressing twice - and <b>Opus</b> if it is two people talking and it goes out more or less as recorded.</p>
               <p>You can change it between sessions. A recording already running keeps whatever it started with, so one person's track can never come back in a different form from everybody else's.</p>
               <div class="note">
                 <b>These are the browser's formats, not ours</b>
@@ -333,9 +360,9 @@
             </div>
             <div class="help-side">
               <figure class="shot">
-                <img src="/img/help/settings-quality.jpg" width="1400" height="804" loading="lazy"
-                     alt="The Recording formats screen in Settings: tick boxes for WAV and Opus sound and for MP4, WebM VP8, VP9 and AV1 pictures, each with what it costs per person per hour, and a running total underneath.">
-                <figcaption>Settings, Formats. Tick what you want; the total underneath says what a show of that size comes to.</figcaption>
+                <img src="/img/help/settings-quality.jpg" width="1400" height="448" loading="lazy"
+                     alt="The Formats screen in Settings: first a choice of what the video of everyone should be - MP4, WebM VP8, VP9 or AV1 - each with what it costs an hour, then a yes or no for keeping a file per person.">
+                <figcaption>Settings, Formats. The video of everyone first, then whether you want the parts as well.</figcaption>
               </figure>
             </div>
           </div>
@@ -347,7 +374,7 @@
             <div class="help-prose">
               <p>Because with WAV ticked every person in the room is producing about 1.4 GB an hour of their own audio, plus their camera, plus the one video of everyone that your browser draws. Four people for two hours is over 11 GB, and it lands on this server.</p>
               <p>The studio never opens a recording to shrink it - there is no media tool in it and nothing on the server decodes a single sample, which is why a full room does not need a powerful machine. The price of that is disk.</p>
-              <p>Download what you want and delete the rest; a recording deleted here is gone. If disk is the tighter constraint, untick WAV and leave Opus, and the running total on the Formats screen will show you what that saves before you record.</p>
+              <p>Download what you want and delete the rest; a recording deleted here is gone. If disk is the tighter constraint, answer No to the separate files, or keep them and swap WAV for Opus. The running total on the Formats screen shows what either saves before you record.</p>
             </div>
             <div class="help-side">
               <figure class="shot">

@@ -459,8 +459,7 @@ export function attachSignaling() {
               }
               case "record": {
                 if (data.start) {
-                  const s2 = await getSettings();
-                  const rec = await startRecording(room, s2.audioFormats, s2.videoFormats);
+                  const rec = await startRecording(room, await getSettings());
                   for (const p of room.peers.values()) {
                     if (p.socket.readyState === 1) {
                       p.socket.send(JSON.stringify({

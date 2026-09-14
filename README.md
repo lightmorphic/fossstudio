@@ -81,18 +81,22 @@ and you never will.
   own track, and uploaded as it is made. Nothing on the server ever
   opens a recording - there is no media tool in the image and nothing
   decodes a sample - so the box stays quiet however full the room is.
-- **The formats are yours to pick, and they are the browser's.** Settings,
-  Formats lists what a browser can write and lets you tick as many as
-  you want: **WAV**, every sample as the microphone heard it at about
-  **1.4 GB per person per hour**, or **Opus**, very good for speech at
-  about **58 MB**; and for the picture **MP4 (H.264)**, **WebM VP8**,
-  **VP9** or **AV1**. Each tick is another file, written at the same
-  time, and the screen adds up what a show of your size comes to before
-  you record rather than after. Nothing here converts anything, so this
-  is the browser's list, not ours: Firefox writes Opus and VP8 and
-  nothing else, and a guest on it comes back in those whatever you tick,
-  with the Recordings list saying so beside their files. WAV and MP4 are
-  the defaults. **Read this before a long show.**
+- **One question, then the rest only if you want it.** Settings, Formats
+  asks what the finished **video of everyone** should be - **MP4
+  (H.264)**, **WebM VP8**, **VP9** or **AV1** - and then whether you
+  want a file for each person as well. Say no and a recording is one
+  file. Say yes and you pick what those are: **WAV**, every sample as
+  the microphone heard it at about **1.4 GB per person per hour**, or
+  **Opus** at about **58 MB**, and the same four for the cameras. The
+  screen adds up what a show of your size comes to before you record
+  rather than after. **Read this before a long show.**
+- **Whoever hosts decides the video of everyone.** Their browser draws
+  the show and encodes it; no guest's browser touches that file. So an
+  MP4 needs the host on Chrome or Edge, and a host on Firefox gets WebM
+  whatever is chosen. Nothing here converts anything, so the list is the
+  browser's, not ours: Firefox writes Opus and VP8 and nothing else, and
+  a guest on it comes back in those whatever you pick, with the
+  Recordings list saying so beside their files.
 - **Every track is the full length of the take.** Somebody who joins
   five minutes late has five minutes of silence at the front of theirs,
   so it still starts at zero and lines up with everybody else's with

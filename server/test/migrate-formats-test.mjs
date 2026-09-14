@@ -37,13 +37,32 @@ for (const [was, wanted] of [["smaller", "opus"], ["best", "wav"]]) {
   const after = JSON.parse(run.stdout);
   check(`"${was}" becomes ${wanted} (${(after.audioFormats || []).join(", ")})`,
     (after.audioFormats || []).join() === wanted);
-  check(`"${was}" gets a picture format too (${(after.videoFormats || []).join(", ")})`,
-    (after.videoFormats || []).join() === "mp4");
+  check(`"${was}" gets a video of everyone too (${after.showFormat})`, after.showFormat === "mp4");
+  check(`"${was}" keeps the separate files, which is what it had`, after.separateFiles === true);
   const onDisk = JSON.parse(fs.readFileSync(path.join(dir, "settings.json"), "utf8"));
   check(`"${was}" is written down, not worked out again every start`,
     Array.isArray(onDisk.audioFormats));
   check(`"${was}": the dead setting is not handed back out`, after.recordingQuality === undefined);
   fs.rmSync(dir, { recursive: true, force: true });
 }
+// The one list for both the show and the cameras, which existed for
+// about an hour between two commits. Anybody who pulled in that window
+// has it on disk, so it is carried forward rather than ignored.
+{
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "fossstudio-migrate-"));
+  fs.writeFileSync(path.join(dir, "settings.json"),
+    JSON.stringify({ audioFormats: ["opus"], videoFormats: ["vp9", "mp4"], exampleAdOffered: true }),
+    { mode: 0o600 });
+  const run = spawnSync(process.execPath, [new URL(import.meta.url).pathname, dir], { encoding: "utf8" });
+  if (run.status !== 0) throw new Error(`migration child failed: ${run.stderr}`);
+  const after = JSON.parse(run.stdout);
+  check(`one picture list becomes the show (${after.showFormat})`, after.showFormat === "vp9");
+  check(`one picture list becomes the cameras (${(after.cameraFormats || []).join(", ")})`,
+    (after.cameraFormats || []).join() === "vp9,mp4");
+  check("the sound choice is left alone", (after.audioFormats || []).join() === "opus");
+  check("the dead list is not handed back out", after.videoFormats === undefined);
+  fs.rmSync(dir, { recursive: true, force: true });
+}
+
 console.log(pass ? "ALL PASS" : "SOME CHECKS FAILED");
 process.exit(pass ? 0 : 1);
