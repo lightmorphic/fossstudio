@@ -203,9 +203,13 @@ records, and it does not broadcast it.
   screen), run the setup check described below and paste what it says.
 - **A security problem:** please report it privately first.
   [SECURITY.md](SECURITY.md) says how.
-- **Code:** we are not merging pull requests yet - a contributor
-  agreement has to be in place first. [CONTRIBUTING.md](CONTRIBUTING.md)
-  explains why in full.
+- **Code:** pull requests are not merged on this project and will be
+  closed. It is not about the code: FOSSStudio is entirely
+  Lightmorphic's own work, which is what lets the same code fund it
+  through the hosted service, and a merged patch would end that. Please
+  open an issue describing the problem and the fix in words instead -
+  it is worth more to us than a patch, and it keeps your work yours.
+  [CONTRIBUTING.md](CONTRIBUTING.md) explains it in full.
 
 ## License
 

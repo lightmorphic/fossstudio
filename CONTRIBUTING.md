@@ -1,6 +1,9 @@
 # Contributing
 
-**Bug reports and discussion yes, code contributions not yet.**
+**Bug reports and ideas: yes, please. Pull requests: no, and they will
+be closed unread. This is not about your code - please read on, because
+the reason is worth ten seconds of your time and it is not the usual
+one.**
 
 ## What we want, and want badly
 
@@ -28,22 +31,17 @@ file.
 If you want to change FOSSStudio for your own use, fork it. The AGPL gives
 you that right and you do not need our permission.
 
-## What changes, and when
+## Could that change?
 
-This rule is temporary. One of two things will happen here, and this
-file will say which:
+Only one way, and not soon: a contributor agreement. A short document
+signed once, saying the code is yours to give and that Lightmorphic may
+use it under any license. Nothing gets merged before that exists,
+because the alternative - taking patches under the AGPL alone - would
+mean Lightmorphic could no longer offer the whole of FOSSStudio under
+other terms, and that is what pays for it.
 
-1. **A contributor agreement.** A short document you sign once, saying
-   the code is yours to give and that Lightmorphic may use it under any
-   license. Pull requests open after that, from anyone who has signed.
-2. **Contributions under the AGPL alone, with no relicensing.** Pull
-   requests open to everybody with nothing to sign, and Lightmorphic
-   gives up the right to put merged code into anything but the AGPL
-   edition.
-
-The first keeps the hosted service possible. The second keeps the
-project simpler. Which one it is has not been decided, and it will not
-be decided quietly. Until it is, pull requests stay closed.
+So there is no queue to join and nothing waiting on us. Please do not
+hold a branch open hoping.
 
 ## If you send code anyway
 
