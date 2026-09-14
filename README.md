@@ -33,11 +33,10 @@ the compose file on a machine you control and it is yours: no account,
 no key, no tier, no per-guest charge, no watermark, nothing phoning
 home. There is no analytics, no tracking, no crash reporting and no
 update check, and the code, the fonts and the relay are all served from
-your own machine. Two things leave it, and only when you ask: pressing
-Publish sends that recording to the FOSSCast address you typed in
-Settings, and turning on desktop notifications means the nudge travels
-through your browser maker's push service, as every web notification
-does. Everything in this repository is everything there is.
+your own machine. One thing leaves it, and only when you ask: turning on
+desktop notifications means the nudge travels through your browser
+maker's push service, as every web notification does. Everything in this
+repository is everything there is.
 
 A studio needs a server with open UDP ports and enough bandwidth for
 everyone's video, which is more to think about than most web apps. If
@@ -139,12 +138,6 @@ and you never will.
   the stored address never reaches any browser. An honest limit: a
   determined person with a fresh network and a cleared browser can get
   past an address block. This stops the casual repeat offender.
-- **Publish to FOSSCast:** one click on a finished recording sends the
-  video to your own [FOSSCast](https://github.com/lightmorphic/fosscast)
-  instance as a draft episode, for you to review there before it goes
-  public. The publisher token stays on the server and never reaches a
-  browser. FOSSCast is a separate self-hosted app that publishes a
-  podcast; neither needs the other to run.
 - **Backdrops, switched mid-show:** the host panel's Backdrop control
   holds it all - pick a color (palette or hex) and wear it solid, or
   as any of six logo layouts generated on the spot from your logo in
@@ -180,10 +173,9 @@ records, and it does not broadcast it.
   host who wants to broadcast does it from software built for that job
   and sends the show wherever it can reach.
 - **No podcast hosting.** No RSS feed, no episode website, no download
-  statistics, no directory submission. That is
-  [FOSSCast](https://github.com/lightmorphic/fosscast), a separate app.
-  One click sends a finished recording from here to there; neither
-  needs the other to run.
+  statistics, no directory submission. The studio hands you the files
+  and stops there; a podcast host is a separate job for separate
+  software.
 - **No editing, and no processing of any kind.** Nothing on the server
   opens a recording, converts it, mixes it or re-encodes it - there is
   no media tool installed and no long-running child process anywhere in
@@ -473,7 +465,6 @@ node test/rejoin-track-test.mjs <url> <password>  # a track is the full length o
 node test/quality-test.mjs <url> <password>       # the recording quality setting, both ways
 node test/help-test.mjs <url> <password>          # the Help tab, its pictures, every link into it, three widths
 node test/help-shots.mjs <url> <password>        # remakes the Help tab's pictures from the real screens
-node test/fosscast-publish-test.mjs      # publish-to-FOSSCast flow against a stub instance
 node test/ten-guest-fit.mjs              # ten people in one room, every tile the same size
 node test/firefox-compat-test.mjs <url> <password>  # same flows, real Firefox engine
 node test/spelling-test.mjs               # American spelling everywhere a person reads

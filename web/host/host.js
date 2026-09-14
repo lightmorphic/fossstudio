@@ -34,7 +34,6 @@
       { id: "place", label: "Studio address" },
       { id: "themes", label: "Themes" },
       { id: "banner", label: "Ad Banner" },
-      { id: "publish", label: "Publish" },
       { id: "blocked", label: "Blocked" }
     ] },
     // Account, System and Help stand apart at the foot of the sidebar:
@@ -63,8 +62,6 @@
   ];
 
   let me = { username: "" };
-  // Whether publishing recordings to FOSSCast is configured
-  let canPublish = false;
   let currentMenu = null;
 
   function visibleMenus() {
@@ -187,8 +184,7 @@
     gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a7.97 7.97 0 0 0 .1-3l2-1.2-2-3.4-2.2.7a8 8 0 0 0-2.6-1.5L14.3 4h-4l-.4 2.6a8 8 0 0 0-2.6 1.5l-2.2-.7-2 3.4 2 1.2a7.97 7.97 0 0 0 .1 3l-2 1.2 2 3.4 2.2-.7a8 8 0 0 0 2.6 1.5l.4 2.6h4l.4-2.6a8 8 0 0 0 2.6-1.5l2.2.7 2-3.4z"/></svg>',
     tick: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12l5 5L20 7"/></svg>',
     obs: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/><circle cx="12" cy="10.5" r="3"/></svg>',
-    pencil: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
-    publish: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 20h16"/></svg>'
+    pencil: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>'
   };
 
   function iconBtn(icon, label, onClick) {
@@ -424,33 +420,6 @@
         dlAll.setAttribute("aria-label", "Download all files");
         actions.appendChild(dlAll);
       }
-      // Publish the combined video to FOSSCast as a draft episode. Two
-      // clicks like every outward action: publishing is the point of no
-      // return only on FOSSCast's side (drafts are reviewed there), but
-      // an accidental multi-GB upload is still worth a confirm.
-      const videoFile = (r.files || []).find((f) => /\.(mp4|webm|mkv|mov)$/i.test(f));
-      if (canPublish && r.status === "ready" && videoFile) {
-        const pub = confirmBtn("publish", "Publish to FOSSCast as a draft episode (click again to confirm)", async () => {
-          pub.disabled = true;
-          pub.dataset.tip = "Uploading to FOSSCast…";
-          try {
-            const out = await apiFetch(`/api/recordings/${encodeURIComponent(r.id)}/publish`, {
-              method: "POST",
-              body: JSON.stringify({ file: videoFile })
-            });
-            pub.classList.add("done");
-            pub.innerHTML = ICONS.tick;
-            pub.dataset.tip = out.draft
-              ? "Uploaded - review the draft in your FOSSCast dashboard"
-              : "Published to FOSSCast";
-          } catch (err) {
-            pub.dataset.tip = err.message || "Publish failed";
-            pub.innerHTML = ICONS.publish;
-            pub.disabled = false;
-          }
-        });
-        actions.appendChild(pub);
-      }
       actions.appendChild(
         confirmBtn("del", "Delete recording and its files", async () => {
           await apiFetch(`/api/recordings/${encodeURIComponent(r.id)}`, { method: "DELETE" });
@@ -488,21 +457,6 @@
       list.appendChild(row);
     }
   }
-
-  async function saveFosscast() {
-    await apiFetch("/api/settings", {
-      method: "PUT",
-      body: JSON.stringify({
-        fosscastUrl: $("fosscastUrl").value.trim(),
-        fosscastToken: $("fosscastToken").value.trim()
-      })
-    });
-    canPublish = !!($("fosscastUrl").value.trim() && $("fosscastToken").value.trim());
-    loadRecordings().catch(() => {});
-    $("fosscastMsg").hidden = false;
-    setTimeout(() => { $("fosscastMsg").hidden = true; }, 2000);
-  }
-  autoSave(["fosscastUrl", "fosscastToken"], saveFosscast);
 
   // ---------- what a recording holds ----------
 
@@ -638,9 +592,6 @@
     const quality = s.recordingQuality === "smaller" ? "smaller" : "best";
     const chosen = document.querySelector(`input[name=recordingQuality][value="${quality}"]`);
     if (chosen) chosen.checked = true;
-    $("fosscastUrl").value = s.fosscastUrl || "";
-    $("fosscastToken").value = s.fosscastToken || "";
-    canPublish = !!(s.fosscastUrl && s.fosscastToken);
     updateWallpaperPreview(s.wallpaper);
     updateLogoPreview(!!s.logo);
     // The note explaining the example only makes sense while the example
@@ -1016,12 +967,9 @@
     loadBackups();
     loadBackupKeep();
     loadLogs();
-    // Settings first: the recording cards read the FOSSCast fields
-    // (the publish button) as they render
-    loadSettings().then(() => {
-      loadSessions();
-      loadRecordings();
-    });
+    loadSettings();
+    loadSessions();
+    loadRecordings();
     loadSessionBlocked();
     setInterval(loadSessions, 10000);   // keep the participant counts fresh
     setInterval(loadRecordings, 15000); // pick up processing -> ready

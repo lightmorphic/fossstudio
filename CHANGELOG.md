@@ -16,15 +16,14 @@ opening all say both now, rather than carrying a meetings paragraph at
 the bottom, which would have said the opposite. In the product, the
 dashboard asks for an "Episode or meeting title" instead of an episode
 title, renames a session rather than an episode, and heads the theme
-logo "Logo"; "Subscribe reminder" and "Publish to FOSSCast" stay as they
-are, being genuinely podcast features.
+logo "Logo"; the "Subscribe reminder" stays as it is, being genuinely a
+podcast feature.
 
 **The privacy claim is printed with its exceptions beside it.** A new
 answer, "What leaves the server?", says there is no analytics, no
 tracking, no crash reporting, no update check and no fetch to any
-domain but your own - and then names the three things that do leave,
-each only when you ask: Publish sending a recording to your own
-FOSSCast address, desktop notifications traveling through your browser
+domain but your own - and then names the two things that do leave, each
+only when you ask: desktop notifications traveling through your browser
 maker's push service as every web notification does, and the optional
 certificate block asking Let's Encrypt for a certificate. A promise with
 a hole in it is worse than a modest one. `server/test/site-test.mjs`
@@ -226,10 +225,6 @@ Every session also has a view-only output link with no join screen and
 no controls. It works as a browser source in OBS, which is how a host
 who wants to broadcast does it, and it can never appear in the
 recording or be seen by anyone in the session.
-
-One click sends a finished recording to your own FOSSCast instance as
-a draft episode. FOSSCast is a separate self-hosted app that publishes
-a podcast; neither needs the other to run.
 
 An install is one person's studio: one login, and no way to make a
 second, because somebody who wants their own runs their own copy. The

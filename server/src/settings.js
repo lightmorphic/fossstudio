@@ -110,20 +110,8 @@ export async function updateSettings(patch) {
   if (patch.adBannerIsExample === false) {
     clean.adBannerIsExample = false;
   }
-  // FOSSCast publish API, for pushing finished recordings as episodes
-  if (typeof patch.fosscastUrl === "string") {
-    const u = patch.fosscastUrl.trim().replace(/\/$/, "");
-    // A plain-http loopback address is allowed so the publish flow can
-    // be driven against a FOSSCast running on the same machine.
-    if (u === "" || /^https:\/\/[^\s]+$/.test(u) || u.startsWith("http://127.0.0.1")) {
-      clean.fosscastUrl = u.slice(0, 200);
-    }
-  }
   if (QUALITIES.includes(patch.recordingQuality)) {
     clean.recordingQuality = patch.recordingQuality;
-  }
-  if (typeof patch.fosscastToken === "string") {
-    clean.fosscastToken = patch.fosscastToken.trim().slice(0, 300);
   }
   const next = { ...(await getSettings()), ...clean };
   await writeJson(FILE, next);

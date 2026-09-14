@@ -59,20 +59,16 @@ For self-hosters assessing the project:
   releases directory by `rrsync`; the key also has no PTY, agent
   forwarding, or port forwarding.
 - **No third parties**: no CDNs, trackers, or external calls from any
-  page; fonts and libraries are self-hosted. Two things do leave the
-  server, both because you asked them to: publishing a recording to
-  the FOSSCast address you entered, and - if notifications are
-  turned on - the nudge that goes through that browser's own push
-  service.
+  page; fonts and libraries are self-hosted. One thing does leave the
+  server, and only because you asked for it: if notifications are
+  turned on, the nudge goes through that browser's own push service.
 - **Data deletion**: deleting a recording, wallpaper, logo or ad-banner
   removes the stored file from disk, not just the database
   record. (Rotating local backups may retain snapshots until they age
   out of the retention window - 5 backups by default, set between 1 and
   100 in the dashboard.)
 - **Secrets** live in the server's `.env` and the data directory -
-  never in the repository. That includes the optional FOSSCast
-  publisher token: publishing runs server-side, so the token is never
-  sent to any browser.
+  never in the repository.
 - **Unauthenticated endpoints** are deliberately few: `/healthz` (up
   or not), `/tls-allowed` (a yes/no answer Caddy consults before
   fetching a certificate on demand; it approves only the dashboard
