@@ -2101,6 +2101,10 @@
       titleImage: () => titleImg,
       tickWorkerUrl: "/assets/tick-worker.js"
     });
+    // The program canvas, where a test can read it. The recording's own
+    // copy of an overlay went missing for weeks because every check we
+    // had looked at the page and nothing looked at the frame.
+    window.__mixerCanvas = mixer.canvas;
     return mixer;
   }
 

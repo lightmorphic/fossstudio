@@ -471,6 +471,9 @@ input[type="email"], input[type="url"] {
   color: var(--muted-fg);
   font-size: 0.85rem;
 }
+/* A banner is shown whole, letterboxed if its shape is not ours. Cropping
+   the preview would show the host something the session will not. */
+.wallpaper-preview.fit { background-size: contain; background-repeat: no-repeat; }
 
 /* Tooltips ride the shared #tipBubble (css/tip.css + js/tip.js) */
 

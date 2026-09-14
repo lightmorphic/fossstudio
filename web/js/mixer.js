@@ -285,7 +285,7 @@
       // Subscribe reminder and sponsor banner: the DOM slides them in and
       // out; here they sit where the compositors put them, and fade with
       // the DOM's own opacity so the timing is the same
-      for (const ov of grid.querySelectorAll(".live-overlay")) {
+      for (const ov of grid.querySelectorAll(".show-overlay")) {
         const alpha = parseFloat(getComputedStyle(ov).opacity);
         if (!(alpha > 0)) continue;
         x.save();

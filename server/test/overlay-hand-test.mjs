@@ -82,10 +82,42 @@ check("subscribe overlay appears in the guest's session",
 await new Promise((r) => setTimeout(r, 7000));
 check("subscribe overlay goes away on its own",
   await guest.evaluate(() => !document.querySelector(".show-overlay")));
+// Record first, so the frame the audience keeps can be looked at too.
+await host.click("#hpRecordBtn");
+await new Promise((r) => setTimeout(r, 2500));
 await host.click("#hpAdBtn");
 await new Promise((r) => setTimeout(r, 1500));
 check("ad overlay appears in the session with the uploaded image",
   await guest.$eval(".show-overlay.ad img", (el) => el.complete && el.naturalWidth > 0).catch(() => false));
+
+// The banner has to be the same size on screen as in the recording, or a
+// host sizes their artwork against one and is judged by the other. The
+// mixer draws it 150 tall on a 720 frame; the page owes it the same
+// share of the grid.
+check("banner is the same share of the picture the recording gives it",
+  await guest.evaluate(() => {
+    const img = document.querySelector(".show-overlay.ad img");
+    const grid = document.getElementById("grid");
+    if (!img || !grid) return false;
+    const share = img.getBoundingClientRect().height / grid.getBoundingClientRect().height;
+    return Math.abs(share - 150 / 720) < 0.03;
+  }));
+
+// And it has to reach the frame. This went unchecked, and the mixer was
+// looking for a class the page had stopped using, so no overlay reached
+// a recording at all while every on-screen check passed.
+check("the ad reaches the recorded frame",
+  await host.evaluate(() => {
+    const c = window.__mixerCanvas;
+    if (!c) return false;
+    const x = c.getContext("2d");
+    // The test ad is plain red, drawn 150 tall in the bottom-right
+    // corner 24px in. Look at the middle of where it lands.
+    const d = x.getImageData(c.width - 24 - 75, c.height - 24 - 75, 1, 1).data;
+    return d[0] > 180 && d[1] < 80 && d[2] < 80;
+  }).catch(() => false));
+await host.click("#hpRecordBtn").catch(() => {});
+await new Promise((r) => setTimeout(r, 2000));
 console.log(pass ? "ALL PASS" : "SOME CHECKS FAILED");
 await browser.close();
 process.exit(pass ? 0 : 1);
