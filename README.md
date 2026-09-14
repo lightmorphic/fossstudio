@@ -267,12 +267,21 @@ studio. It makes its own secrets on the first start and keeps them in
 its data volume, so nobody generates one with `openssl` and nobody
 pastes one anywhere.
 
-The log prints a setup code. Open your domain in a browser, give it the
-code, and the studio asks for the password you want, offers you a
-passkey and two-factor, and asks where it lives. The code proves the
-machine is yours - without it, the first stranger to find the address
-would own your studio - and it is held in memory only, so a restart
-prints a new one and losing it costs nothing.
+Open your domain in a browser and the studio asks for the password you
+want, offers you a passkey and two-factor, and asks where it lives. It
+asks for a setup code first if - and only if - your browser is on some
+other machine, because a code is only ever a way of proving the machine
+is yours. Open the studio on the machine it is running on and the
+connection itself is that proof, so there is no code and nothing to
+look up. The studio takes the address from the connection and never
+from a header, so `X-Forwarded-For: 127.0.0.1` buys a stranger nothing,
+and any sign of a proxy in front puts the code back.
+
+With the compose install above you will want the code, even sitting at
+the server: your browser is outside the container, so the request
+arrives from the Docker network rather than from loopback. That is what
+`docker compose logs app` is for. The code is held in memory only, so a
+restart prints a new one and losing it costs nothing.
 
 The password is enforced rather than advised: at least twelve
 characters, and not one of the ones everybody guesses. There are no

@@ -422,9 +422,10 @@
           <h2>How does the login work, and what if I am locked out?</h2>
           <div class="help-cols">
             <div class="help-prose">
-              <p><b>The first time.</b> A studio nobody has claimed prints a code in its own log and asks for it before letting anybody set a password. Being able to read that log is the proof that the machine is yours - otherwise the first stranger to find the address would own your studio. On the server:</p>
+              <p><b>The first time.</b> A studio nobody has claimed asks for a code before it lets anybody set a password, because otherwise the first stranger to find the address would own your studio. It asks only when your browser is somewhere other than the machine the studio is running on. Opened on that machine itself the connection is proof enough, there is no code, and setup is one step: choose a password.</p>
+              <p>Everywhere else - which includes a browser on your laptop reaching a server, and a Docker install, where your browser is outside the container - it wants the code, and the code is printed in the studio's own log. On the server:</p>
               <p class="cmd"><code>docker compose logs app</code></p>
-              <p>The code is near the end, in a box. It is held in memory only, never written to disk, and changes every time the studio restarts - so if you have lost it, restart and read the new one.</p>
+              <p>The code is near the end, in a box. It is held in memory only, never written to disk, and changes every time the studio restarts - so if you have lost it, restart and read the new one. The studio takes the address from the connection and never from a header, so nobody can claim to be on your machine by saying so in a request.</p>
               <p><b>The password.</b> At least twelve characters, and not one of the ones everybody guesses. There are no rules about capitals and symbols: those produce <code>Password1!</code>, which is short, hard to remember and not much harder to guess. Four or five unrelated words in a row is longer, easier to keep in your head, and nobody has a list of them. The studio will offer you one.</p>
               <p><b>Passkeys.</b> Your browser or phone keeps the private key and the studio stores only the public half, so somebody who steals the data folder gets nothing they can log in with, and there is no password for anybody to phish out of you. Add one from Settings, Account. A passkey belongs to the address it was made on: move the studio to a different domain and every passkey made on the old one stops working, which is exactly why the password stays. Keep it somewhere you can get at it.</p>
               <p><b>Two-factor.</b> A six-digit code from an app on your phone, on top of the password. Worth the minute it takes; almost nobody comes back to do it later. The studio shows the secret and a link that opens your authenticator app - there is no code to scan, so on a desktop you copy the secret across.</p>
@@ -432,12 +433,12 @@
             <div class="help-side">
               <figure class="shot">
                 <img src="/img/help/setup.jpg" width="704" height="1000" loading="lazy"
-                     alt="The first-run screen: this studio has no owner yet, the first person to set a password owns it, and it asks for the code printed in the studio's own log before it will let anyone.">
-                <figcaption>The first run. Nobody can get past this without reading the studio's own log, which is the proof that the machine is yours.</figcaption>
+                     alt="The first-run screen as it looks from another machine: this studio has no owner yet, the first person to set a password owns it, and it asks for the code printed in the studio's own log before it will let anyone.">
+                <figcaption>The first run, from another machine. Nobody gets past this without reading the studio's own log. On the machine itself there is no code step at all - it opens on the password.</figcaption>
               </figure>
               <div class="note">
                 <b>Locked out</b>
-                You have the machine, so you have a way in. Stop the studio, delete <code>users.json</code> from its data folder, start it again, and it will print a fresh setup code and let you claim it anew. Everything else - sessions, recordings, settings - is in other files and is untouched.
+                You have the machine, so you have a way in. Stop the studio, delete <code>users.json</code> from its data folder, start it again, and it will print a fresh setup code and let you claim it anew. Everything else - sessions, recordings, settings - is in other files and is untouched. There is one sign-up in the life of an install: while the studio has an owner the setup screen is not there at all, from this machine as much as from anywhere else.
               </div>
             </div>
           </div>

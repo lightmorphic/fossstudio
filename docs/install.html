@@ -42,7 +42,10 @@ place, so the file itself can stay short.</p>
 <code>docker-compose.yml</code> on a Linux server, then run
 <code>docker compose up -d</code>. Run <code>docker compose logs app</code>
 and it prints a code. Open your domain in a browser, give it the code,
-choose a password, and the studio sets itself up.</p>
+choose a password, and the studio sets itself up. (The code is only
+asked for when your browser is on another machine than the studio -
+see <a href="#code">when the code is asked for</a> - and with Docker it
+almost always is.)</p>
 <p>There is nothing to fill in beforehand. The domain, the login and the
 secrets are all settings inside the studio. It makes its own secrets on
 the first start and keeps them in its data volume, so you never type one
@@ -161,11 +164,34 @@ address.</p></li>
 <p>Everyone you record with has to be on your tailnet, which means
 inviting them to it. That is the trade.</p>
 
-<h2>Why is there a code in the log?</h2>
+<h2 id="code">When the code is asked for</h2>
 <p>A setup page that anyone can reach would let the first stranger who
 finds it own your studio. The code proves you own the machine, because
 only somebody with a shell on it can read the log. It is printed once,
 on the first start, and never again after the studio has an owner.</p>
+<p>That is the only job it has, so the studio skips it when the job is
+already done. A request that arrives on <code>127.0.0.1</code> was
+opened on the machine the studio is running on - nothing off that
+machine can reach that address - and then setup is one step: choose a
+password, add a passkey or two-factor if you want them, done. There is
+no code box on the screen and nothing to look up.</p>
+<p>The address is read from the connection itself, never from a header.
+<code>X-Forwarded-For: 127.0.0.1</code> is a line of text anyone can put
+in a request, so a studio that believed it could be claimed by a
+stranger in one try. And because a reverse proxy in front of the studio
+is the one thing whose own address can be loopback while the visitor is
+anywhere in the world, any sign of a proxy - any of the usual
+forwarding headers, which Caddy, nginx, Apache and Traefik all send -
+puts the code back.</p>
+<p><b>All three installs above want the code</b>, even when you are
+sitting at the server. Your browser is outside the container, so the
+request reaches the studio across the Docker network rather than on
+loopback, and Caddy or nginx sets a forwarding header on top of that.
+Skipping the code is for a studio running directly on the machine in
+front of you.</p>
+<p>If you run your own proxy on the same machine and it strips those
+headers, set <code>REQUIRE_SETUP_CODE=1</code> in the app's environment
+and the code is always asked for.</p>
 
 <h2>HTTPS is not optional</h2>
 <p>Browsers refuse camera and microphone access on a plain

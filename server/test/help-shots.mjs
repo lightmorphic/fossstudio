@@ -168,6 +168,11 @@ await plain.close();
 // throws it away afterwards. The code in the picture belonged to that
 // studio for the few seconds it lived; setup codes are held in memory
 // and change on every restart.
+//
+// REQUIRE_SETUP_CODE, because this shot is the code step and a browser
+// on the same machine is not asked for a code any more. That is the
+// screen a Docker installer sees, which is everybody the help is
+// written for; the local one is a password box and needs no picture.
 const PORT = 3960 + Math.floor(Math.random() * 18) * 2;
 const RTC = 41500 + Math.floor(Math.random() * 50) * 8;
 const fresh = fs.mkdtempSync(path.join(os.tmpdir(), "fs-help-shot-"));
@@ -177,7 +182,8 @@ const child = spawn(process.execPath, ["src/index.js"], {
     ...process.env,
     DATA_DIR: fresh, HTTP_PORT: String(PORT), BIND_HOST: "127.0.0.1",
     WEB_DIR: `${REPO}web`, DOMAIN: "localhost",
-    HOST_PASSWORD: "", RTC_MIN_PORT: String(RTC), RTC_MAX_PORT: String(RTC + 3)
+    HOST_PASSWORD: "", REQUIRE_SETUP_CODE: "1",
+    RTC_MIN_PORT: String(RTC), RTC_MAX_PORT: String(RTC + 3)
   }
 });
 child.stdout.on("data", () => {});
