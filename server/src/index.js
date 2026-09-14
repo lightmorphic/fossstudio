@@ -148,6 +148,18 @@ app.get("/s/:roomId([a-zA-Z0-9_-]{4,32})", (req, res) => {
   res.sendFile(path.join(config.webDir, "session.html"));
 });
 
+// One sign-up in the life of an install. Once the studio has an owner
+// the setup screen is not hidden or redirected, it is gone - from this
+// machine as much as from anywhere else - and /api/setup/claim refuses
+// alongside it. Ahead of the static handler, because otherwise the file
+// would be served straight off disk.
+app.get("/host/setup.html", async (req, res, next) => {
+  if (!(await isClaimed())) return next();
+  res.status(404).sendFile(path.join(config.webDir, "404.html"), (err) => {
+    if (err) res.status(404).send("Not found");
+  });
+});
+
 // Big unchanging assets get real caching; pages stay fresh
 for (const dir of ["assets", "fonts", "icons"]) {
   app.use(`/${dir}`, express.static(path.join(config.webDir, dir), { maxAge: "7d" }));

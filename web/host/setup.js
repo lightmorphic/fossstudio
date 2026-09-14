@@ -7,7 +7,12 @@
 
   function show(id) {
     ["stepCode", "stepLogin", "stepPasskey", "stepTwoFactor", "stepPlace", "stepDone"]
-      .forEach(function (s) { $(s).hidden = s !== id; });
+      .forEach(function (s) {
+        // stepCode is taken out of the page altogether when the studio
+        // is being set up on the machine it runs on.
+        var el = $(s);
+        if (el) el.hidden = s !== id;
+      });
   }
 
   function say(el, text) {
@@ -27,8 +32,16 @@
   }
 
   // A studio somebody already owns has no business showing this page.
+  // And the studio, not the browser, decides whether a code is wanted:
+  // reached on the machine it is running on there is nothing left for
+  // one to prove, so the step is removed rather than hidden. Nobody
+  // should have to wonder what a greyed-out box was for.
   fetch("/api/setup/state").then(function (r) { return r.json(); }).then(function (s) {
-    if (s.claimed) location.href = "/host/login.html";
+    if (s.claimed) return void (location.href = "/host/login.html");
+    if (s.needsCode) return show("stepCode");
+    var step = $("stepCode");
+    if (step) step.remove();
+    show("stepLogin");
   });
 
   // ---- 1. the code -------------------------------------------------
@@ -36,14 +49,16 @@
   // twice would mean holding it in the page in between. So this step
   // just carries it forward.
   var setupCode = "";
-  $("codeNext").onclick = function () {
-    var value = $("code").value.trim();
-    if (!value) return say($("codeErr"), "Paste the code from the log above.");
-    setupCode = value;
-    say($("codeErr"), "");
-    show("stepLogin");
-  };
-  $("code").addEventListener("keydown", function (e) { if (e.key === "Enter") $("codeNext").click(); });
+  if ($("codeNext")) {
+    $("codeNext").onclick = function () {
+      var value = $("code").value.trim();
+      if (!value) return say($("codeErr"), "Paste the code from the log above.");
+      setupCode = value;
+      say($("codeErr"), "");
+      show("stepLogin");
+    };
+    $("code").addEventListener("keydown", function (e) { if (e.key === "Enter") $("codeNext").click(); });
+  }
 
   // ---- 2. the login ------------------------------------------------
   function freshSuggestion() {
@@ -86,7 +101,7 @@
       // A wrong code is a wrong step, not a wrong password, so the
       // sentence goes back to the step it belongs to rather than being
       // hidden along with the one the person has left.
-      if (/setup code/.test(err.message)) {
+      if (/setup code/.test(err.message) && $("stepCode")) {
         say($("loginErr"), "");
         say($("codeErr"), err.message);
         show("stepCode");

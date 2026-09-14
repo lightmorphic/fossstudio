@@ -11,8 +11,10 @@
   <div class="panel setup" id="setup">
     <h1 style="font-size:1.4rem; margin-bottom:0.4rem"><span class="foss">FOSS</span>Studio</h1>
 
-    <!-- 1. proving the machine is yours -->
-    <section id="stepCode">
+    <!-- 1. proving the machine is yours. Hidden until the studio has
+         said whether it is needed: opened on the machine the studio
+         runs on, this whole section is taken out of the page. -->
+    <section id="stepCode" hidden>
       <p>This studio has no owner yet. The first person to set a password owns it, so it asks for a code before it will let anyone.</p>
       <p class="hint" style="margin-bottom:1rem">The code is printed in the studio's own log when it starts, and nowhere else. On the machine running it:</p>
       <p class="cmd"><code>docker compose logs app</code></p>

@@ -10,6 +10,13 @@
 // The code lives in memory for the life of the process. It is never
 // written down, so a stolen backup does not contain it, and it changes
 // every time the studio restarts.
+//
+// The code has one job: to prove the person at the browser is the
+// person who owns the machine. A request that arrives on the loopback
+// address has already proved that - nothing but this machine can open a
+// connection to 127.0.0.1 - so opening the studio on the machine it
+// runs on skips the code entirely and goes straight to choosing a
+// password. From anywhere else the code applies exactly as before.
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -73,7 +80,9 @@ export async function announceSetup() {
     "  ------------------------------------------------------------",
     "  This studio has no owner yet.",
     "",
-    "  Open it in a browser and it will ask for this code:",
+    "  Open it in a browser on this machine and it will simply ask you",
+    "  to choose a password. Opening it from another machine, it asks",
+    "  for this code first:",
     "",
     `      ${setupCode}`,
     "",
@@ -87,6 +96,56 @@ export async function announceSetup() {
 }
 
 export function currentSetupCode() { return setupCode; }
+
+// ---------- is this request coming from the machine itself? ----------
+
+// Headers a proxy writes in front of us. Every one of them is plain
+// text that anybody can put in a request, so they are never read as an
+// address - they are read only as evidence that something is relaying,
+// in which case the address on the socket belongs to the relay and
+// proves nothing about who is really there.
+const PROXY_HEADERS = [
+  "x-forwarded-for", "x-forwarded-host", "x-forwarded-proto", "x-forwarded-port",
+  "x-forwarded-server", "forwarded", "x-real-ip", "x-client-ip", "x-cluster-client-ip",
+  "cf-connecting-ip", "true-client-ip", "fastly-client-ip", "fly-client-ip",
+  "x-original-forwarded-for", "via"
+];
+
+// 127.0.0.0/8 and ::1, and nothing else. IPv4 arriving on a dual-stack
+// socket wears an ::ffff: prefix, which is the same address.
+export function isLoopbackAddress(address) {
+  const ip = String(address || "").replace(/^::ffff:/i, "").replace(/%.*$/, "");
+  if (ip === "::1" || ip === "0:0:0:0:0:0:0:1") return true;
+  return /^127\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.test(ip) &&
+    ip.split(".").every((n) => Number(n) <= 255);
+}
+
+// The whole of the decision, in one place, erring towards asking.
+//
+// The address is taken from the socket, never from a header: a header
+// is written by whoever is in front and X-Forwarded-For: 127.0.0.1 costs
+// a stranger nothing. Taken from the socket, a loopback address means
+// the connection was opened on this machine.
+//
+// The one case where that is not enough is a reverse proxy running on
+// this same machine and reaching the studio over loopback: then every
+// request in the world arrives from 127.0.0.1 and the shortcut would
+// hand the studio to the first passer-by. There is no way to see past
+// a relay that says nothing about itself, so anything that looks like
+// one - any of the headers above - means the code is asked for. Caddy,
+// nginx, Apache and Traefik all set X-Forwarded-For by default, and the
+// bundled Caddy reaches the app across the compose network rather than
+// loopback, so its requests are not loopback in the first place.
+//
+// REQUIRE_SETUP_CODE=1 turns the shortcut off for anybody whose proxy
+// strips those headers and shares this machine. It is in the
+// environment rather than in the settings because there is nobody to
+// have settings until the studio has been claimed.
+export function isLocalRequest(req) {
+  if (/^(1|true|yes|always)$/i.test(String(process.env.REQUIRE_SETUP_CODE || ""))) return false;
+  if (PROXY_HEADERS.some((h) => req.headers?.[h] !== undefined)) return false;
+  return isLoopbackAddress(req.socket?.remoteAddress);
+}
 
 export function clearSetupCode() { setupCode = null; }
 
