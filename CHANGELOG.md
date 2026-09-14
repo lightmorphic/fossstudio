@@ -4,6 +4,24 @@ All notable changes to FOSSStudio are documented here.
 
 ## Unreleased
 
+**Help is a tab in the dashboard, with pictures of the real screens.**
+It was a page of its own: a column of prose about as wide as a phone,
+reached from a button in the top right, opening with no menus around it.
+It is now a pane like Sessions or Settings, at the foot of the left-hand
+menu beside Account and System, in the same grid and the same width as
+everything else. Each answer is two columns on a desktop - the prose at
+a measure somebody can read, and beside it the thing that makes it
+quicker to understand: a screenshot of the screen being talked about, a
+table of the ports or the four ways to get a certificate, or the one
+sentence in that answer that matters most. There is one new answer, on
+what the buttons in the host panel do. The pictures are the product,
+taken from a real studio by `server/test/help-shots.mjs` the same way
+the website's are, and served from the studio itself, because a box with
+no internet is the normal case here. `/help` still works as an address
+and still lands on the right answer: `/help#public-ip`, which is what
+the media warning in a live session points at, opens Help at "Why can
+nobody hear anything?".
+
 **The host panel speaks in icons.** Eleven word buttons down the side of
 a live session become seven pictures on two rows - auto level, mute all,
 the subscribe reminder, the ad banner, then banner colors, title color

@@ -2,7 +2,7 @@
 // generated face appears in more than one image on the site.
 import { chromium } from "playwright";
 import fs from "node:fs";
-import { studioLogin, STUDIO, REPO, CAMS } from "./helpers.mjs";
+import { studioLogin, shotStudio, joinAll, pngToJpeg, STUDIO, REPO } from "./helpers.mjs";
 
 const B = "http://127.0.0.1:3999";
 const PW = "testpass123";
@@ -20,43 +20,11 @@ await mk("Episode 40: The systemd Episode");
 const sessionA = await mk("Episode 42: Live From FOSDEM");
 const sessionB = await mk("Episode 39: Homelab Horror Stories");
 
-async function studio(cam, name, tagline, sessionId, asHost) {
-  const browser = await chromium.launch({
-    args: [
-      "--use-fake-device-for-media-stream",
-      "--use-fake-ui-for-media-stream",
-      `--use-file-for-fake-video-capture=${CAMS}/${cam}`,
-      "--autoplay-policy=no-user-gesture-required"
-    ]
-  });
-  const ctx = await browser.newContext({
-    permissions: ["camera", "microphone"],
-    viewport: { width: 1560, height: 975 },
-    deviceScaleFactor: 2
-  });
-  if (asHost) {
-    const login = await ctx.newPage();
-    await login.goto(`${B}/host/login.html`);
-    await login.fill("#username", STUDIO.username);
-    await login.fill("#password", STUDIO.password);
-    await login.click("button[type=submit]");
-    await login.waitForURL("**/host/");
-    await login.close();
-  }
-  const page = await ctx.newPage();
-  await page.goto(`${B}/s/${sessionId}${asHost ? "?as=host" : ""}`);
-  await page.waitForSelector("#joinBtn:not([disabled])");
-  await page.fill("#nameInput", name);
-  if (tagline) await page.fill("#taglineInput", tagline);
-  return { browser, page };
-}
-
-async function joinAll(list) {
-  for (const s of list) {
-    await s.page.click("#joinBtn");
-    await s.page.waitForSelector("#session:not([hidden])");
-  }
-}
+// A person in a browser, and the whole room joining. Both live in
+// helpers.mjs, because the help page's pictures are taken the same way
+// and a second copy of this is how the last set went stale.
+const studio = (cam, name, tagline, sessionId, asHost) =>
+  shotStudio(chromium, B, { cam, name, tagline, sessionId, asHost });
 
 // --- Session A: the hero shot (three unique people) ---
 const a1 = await studio("vcam1.y4m", "Anna", "awesomepodcast.org", sessionA.id, true);
@@ -134,19 +102,7 @@ const conv = await chromium.launch();
 const convPage = await (await conv.newContext()).newPage();
 for (const name of ["session", "spotlight", "host-panel", "preview"]) {
   const png = `${OUT}/${name}.png`;
-  if (!fs.existsSync(png)) continue;
-  const jpg = await convPage.evaluate(async (b64) => {
-    const img = new Image();
-    img.src = "data:image/png;base64," + b64;
-    await img.decode();
-    const w = 2000, h = Math.round(img.height * (w / img.width) / 2) * 2;
-    const c = document.createElement("canvas");
-    c.width = w; c.height = h;
-    c.getContext("2d").drawImage(img, 0, 0, w, h);
-    return c.toDataURL("image/jpeg", 0.86).split(",")[1];
-  }, fs.readFileSync(png).toString("base64"));
-  fs.writeFileSync(`${OUT}/${name}.jpg`, Buffer.from(jpg, "base64"));
-  fs.unlinkSync(png);
+  if (fs.existsSync(png)) await pngToJpeg(convPage, png, `${OUT}/${name}.jpg`);
 }
 await conv.close();
 

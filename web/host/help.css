@@ -108,6 +108,10 @@
 .help td:last-child, .help th:last-child { padding-right: 0; }
 .help tr:last-child td { border-bottom: 0; }
 .help td b { font-weight: 600; }
+/* The first cell of a row is the thing being named - a port range, a way
+   of getting a certificate, a button in the host panel - and a name
+   broken across three lines is harder to find than one that is not. */
+.help td:first-child b { white-space: nowrap; }
 /* A table is the one thing on the page that can be wider than its
    column, so it gets to scroll inside itself. */
 .help .table-wrap { overflow-x: auto; }

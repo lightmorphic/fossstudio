@@ -132,7 +132,19 @@ await dash.fill("#placePublicIp", "203.0.113.10");
 await dash.waitForTimeout(200);
 await (await dash.$(".content section:not([hidden])")).screenshot({ path: keep("settings-address") });
 
-await pane("#settings/recording", "settings-quality");
+// Recording quality, cut under the two choices: the paragraphs below
+// them say what this page says anyway, and a screenshot shrunk into a
+// column is only worth having if the words in it can still be read.
+await dash.goto(`${B}/host/#settings/recording`);
+await dash.waitForTimeout(600);
+await dash.screenshot({
+  path: keep("settings-quality"),
+  clip: await dash.evaluate(() => {
+    const panel = document.querySelector("#pane-recording .panel").getBoundingClientRect();
+    const choice = document.querySelector("#pane-recording .choice").getBoundingClientRect();
+    return { x: panel.x, y: panel.y, width: panel.width, height: choice.bottom + 20 - panel.y };
+  })
+});
 // Recordings, cut off under the first take. A studio that has been used
 // for a while has a screenful of them, and the picture only has to show
 // what one take holds.

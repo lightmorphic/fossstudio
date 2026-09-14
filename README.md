@@ -272,8 +272,10 @@ rules about capitals and symbols. A passphrase is offered beside the
 box if you would rather not think of one.
 
 Everything on that screen is in Settings afterwards, and the studio's
-own help page is at `/help` on your install - it works with no internet
-connection and describes the version you have.
+own help is the Help tab at the foot of the dashboard's left-hand menu
+(`/help` on your install goes there too) - it works with no internet
+connection, has pictures of the real screens in it, and describes the
+version you have.
 
 **The full checkout** (for hacking on it, or the deploy-from-a-dev-box
 flow): clone the repo, and then
@@ -433,8 +435,8 @@ On a home server, those UDP ranges need forwarding on the router.
 Two more that catch people: the page has to reach the browser over
 HTTPS, because browsers refuse camera and microphone access without
 it; and the public address in Settings has to be one guests can
-actually reach. The studio's own help page (`/help` on your install)
-says all of this too, in the place somebody hits it.
+actually reach. The studio's own Help tab says all of this too, in the
+place somebody hits it, with a picture of the screen it means.
 
 ## Tests
 
@@ -453,7 +455,8 @@ node test/one-account-test.mjs <url> <password>  # one account, and no road to a
 node test/setup-test.mjs                         # first run: setup code, password rule, passkey, 2FA
 node test/rejoin-track-test.mjs <url> <password>  # a track is the full length of the take
 node test/quality-test.mjs <url> <password>       # the recording quality setting, both ways
-node test/help-test.mjs <url> <password>          # the help page and every link into it
+node test/help-test.mjs <url> <password>          # the Help tab, its pictures, every link into it, three widths
+node test/help-shots.mjs <url> <password>        # remakes the Help tab's pictures from the real screens
 node test/fosscast-publish-test.mjs      # publish-to-FOSSCast flow against a stub instance
 node test/ten-guest-fit.mjs              # ten people in one room, every tile the same size
 node test/firefox-compat-test.mjs <url> <password>  # same flows, real Firefox engine
