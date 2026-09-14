@@ -6,7 +6,7 @@
 <title>FOSSStudio - Dashboard</title>
 <link rel="stylesheet" href="/host/host.css?v=20260914g">
 <link rel="stylesheet" href="/host/help.css?v=20260914b">
-<link rel="stylesheet" href="/css/tip.css?v=20260914c">
+<link rel="stylesheet" href="/css/tip.css?v=20260914d">
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icons/icon-192.png">
 <meta name="theme-color" content="#14161a">
@@ -88,7 +88,8 @@
       <section id="pane-blocked" class="stack" hidden>
         <div class="panel">
           <h2>Blocked from sessions</h2>
-          <p class="hint" style="margin-bottom:0.8rem">Guests blocked from joining sessions - the block button next to a guest in the in-session host panel puts them here, barred by address and by the device their browser presented. Unblocking lets them straight back in.</p>
+          <p class="hint" style="margin-bottom:0.8rem">Guests blocked from joining sessions, barred by address and by the device their browser presented. Unblocking lets them straight back in.</p>
+          <p class="hint" style="margin-bottom:0.8rem"><b>Where the button is.</b> You block somebody from inside a session, not from here. Open the host panel down the right-hand side and find them in the list of people at the foot of it. Under their name is a row of small buttons, and the last one - a circle with a line struck through it - is Block. The first click turns it red and asks; the second one removes them from the room and puts them on this list. Your own row and any other host's have no such button, because you cannot block yourself. <a class="helplink" href="#help/guests">More about guests</a></p>
           <div id="sessionBlockedList"><p class="hint">Loading…</p></div>
         </div>
       </section>
@@ -468,6 +469,7 @@
               <p><b>Dropping out and coming back.</b> Their browser remembers who they are for that session, so they come back as the same person and carry on the same track. The time they were away becomes silence in the middle of one file, not a second file. A three-second blip does not split a recording in two.</p>
               <p>Two things will produce a second track under the same name: coming back on a different device, or on a browser whose site data has been cleared. There is no honest way round that - a browser with no memory of the session is a stranger - so the studio says so beside the second track instead of pretending.</p>
               <p>Cameras are the exception. Silence can be manufactured without an encoder and a picture of nothing cannot, so a person who dropped out has one camera file per stretch, each one told where in the take it starts. The sound beside it is still the full length. Two people sharing one link stay two people: the link is not what identifies anybody.</p>
+              <p><b>Removing somebody.</b> The button is in the session, not in these settings. Open the host panel down the right-hand side of the room and look at the list of people at the foot of it. Under each name is a row of small buttons - noise reduction, microphone, spotlight - and the last of them, a circle with a line struck through it, is Block. One click turns it red and asks; a second click removes that person from the room and bars them from every session, by address and by the device their browser presented. Nothing is lost: the take keeps what they had already recorded, and <a class="helplink" href="#settings/blocked">Blocked from sessions</a> in Settings lets them straight back in whenever you like. Your own row has no Block button on it, and neither has another host's.</p>
             </div>
             <div class="help-side">
               <figure class="shot">
@@ -501,7 +503,7 @@
                   </tbody>
                 </table>
               </div>
-              <p>Every one of them carries an <b>i</b> beside it in the panel itself, saying the same thing at the moment you need it.</p>
+              <p>Every one of them carries an <b>i</b> beside it in the panel itself, saying the same thing at the moment you need it. When you no longer want telling, the small <b>i</b> in the corner of the panel's title bar turns the hints and the hovering bubbles off together, here and on this dashboard. It is remembered in the browser you pressed it in, and the same button puts them back.</p>
             </div>
             <div class="help-side">
               <figure class="shot">
@@ -540,7 +542,7 @@
   </div>
 </div>
 
-<script src="/js/tip.js?v=20260823f"></script>
+<script src="/js/tip.js?v=20260914d"></script>
 <script src="/host/host.js?v=20260914d"></script>
 </body>
 </html>

@@ -468,7 +468,7 @@
     const blocked = await apiFetch("/api/session/blocked");
     list.innerHTML = "";
     if (blocked.length === 0) {
-      list.innerHTML = '<p class="hint">Nobody is blocked. Block someone from the host panel while in a session.</p>';
+      list.innerHTML = '<p class="hint">Nobody is blocked. The Block button is in the host panel while you are in a session, at the end of the row of small buttons under a guest's name.</p>';
       return;
     }
     for (const b of blocked) {

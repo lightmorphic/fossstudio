@@ -19,6 +19,7 @@
     zoomSlider: $("zoomSlider"), zoomValue: $("zoomValue"), mirrorBtn: $("mirrorBtn"),
     nameInput: $("nameInput"), taglineInput: $("taglineInput"), joinBtn: $("joinBtn"),
     closeBtn: $("closeBtn"), previewBye: $("previewBye"), rejoinBtn: $("rejoinBtn"),
+    byeTitle: $("byeTitle"), byeText: $("byeText"),
     previewCard: document.querySelector("#preview .preview-card:not(.bye)"),
     previewError: $("previewError"), micMeterFill: $("micMeterFill"),
     mediaWarning: $("mediaWarning"), mediaWarningText: $("mediaWarningText"),
@@ -39,7 +40,8 @@
     hpTitleSwatches: $("hpTitleSwatches"), hpTitleHex: $("hpTitleHex"),
     hpBackdropBtn: $("hpBackdropBtn"), hpBackdropPop: $("hpBackdropPop"),
     hpBackdropSwatches: $("hpBackdropSwatches"), hpBackdropHex: $("hpBackdropHex"),
-    myColorBtn: $("myColorBtn"), myColorPop: $("myColorPop")
+    myColorBtn: $("myColorBtn"), myColorPop: $("myColorPop"),
+    hpTipsBtn: $("hpTipsBtn")
   };
 
   // Inline SVG control icons (house rule: no icon fonts, no emoji)
@@ -53,8 +55,16 @@
     hand: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 11V6a1.5 1.5 0 0 1 3 0v4V4.5a1.5 1.5 0 0 1 3 0V10V6a1.5 1.5 0 0 1 3 0v5.5l1.6-2.2a1.5 1.5 0 0 1 2.5 1.6L17.5 17a6 6 0 0 1-5.6 4H11a6 6 0 0 1-6-6v-4z"/></svg>',
     leave: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3M15 16l4-4-4-4M19 12H9"/></svg>',
     recDot: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="7"/></svg>',
+    // The tips switch wears the same round i as the dots it turns off,
+    // struck through when they are off, so what the button governs is
+    // obvious without a word next to it
+    tipsOn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5h.01"/></svg>',
+    tipsOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5h.01"/><path d="M5 5l14 14"/></svg>',
   };
-  for (const [id, icon] of [["muteBtn", "mic"], ["camBtn", "cam"], ["dimBtn", "dim"], ["leaveBtn", "leave"], ["myColorBtn", "palette"], ["handBtn", "hand"], ["recLight", "recDot"]]) {
+  // Close on the join screen wears the session's Leave button whole -
+  // same round red disc, same door icon - so the way out looks the
+  // same before you are in the room as it does once you are
+  for (const [id, icon] of [["muteBtn", "mic"], ["camBtn", "cam"], ["dimBtn", "dim"], ["leaveBtn", "leave"], ["closeBtn", "leave"], ["myColorBtn", "palette"], ["handBtn", "hand"], ["recLight", "recDot"]]) {
     document.getElementById(id).innerHTML = ICONS[icon];
   }
 
@@ -496,6 +506,20 @@
       };
       ws.onclose = (e) => {
         if (!joined) return;
+        // 4409/4410: this seat was taken by a newer window of the same
+        // browser or the same login. Say so rather than going dark, and
+        // land on the goodbye card instead of the join form: the join
+        // form invites a click that would take the seat straight back
+        // and leave the two windows swapping it. The way back is still
+        // on the page, one deliberate button away.
+        if (e.code === 4409 || e.code === 4410) {
+          steppedAside(e.code === 4410
+            ? ["Hosting moved to another window",
+               "You opened this session again somewhere else, and that window is the host now. Only one window can run a session: two Record buttons and two sets of controls would undo each other."]
+            : ["You joined again in another window",
+               "This session is open in another window of this browser, and that one has your place in the room. One window each keeps the recording usable."]);
+          return;
+        }
         leaveToPreview(e.code === 4403
           ? "The host has removed you from this session."
           : "The connection dropped. Rejoin when you're ready.");
@@ -2383,7 +2407,11 @@
     }
   }
 
-  function leaveToPreview(message) {
+  // quiet: tear down and go back to the join screen without waking the
+  // camera again. steppedAside uses it - starting a preview only to stop
+  // it a moment later races getUserMedia and can leave a stream running
+  // in a window that is not in the room.
+  function leaveToPreview(message, quiet) {
     joined = false;
     earlyEvents.length = 0; // never replay a dead connection's events
     if (recorders.length) stopSelfRecording();
@@ -2409,7 +2437,22 @@
     els.joinBtn.disabled = false;
     els.joinBtn.textContent = "Join session";
     if (message) showError(message);
-    initPreview();
+    if (!quiet) initPreview();
+  }
+
+  // Out of the room because a newer window took the seat: everything
+  // torn down as for any other exit, then the goodbye card with words
+  // that say what actually happened. The camera and microphone go off
+  // with it - a window that is not in the room has no business holding
+  // them, and two live cameras of one person is the noise we just
+  // removed.
+  function steppedAside([title, text]) {
+    leaveToPreview(null, true);
+    stopPreview();
+    els.byeTitle.textContent = title;
+    els.byeText.textContent = text;
+    els.previewCard.hidden = true;
+    els.previewBye.hidden = false;
   }
 
   // ---------- Controls ----------
@@ -2450,6 +2493,26 @@
     leaveToPreview();
   };
 
+  // The tips switch. window.tips (js/tip.js) holds the state and the
+  // storage, so the dashboard in another tab follows without either
+  // page knowing about the other; all this does is draw the button and
+  // keep it honest about which way it is set. The aria-label changes
+  // with the state and is never removed - a screen reader keeps every
+  // control's name whether or not anybody wants bubbles.
+  function paintTipsBtn() {
+    const on = window.tips ? window.tips.on : true;
+    els.hpTipsBtn.innerHTML = on ? ICONS.tipsOn : ICONS.tipsOff;
+    els.hpTipsBtn.setAttribute("aria-pressed", String(!on));
+    const label = on ? "Turn the hints off" : "Turn the hints on";
+    els.hpTipsBtn.setAttribute("aria-label", label);
+    els.hpTipsBtn.dataset.tip = label;
+  }
+  if (window.tips) {
+    paintTipsBtn();
+    window.tips.onChange(paintTipsBtn);
+    els.hpTipsBtn.onclick = () => window.tips.set(!window.tips.on);
+  }
+
   // Close on the join screen. window.close() is ignored for a tab the
   // browser did not open from a script, which is every tab a guest
   // arrives in from a link, so this does not pretend: it puts the
@@ -2463,7 +2526,13 @@
     els.previewBye.hidden = false;
     window.close();
   };
+  const BYE_DEFAULT = [els.byeTitle.textContent, els.byeText.textContent];
   els.rejoinBtn.onclick = () => {
+    // Put the card's own words back: it may have been borrowed to
+    // explain a seat taken elsewhere, and the next Close must not
+    // inherit that
+    els.byeTitle.textContent = BYE_DEFAULT[0];
+    els.byeText.textContent = BYE_DEFAULT[1];
     els.previewBye.hidden = true;
     els.previewCard.hidden = false;
     initPreview();

@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>FOSSStudio session</title>
-<link rel="stylesheet" href="/css/session.css?v=20260914c">
-<link rel="stylesheet" href="/css/tip.css?v=20260914c">
+<link rel="stylesheet" href="/css/session.css?v=20260914d">
+<link rel="stylesheet" href="/css/tip.css?v=20260914d">
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icons/icon-192.png">
 <meta name="theme-color" content="#14161a">
@@ -67,15 +67,15 @@
          puts the camera and microphone down and says goodbye on the
          page, with the way back in still on it. -->
     <div class="preview-foot">
-      <button type="button" id="closeBtn" class="small-btn">Close</button>
+      <button type="button" id="closeBtn" class="ctl leave" data-tip="Close - puts your camera and microphone down without joining" aria-label="Close without joining"></button>
     </div>
   </div>
   <!-- Shown in place of the card once Close is pressed -->
   <div class="preview-card bye" id="previewBye" hidden>
-    <h1>Nothing is running</h1>
-    <p>Your camera and microphone are switched off and you have not joined.
+    <h1 id="byeTitle">Nothing is running</h1>
+    <p id="byeText">Your camera and microphone are switched off and you have not joined.
        This tab can be closed whenever you like.</p>
-    <p class="soft">Changed your mind? The link still works.</p>
+    <p class="soft" id="byeSoft">Changed your mind? The link still works.</p>
     <button type="button" id="rejoinBtn" class="small-btn">Back to the join screen</button>
   </div>
 </div>
@@ -127,6 +127,14 @@
     <header class="hp-head">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3"/><path d="M1 14h6M9 8h6M17 16h6"/></svg>
       <h2>Host controls</h2>
+      <!-- The tips switch. It sits in the panel's title bar rather than
+           among the show controls because it is about the panel, not
+           about the show, and nobody reaching for Mute all should be
+           able to hit it by mistake. It keeps its own bubble when tips
+           are off (data-tip-always) - otherwise there is no way back. -->
+      <button type="button" id="hpTipsBtn" class="hp-tips" aria-pressed="false"
+              data-tip-always data-tip="Turn the hints off"
+              aria-label="Turn the hints off"></button>
     </header>
     <!-- Record, full width: it shows its elapsed clock while running, so
          the button never grows and shoves its neighbors around -->
@@ -195,7 +203,7 @@
     <hr class="hp-divider">
     <div id="hpGuests"></div>
     <hr class="hp-divider">
-    <div class="hp-build">Build 20260914c</div>
+    <div class="hp-build">Build 20260914d</div>
     <!-- Who pays for this, in the same quiet place as on the dashboard:
          the end of the column, not a banner across the show. The panel
          is 172px wide, so it is smaller here than there and the words
@@ -220,8 +228,8 @@
 </div>
 
 <script src="/assets/mediasoup-client.js?v=20260807e"></script>
-<script src="/js/tip.js?v=20260914b"></script>
+<script src="/js/tip.js?v=20260914d"></script>
 <script src="/js/mixer.js?v=20260913a"></script>
-<script src="/js/session.js?v=20260914c"></script>
+<script src="/js/session.js?v=20260914d"></script>
 </body>
 </html>

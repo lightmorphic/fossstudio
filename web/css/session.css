@@ -165,6 +165,9 @@ body {
   padding-top: 0.9rem;
   border-top: 1px solid var(--line);
 }
+/* It is the session's Leave button, so it takes the .ctl rules whole;
+   only the hover belongs to this screen */
+.preview-foot .ctl.leave:hover { background: #8f3636; border-color: #8f3636; }
 /* The goodbye that replaces the card: one column whatever the width,
    because it is three short lines and a button, not a form */
 .preview-card.bye { display: block; max-width: 26rem; text-align: center; }
@@ -587,6 +590,7 @@ body.is-guest.rec-dim .controls:hover { opacity: 1; }
    It is a header row now: the sliders mark, the words, and a rule that
    closes it off from the controls below. */
 .hp-head {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -597,6 +601,27 @@ body.is-guest.rec-dim .controls:hover { opacity: 1; }
   color: var(--lm-muted-fg);
 }
 .hp-head svg { width: 15px; height: 15px; flex: 0 0 auto; }
+/* The tips switch lives in the far corner of the title bar, out of the
+   flow so the heading stays centered whether it is there or not */
+.hp-tips {
+  position: absolute;
+  right: 0;
+  top: -1px;
+  display: grid;
+  place-items: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  color: var(--lm-muted-fg, #a1a1aa);
+  cursor: pointer;
+}
+.hp-tips svg { width: 15px; height: 15px; }
+.hp-tips:hover { color: var(--lm-fg, #fafafa); }
+/* Off reads as off at a glance, without a word in a 172px column */
+.hp-tips[aria-pressed="true"] { opacity: 0.55; }
 .host-panel h2 {
   font-size: 0.7rem;
   font-weight: 600;

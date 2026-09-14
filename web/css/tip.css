@@ -61,3 +61,11 @@
   text-align: left;
 }
 #tipBubble li { margin: 0.18rem 0; }
+
+/* Tips off (see js/tip.js): the bubbles stop and the round i dots go
+   with them - they are the same irritation in two shapes, and half a
+   switch would be worse than none. The dots are hidden rather than
+   removed, and nothing here touches an aria-label: a screen reader
+   still hears every control's name, which is not what anybody was
+   asking to be rid of. */
+html.tips-off .info-btn { display: none; }

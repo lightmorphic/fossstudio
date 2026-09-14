@@ -5,6 +5,27 @@
 // off the page - and the tail moves to whichever corner faces the
 // control it describes.
 (() => {
+  // The switch. Once somebody knows what the buttons do, being told
+  // again on every hover is noise, so one control in the host panel
+  // turns the bubbles and the round i dots off together. The choice
+  // lives in localStorage rather than on the server: it is about this
+  // person at this browser, not about the account, and a guest who
+  // never signs in anywhere gets to keep it too.
+  //
+  // It is kept here, in the shared file, so the dashboard obeys a
+  // switch flicked in the session without either page knowing about
+  // the other. The dot classes go on <html> so CSS can hide the dots
+  // before anything is painted, and the storage event carries a change
+  // to a tab that is already open.
+  const TIPS_KEY = "fossstudio-tips";
+  let tipsOn = true;
+  try { tipsOn = localStorage.getItem(TIPS_KEY) !== "off"; } catch {}
+
+  function paint() {
+    document.documentElement.classList.toggle("tips-off", !tipsOn);
+  }
+  paint();
+
   const tip = document.createElement("div");
   tip.id = "tipBubble";
   tip.hidden = true;
@@ -24,6 +45,9 @@
     // redraw on every control change) - a detached anchor measures
     // 0,0 and would teleport the bubble to the corner
     if (!el.isConnected) return hide();
+    // Tips off means no bubbles - except on the switch itself, which
+    // has to stay explainable or there is no way back on
+    if (!tipsOn && !el.hasAttribute("data-tip-always")) return hide();
     const text = el.dataset.tip;
     if (!text) return hide();
     if (tipFor !== el) {
@@ -88,4 +112,28 @@
   // layout read per scroll frame, and a moving anchor means the user
   // has moved on anyway
   window.addEventListener("scroll", () => hide(), true);
+
+  // Another tab of the same studio flicked it
+  window.addEventListener("storage", (e) => {
+    if (e.key !== TIPS_KEY) return;
+    tipsOn = e.newValue !== "off";
+    paint();
+    if (!tipsOn) hide();
+    for (const fn of listeners) fn(tipsOn);
+  });
+
+  const listeners = new Set();
+
+  // What a page's own switch talks to
+  window.tips = {
+    get on() { return tipsOn; },
+    set(on) {
+      tipsOn = !!on;
+      try { localStorage.setItem(TIPS_KEY, tipsOn ? "on" : "off"); } catch {}
+      paint();
+      if (!tipsOn) hide();
+      for (const fn of listeners) fn(tipsOn);
+    },
+    onChange(fn) { listeners.add(fn); },
+  };
 })();
