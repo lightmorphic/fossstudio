@@ -107,7 +107,7 @@
    "name": "What leaves the server?",
    "acceptedAnswer": {
     "@type": "Answer",
-    "text": "Nothing, unless you switch it on. There is no analytics, no tracking, no crash reporting, no update check and no call to any domain but your own - the code and the fonts are served from your machine, and so is this website. Audio and video go between the browsers in the session and your server, never through anyone else. Two things do leave, and only because you asked for them: pressing Publish sends a recording to the FOSSCast address you typed in Settings, and turning on desktop notifications means the nudge travels through your browser maker's push service, as every web notification does. If you use the certificate block in the compose file, that server asks Let's Encrypt for a certificate for your domain."
+    "text": "Nothing, unless you switch it on. No analytics, no tracking, no crash reporting, no update check, no call to any domain but your own - the code and the fonts come from your machine, and so does this website. Audio and video go between the browsers in the session and your server, never through anyone else. Three things leave, each because you asked: Publish sends that recording to the FOSSCast address you typed in Settings, desktop notifications travel through your browser maker's push service as every web notification does, and the certificate block in the compose file asks Let's Encrypt for a certificate."
    }
   },
   {
@@ -443,11 +443,16 @@
   /* A block that stands on its words: the same measure as one column of
      a duo, so the page keeps its rhythm. */
   .solo { max-width: 34rem; margin: 2.5rem 0; }
-  .duo h3 { font-size: 1.35rem; font-weight: 800; letter-spacing: -0.01em; margin-bottom: 0.55rem; }
-  .duo p { color: var(--muted); }
-  .duo ul { list-style: none; padding: 0; margin-top: 0.9rem; color: var(--muted); }
-  .duo li { margin: 0.45rem 0; padding-left: 1.4rem; position: relative; }
-  .duo li::before {
+  /* A solo block is one column of a duo standing on its own, so it takes
+     the duo's type and the same dashed list marks. They were scoped to
+     .duo alone until 14 September 2026, which left the solo blocks with
+     the browser's round bullets in the middle of a page that uses
+     dashes everywhere else. */
+  .duo h3, .solo h3 { font-size: 1.35rem; font-weight: 800; letter-spacing: -0.01em; margin-bottom: 0.55rem; }
+  .duo p, .solo p { color: var(--muted); }
+  .duo ul, .solo ul { list-style: none; padding: 0; margin-top: 0.9rem; color: var(--muted); }
+  .duo li, .solo li { margin: 0.45rem 0; padding-left: 1.4rem; position: relative; }
+  .duo li::before, .solo li::before {
     content: "";
     position: absolute;
     left: 0; top: 0.62em;
@@ -968,8 +973,8 @@
       </div>
       <div class="faq-item">
         <h3>What leaves the server?</h3>
-        <p>Nothing, unless you switch it on. There is no analytics, no tracking, no crash reporting, no update check, and no call to any domain but your own: the code and the fonts are served from your machine, and so is this website. Audio and video go between the browsers in the session and your server, never through anybody else's.</p>
-        <p style="margin-top:0.6rem">Two things do leave, and only because you asked for them. Pressing <b>Publish</b> sends that recording to the FOSSCast address you typed in Settings. Turning on <b>desktop notifications</b> means the nudge travels through your browser maker's push service, as every web notification does; leave them off and nothing is sent. And if you use the certificate block in the compose file, that server asks Let's Encrypt for a certificate for your domain, which is how HTTPS works anywhere.</p>
+        <p>Nothing, unless you switch it on. No analytics, no tracking, no crash reporting, no update check, no call to any domain but your own: the code and the fonts come from your machine, and so does this website. Audio and video go between the browsers in the session and your server, never through anybody else's.</p>
+        <p style="margin-top:0.6rem">Three things leave, each because you asked. <b>Publish</b> sends that recording to the FOSSCast address you typed in Settings. <b>Desktop notifications</b> travel through your browser maker's push service, as every web notification does - leave them off and nothing is sent. And the certificate block in the compose file asks Let's Encrypt for a certificate, which is how HTTPS works anywhere.</p>
       </div>
       <div class="faq-item">
         <h3>How many people can be in a session?</h3>

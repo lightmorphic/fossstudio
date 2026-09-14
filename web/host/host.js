@@ -251,7 +251,7 @@
       row.querySelector(".meta").textContent =
         `${link} · created ${new Date(s.createdAt).toLocaleDateString()}`;
 
-      const edit = iconBtn("pencil", "Rename the episode", () => {
+      const edit = iconBtn("pencil", "Rename this session", () => {
         if (row.querySelector(".title-edit")) return;
         const titleEl = row.querySelector(".title");
         const input = document.createElement("input");

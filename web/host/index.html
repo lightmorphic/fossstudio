@@ -48,7 +48,7 @@
         <div class="panel">
           <h2>New session</h2>
           <form id="newSessionForm" style="display:flex; gap:0.75rem; flex-wrap:wrap">
-            <input type="text" id="newSessionTitle" placeholder="Episode title" required maxlength="80" style="flex:1; min-width:12rem">
+            <input type="text" id="newSessionTitle" placeholder="Episode or meeting title" required maxlength="80" style="flex:1; min-width:12rem">
             <button class="btn primary" type="submit">Create session link</button>
           </form>
         </div>
@@ -62,7 +62,7 @@
       <section id="pane-library" class="stack" hidden>
         <div class="panel">
           <h2>Recordings</h2>
-          <p class="hint" style="margin-bottom:0.8rem">Everyone's own track, plus one video of the whole show. Every track is the full length of the take, whenever that person joined. <a class="helplink" href="#help/guests">Guests who join late or drop out</a> &middot; <a class="helplink" href="#help/disk">How much disk a show takes</a></p>
+          <p class="hint" style="margin-bottom:0.8rem">Everyone's own track, plus one video of everyone together. Every track is the full length of the take, whenever that person joined. <a class="helplink" href="#help/guests">Guests who join late or drop out</a> &middot; <a class="helplink" href="#help/disk">How much disk a session takes</a></p>
           <div id="recordingList"><p class="hint">Loading…</p></div>
         </div>
       </section>
@@ -96,8 +96,8 @@
 
       <section id="pane-themes" class="stack" hidden>
         <div class="panel">
-          <h2>Podcast logo</h2>
-          <p class="hint" style="margin-bottom:0.5rem">Shown above the episode title on the video - and baked into recordings. About 250×50 pixels works best. <b>A PNG with a transparent background is strongly recommended</b> - it sits cleanly on the video, and the generated logo backgrounds come out much sharper from it. JPEG or WebP also work, up to 2 MB.</p>
+          <h2>Logo</h2>
+          <p class="hint" style="margin-bottom:0.5rem">Shown above the session title on the video - and baked into recordings. Your podcast's logo, or your company's. About 250×50 pixels works best. <b>A PNG with a transparent background is strongly recommended</b> - it sits cleanly on the video, and the generated logo backgrounds come out much sharper from it. JPEG or WebP also work, up to 2 MB.</p>
           <div class="wallpaper-preview" id="logoPreview" style="aspect-ratio: 5 / 1; background-size: contain; background-repeat: no-repeat; background-position: center">No logo uploaded</div>
           <div style="display:flex; gap:0.6rem; margin-top:0.8rem">
             <button class="btn" id="logoPick">Upload logo</button>
@@ -113,7 +113,7 @@
             <button class="btn" id="wallpaperRemove">Remove</button>
             <input type="file" id="wallpaperFile" accept="image/jpeg,image/png,image/webp" hidden>
           </div>
-          <p class="hint" style="margin-top:0.5rem">One of the looks the host can switch to mid-show, from the Backdrop button in the host controls - alongside solid colors and generated logo layouts, all picked there during the show. 1920×1080 pixels is the ideal size (anything with the same 16:9 shape works). JPEG, PNG or WebP, up to 8 MB.</p>
+          <p class="hint" style="margin-top:0.5rem">One of the looks the host can switch to mid-session, from the Backdrop button in the host controls - alongside solid colors and generated logo layouts, all picked there while it is running. 1920×1080 pixels is the ideal size (anything with the same 16:9 shape works). JPEG, PNG or WebP, up to 8 MB.</p>
         </div>
       </section>
 
@@ -139,7 +139,7 @@
             </label>
           </div>
           <span class="msg ok" id="qualityMsg" hidden>✓ Saved</span>
-          <p class="hint" style="margin-top:1rem">A file with <code>.webm</code> on the end is a box, and the name on the box does not tell you what is inside it. The same box holds either every sample your microphone heard or about a twenty-fifth of that, and until you open it in an editor the two look alike. That is the whole of this choice: the box stays the same, the contents do not. Best quality keeps everything, which matters if the recording will be cleaned up, levelled or repaired afterwards. Smaller files throws away what the ear does not miss on speech, and a two-hour show with four people becomes a few hundred megabytes instead of eleven gigabytes.</p>
+          <p class="hint" style="margin-top:1rem">A file with <code>.webm</code> on the end is a box, and the name on the box does not tell you what is inside it. The same box holds either every sample your microphone heard or about a twenty-fifth of that, and until you open it in an editor the two look alike. That is the whole of this choice: the box stays the same, the contents do not. Best quality keeps everything, which matters if the recording will be cleaned up, levelled or repaired afterwards. Smaller files throws away what the ear does not miss on speech, and a two-hour session with four people becomes a few hundred megabytes instead of eleven gigabytes.</p>
           <p class="hint" style="margin-top:0.7rem">Firefox cannot record uncompressed audio at all. A guest on Firefox comes back compressed whatever this is set to, and the Recordings list says so beside their track. <a class="helplink" href="#help/recording-quality">More about what is in the file</a></p>
         </div>
       </section>
@@ -171,7 +171,7 @@
         </div>
         <div class="panel">
           <h2>Account name</h2>
-          <p class="hint" style="margin-bottom:0.6rem">The name for this account - it's also what you sign in with. Rename it any time, e.g. if you switch to a different podcast. Lowercase letters, numbers, - or _, 2 to 24 characters.</p>
+          <p class="hint" style="margin-bottom:0.6rem">The name for this account - it's also what you sign in with. Rename it any time, e.g. if you switch to a different podcast or team. Lowercase letters, numbers, - or _, 2 to 24 characters.</p>
           <div class="field">
             <label for="accountUsername">Name</label>
             <input type="text" id="accountUsername" maxlength="24" autocomplete="off" spellcheck="false">
@@ -336,7 +336,7 @@
           <div class="help-cols">
             <div class="help-prose">
               <p><b>Best quality</b> if the recording is going to be worked on afterwards - levelled, cleaned up, noise removed, a bad patch repaired. Every one of those jobs is better done on the real samples, and compressing once at the end is better than compressing twice.</p>
-              <p><b>Smaller files</b> if the show is two people talking and it goes out more or less as recorded. A two-hour show with four people is a few hundred megabytes instead of eleven gigabytes.</p>
+              <p><b>Smaller files</b> if it is two people talking and it goes out more or less as recorded. A two-hour session with four people is a few hundred megabytes instead of eleven gigabytes.</p>
               <p>You can change it between sessions. A recording already running keeps whatever it started with, so one person's track can never come back in a different form from everybody else's.</p>
               <div class="note">
                 <b>Firefox cannot record uncompressed audio at all</b>
@@ -357,14 +357,14 @@
           <h2>Why is my recording eleven gigabytes?</h2>
           <div class="help-cols">
             <div class="help-prose">
-              <p>Because at best quality every person in the room is producing about 1.4 GB an hour of their own audio, plus their camera, plus the one video of the whole show that your browser draws. Four people for two hours is over 11 GB, and it lands on this server.</p>
+              <p>Because at best quality every person in the room is producing about 1.4 GB an hour of their own audio, plus their camera, plus the one video of everyone that your browser draws. Four people for two hours is over 11 GB, and it lands on this server.</p>
               <p>The studio never opens a recording to shrink it - there is no media tool in it and nothing on the server decodes a single sample, which is why a full room does not need a powerful machine. The price of that is disk.</p>
               <p>Download what you want and delete the rest; a recording deleted here is gone. If disk is the tighter constraint, that is what Smaller files is for.</p>
             </div>
             <div class="help-side">
               <figure class="shot">
                 <img src="/img/help/recordings.jpg" width="1400" height="658" loading="lazy"
-                     alt="The Recordings screen, listing a take by its episode title with the files under it: an audio track and a camera track for each person, and one video of everyone, each with its size and a download button.">
+                     alt="The Recordings screen, listing a take by its title with the files under it: an audio track and a camera track for each person, and one video of everyone, each with its size and a download button.">
                 <figcaption>Recordings. Every take that has been made on this studio, with each person's own track and the one video of everyone. This is where the disk goes, and where you delete it.</figcaption>
               </figure>
             </div>
@@ -499,7 +499,7 @@
                     <tr><td><b>Ad banner</b></td><td>Shows the banner from Settings for about eighteen seconds.</td></tr>
                     <tr><td><b>Banner colors</b></td><td>The color of everyone's name banners.</td></tr>
                     <tr><td><b>Title color</b></td><td>The background of the logo and title block.</td></tr>
-                    <tr><td><b>Backdrop</b></td><td>Switches the show's background mid-show. A recording keeps the backdrop it started with.</td></tr>
+                    <tr><td><b>Backdrop</b></td><td>Switches the background mid-session. A recording keeps the backdrop it started with.</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -509,7 +509,7 @@
               <figure class="shot">
                 <img src="/img/help/host-panel.jpg" width="1600" height="1000" loading="lazy"
                      alt="A session with three people in it, the host panel open down the right-hand side showing the record button, a row of small icon buttons for auto level, mute all, subscribe reminder and ad banner, and a second row for the color tools.">
-                <figcaption>The host panel, open. Record at the top, the show controls under it, the color tools below those, and the people in the room at the foot.</figcaption>
+                <figcaption>The host panel, open. Record at the top, the session controls under it, the color tools below those, and the people in the room at the foot.</figcaption>
               </figure>
             </div>
           </div>
