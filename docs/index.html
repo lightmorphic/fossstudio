@@ -869,38 +869,28 @@
 <span class="c">#   1. Save this file as docker-compose.yml on a Linux server whose</span>
 <span class="c">#      DNS (your domain) points at it, with ports 80/443 (TCP) and</span>
 <span class="c">#      3478 + 40000-40003 + 49160-49189 (UDP) open.</span>
-<span class="c">#   2. Fill in the five values just below. Every one of them is a</span>
-<span class="c">#      stand-in: none will work as it is.</span>
-<span class="c">#   3. Turn HTTPS on: see the note above the caddy service.</span>
-<span class="c">#   4. docker compose up -d</span>
+<span class="c">#   2. Turn HTTPS on: see the note above the caddy service.</span>
+<span class="c">#   3. docker compose up -d</span>
+<span class="c">#   4. docker compose logs app - it prints a code. Open your domain in a</span>
+<span class="c">#      browser and the studio asks for it, then for the password you</span>
+<span class="c">#      want, and sets itself up.</span>
 <span class="c">#</span>
-<span class="c"># That's the whole install: the image is built and published by GitHub,</span>
-<span class="c"># the web pages are inside it, and your studio is at https://&lt;your</span>
-<span class="c"># domain&gt;. Sign in with username "admin" and the password below. The</span>
-<span class="c"># password here is read on every start, so changing it here and running</span>
-<span class="c"># "docker compose up -d" again is all it takes to change it.</span>
-
-<span class="k">x-config:</span> <span class="a">&amp;config</span>
-  <span class="k">DOMAIN:</span> <span class="hl">studio.your-domain.com</span><span class="c">                # your public address</span>
-  <span class="k">PUBLIC_IP:</span> <span class="hl">"your-servers-public-ip"</span><span class="c">           # curl -4 https://api.ipify.org</span>
-  <span class="k">HOST_PASSWORD:</span> <span class="hl">change-me-to-something-long</span><span class="c">    # the "admin" login</span>
-  <span class="k">SESSION_SECRET:</span> <span class="hl">also-change-me-to-random</span><span class="c">      # openssl rand -hex 32</span>
-  <span class="k">TURN_SECRET:</span> <span class="hl">and-change-me-to-random-too</span><span class="c">      # openssl rand -hex 32</span>
-  <span class="k">HTTP_PORT:</span> <span class="v">"3000"</span>
-
-<span class="c">  # The address the app listens on INSIDE its container. It has to be</span>
-<span class="c">  # 0.0.0.0, or a published port has nothing to reach. What the outside</span>
-<span class="c">  # world can get at is decided by the ports: list further down, not by</span>
-<span class="c">  # this - "127.0.0.1:3000:3000" there keeps the web port on this</span>
-<span class="c">  # machine, "3000:3000" opens it to anything that can route here.</span>
-  <span class="k">BIND_HOST:</span> <span class="v">"0.0.0.0"</span>
+<span class="c"># There is nothing to fill in. The domain, the login and the secrets are</span>
+<span class="c"># all settings inside the studio: it makes its own secrets on the first</span>
+<span class="c"># start and keeps them in its data volume, and you never type one. What</span>
+<span class="c"># is left here is what Docker needs - the image, the ports, the volume.</span>
 
 <span class="k">services:</span>
   <span class="k">app:</span>
     <span class="k">image:</span> <span class="v">ghcr.io/lightmorphic/fossstudio:latest</span>
     <span class="k">restart:</span> <span class="v">unless-stopped</span>
     <span class="k">environment:</span>
-      &lt;&lt;: *config
+<span class="c">      # The address the app listens on INSIDE its container. It has to</span>
+<span class="c">      # be 0.0.0.0, or a published port has nothing to reach. What the</span>
+<span class="c">      # outside world can get at is decided by the ports: list below -</span>
+<span class="c">      # "127.0.0.1:3000:3000" there keeps the web port on this machine,</span>
+<span class="c">      # "3000:3000" opens it to anything that can route here.</span>
+      <span class="k">BIND_HOST:</span> <span class="v">"0.0.0.0"</span>
 <span class="c">    # Every port is published host:container with the same number on</span>
 <span class="c">    # both sides, and that is not tidiness: the media engine tells each</span>
 <span class="c">    # guest which port to send audio and video to, so a port that means</span>
@@ -914,6 +904,14 @@
       - "40000-40003:40000-40003/tcp"        # media, for networks that block UDP
     <span class="k">volumes:</span>
       - fossstudio_data:/data
+<span class="c">    # The relay waits for this, because it reads a file the studio has</span>
+<span class="c">    # not written yet on a first run.</span>
+    <span class="k">healthcheck:</span>
+      <span class="k">test:</span> <span class="v">["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/healthz').then(r=&gt;process.exit(r.ok?0:1)).catch(()=&gt;process.exit(1))"]</span>
+      <span class="k">interval:</span> <span class="v">5s</span>
+      <span class="k">timeout:</span> <span class="v">3s</span>
+      <span class="k">retries:</span> <span class="v">12</span>
+      <span class="k">start_period:</span> <span class="v">5s</span>
 
 <span class="c">  # ---------------------------------------------------------------------</span>
 <span class="c">  # HTTPS is not optional, but Caddy is. Browsers refuse camera and</span>
@@ -933,6 +931,11 @@
 <span class="c">  # hashes on these sentences; they are only notes. Caddy then fetches</span>
 <span class="c">  # and renews the certificate and serves the studio on 80 and 443.</span>
 <span class="c">  #</span>
+<span class="c">  # It asks the app before fetching one, which is how it works without</span>
+<span class="c">  # being told your domain: before anybody owns the studio it will get a</span>
+<span class="c">  # certificate for whatever name is pointed at it, and once the studio</span>
+<span class="c">  # has an owner, only for that owner's domain.</span>
+<span class="c">  #</span>
 <span class="c">  # With Caddy on, change the app's "3000:3000" above to</span>
 <span class="c">  # "127.0.0.1:3000:3000": Caddy reaches the app by its service name on</span>
 <span class="c">  # the compose network, so the web port no longer needs to leave this</span>
@@ -947,8 +950,6 @@
 <span class="c">  # caddy:</span>
 <span class="c">  #   image: caddy:2-alpine</span>
 <span class="c">  #   restart: unless-stopped</span>
-<span class="c">  #   environment:</span>
-<span class="c">  #     &lt;&lt;: *config</span>
 <span class="c">  #   ports:</span>
 <span class="c">  #     - "80:80"</span>
 <span class="c">  #     - "443:443"</span>
@@ -960,28 +961,31 @@
 <span class="c">  #     - caddy_data:/data</span>
 <span class="c">  #     - caddy_config:/config</span>
 
+<span class="c">  # The relay, for guests behind a firewall that will not let their</span>
+<span class="c">  # browser talk to this machine directly. Its settings are not here:</span>
+<span class="c">  # the studio writes them into its own data volume on every start, so</span>
+<span class="c">  # the shared secret and the public address can never drift apart from</span>
+<span class="c">  # what the studio is using, and neither is in this file. Until the</span>
+<span class="c">  # studio has written them - a few seconds on a first run - this</span>
+<span class="c">  # container restarts, which is what restart: unless-stopped is for.</span>
   <span class="k">coturn:</span>
     <span class="k">image:</span> <span class="v">coturn/coturn:4-alpine</span>
     <span class="k">restart:</span> <span class="v">unless-stopped</span>
-    <span class="k">environment:</span>
-      &lt;&lt;: *config
+    <span class="k">depends_on:</span>
+      <span class="k">app:</span>
+        <span class="k">condition:</span> <span class="v">service_healthy</span>
     <span class="k">ports:</span>
       - "3478:3478/tcp"                      # relay control
       - "3478:3478/udp"                      # relay control
       - "49160-49189:49160-49189/udp"        # relayed media
-<span class="c">    # sh -c so the values come from the container's own environment</span>
-<span class="c">    # (this file has no .env for compose-time substitution)</span>
-    <span class="k">entrypoint:</span> <span class="v">["/bin/sh", "-c"]</span>
-    <span class="k">command:</span>
-      - &gt;
-        turnserver
-        --realm="$$DOMAIN"
-        --use-auth-secret
-        --static-auth-secret="$$TURN_SECRET"
-        --listening-port=3478
-        --min-port=49160 --max-port=49189
-        --external-ip="$$PUBLIC_IP"
-        --no-multicast-peers
+    <span class="k">volumes:</span>
+      - type: volume
+        <span class="k">source:</span> <span class="v">fossstudio_data</span>
+        <span class="k">target:</span> <span class="v">/etc/coturn</span>
+        <span class="k">read_only:</span> <span class="v">true</span>
+        <span class="k">volume:</span>
+          <span class="k">subpath:</span> <span class="v">turn</span>
+    <span class="k">command:</span> <span class="v">["-c", "/etc/coturn/turnserver.conf"]</span>
 
 <span class="k">volumes:</span>
   <span class="k">fossstudio_data:</span>
@@ -995,13 +999,8 @@
 <span class="c">#     content: |</span>
 <span class="c">#       {</span>
 <span class="c">#         on_demand_tls {</span>
-<span class="c">#           ask http://app:{$$HTTP_PORT}/tls-allowed</span>
+<span class="c">#           ask http://app:3000/tls-allowed</span>
 <span class="c">#         }</span>
-<span class="c">#       }</span>
-<span class="c">#       {$$DOMAIN} {</span>
-<span class="c">#         encode zstd gzip</span>
-<span class="c">#         header Strict-Transport-Security "max-age=31536000"</span>
-<span class="c">#         reverse_proxy app:{$$HTTP_PORT}</span>
 <span class="c">#       }</span>
 <span class="c">#       https:// {</span>
 <span class="c">#         tls {</span>
@@ -1009,7 +1008,7 @@
 <span class="c">#         }</span>
 <span class="c">#         encode zstd gzip</span>
 <span class="c">#         header Strict-Transport-Security "max-age=31536000"</span>
-<span class="c">#         reverse_proxy app:{$$HTTP_PORT}</span>
+<span class="c">#         reverse_proxy app:3000</span>
 <span class="c">#       }</span>
 </pre>
       </div>

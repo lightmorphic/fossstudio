@@ -31,6 +31,7 @@
     ] },
     { id: "settings", label: "Settings", subs: [
       { id: "recording", label: "Recording" },
+      { id: "place", label: "Studio address" },
       { id: "themes", label: "Themes" },
       { id: "banner", label: "Ad Banner" },
       { id: "publish", label: "Publish" },
@@ -452,6 +453,118 @@
     input.addEventListener("change", () => { saveQuality(input.value).catch(() => {}); });
   }
 
+  // ---------- passkeys ----------
+
+  // Base64url both ways: WebAuthn speaks ArrayBuffers and JSON does not.
+  const b64 = {
+    to(buf) {
+      const bytes = new Uint8Array(buf);
+      let out = "";
+      for (const b of bytes) out += String.fromCharCode(b);
+      return btoa(out).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    },
+    from(str) {
+      const raw = atob(str.replace(/-/g, "+").replace(/_/g, "/"));
+      const out = new Uint8Array(raw.length);
+      for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+      return out;
+    }
+  };
+
+  async function loadPasskeys() {
+    const list = $("passkeyList");
+    if (!window.PublicKeyCredential) {
+      list.innerHTML = "<p class=\"hint\">This browser cannot use passkeys. The password above is how you sign in here.</p>";
+      $("addPasskeyBtn").hidden = true;
+      return;
+    }
+    const keys = await apiFetch("/api/passkeys").catch(() => []);
+    list.textContent = "";
+    if (!keys.length) {
+      list.innerHTML = "<p class=\"hint\">No passkeys yet.</p>";
+      return;
+    }
+    for (const key of keys) {
+      const row = document.createElement("div");
+      row.className = "row";
+      const name = document.createElement("span");
+      name.textContent = `Passkey on ${key.rpId}`;
+      const when = document.createElement("span");
+      when.className = "hint";
+      when.textContent = `added ${new Date(key.addedAt).toLocaleDateString()}`;
+      row.append(name, when);
+      row.appendChild(confirmBtn("del", "Remove this passkey", async () => {
+        await apiFetch(`/api/passkeys/${encodeURIComponent(key.id)}`, { method: "DELETE" });
+        loadPasskeys();
+      }));
+      list.appendChild(row);
+    }
+  }
+
+  $("addPasskeyBtn").onclick = async () => {
+    $("passkeyMsg").hidden = true;
+    try {
+      const opts = await apiFetch("/api/passkeys/begin", { method: "POST" });
+      const cred = await navigator.credentials.create({
+        publicKey: {
+          challenge: b64.from(opts.challenge),
+          rp: { id: opts.rpId, name: opts.rpName },
+          user: { id: b64.from(opts.userId), name: opts.userName, displayName: opts.userName },
+          pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+          authenticatorSelection: { residentKey: "preferred", userVerification: "preferred" },
+          excludeCredentials: (opts.excludeCredentials || [])
+            .map((id) => ({ type: "public-key", id: b64.from(id) })),
+          timeout: 90000,
+          attestation: "none"
+        }
+      });
+      await apiFetch("/api/passkeys/finish", {
+        method: "POST",
+        body: JSON.stringify({
+          response: {
+            clientDataJSON: b64.to(cred.response.clientDataJSON),
+            attestationObject: b64.to(cred.response.attestationObject)
+          }
+        })
+      });
+      loadPasskeys();
+    } catch (err) {
+      $("passkeyMsg").textContent = err.message || "Your browser would not make a passkey here.";
+      $("passkeyMsg").hidden = false;
+    }
+  };
+
+  // ---------- where the studio lives ----------
+
+  async function loadPlace() {
+    const p = await apiFetch("/api/setup/place").catch(() => null);
+    if (!p) return;
+    $("placeDomain").value = p.domain === "localhost" ? "" : (p.domain || "");
+    $("placePublicIp").value = p.publicIp || "";
+    $("placeTurnHost").value = p.turnHost || "";
+  }
+
+  $("savePlaceBtn").onclick = async () => {
+    $("placeMsg").hidden = true;
+    $("placeErrMsg").hidden = true;
+    try {
+      const out = await apiFetch("/api/setup/place", {
+        method: "PUT",
+        body: JSON.stringify({
+          domain: $("placeDomain").value,
+          publicIp: $("placePublicIp").value,
+          turnHost: $("placeTurnHost").value
+        })
+      });
+      $("placeMsg").hidden = false;
+      $("placeRestart").hidden = !out.restartNeeded;
+      setTimeout(() => { $("placeMsg").hidden = true; }, 2000);
+    } catch (err) {
+      $("placeErrMsg").textContent = err.message;
+      $("placeErrMsg").hidden = false;
+    }
+  };
+
   // ---------- theme ----------
 
 
@@ -829,6 +942,8 @@
       showSub(visibleSubs(currentMenu)[0].id);
     }
     load2fa();
+    loadPasskeys();
+    loadPlace();
     loadBackups();
     loadBackupKeep();
     loadLogs();

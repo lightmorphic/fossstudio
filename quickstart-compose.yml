@@ -3,38 +3,28 @@
 #   1. Save this file as docker-compose.yml on a Linux server whose
 #      DNS (your domain) points at it, with ports 80/443 (TCP) and
 #      3478 + 40000-40003 + 49160-49189 (UDP) open.
-#   2. Fill in the five values just below. Every one of them is a
-#      stand-in: none will work as it is.
-#   3. Turn HTTPS on: see the note above the caddy service.
-#   4. docker compose up -d
+#   2. Turn HTTPS on: see the note above the caddy service.
+#   3. docker compose up -d
+#   4. docker compose logs app - it prints a code. Open your domain in a
+#      browser and the studio asks for it, then for the password you
+#      want, and sets itself up.
 #
-# That's the whole install: the image is built and published by GitHub,
-# the web pages are inside it, and your studio is at https://<your
-# domain>. Sign in with username "admin" and the password below. The
-# password here is read on every start, so changing it here and running
-# "docker compose up -d" again is all it takes to change it.
-
-x-config: &config
-  DOMAIN: studio.your-domain.com                # your public address
-  PUBLIC_IP: "your-servers-public-ip"           # curl -4 https://api.ipify.org
-  HOST_PASSWORD: change-me-to-something-long    # the "admin" login
-  SESSION_SECRET: also-change-me-to-random      # openssl rand -hex 32
-  TURN_SECRET: and-change-me-to-random-too      # openssl rand -hex 32
-  HTTP_PORT: "3000"
-
-  # The address the app listens on INSIDE its container. It has to be
-  # 0.0.0.0, or a published port has nothing to reach. What the outside
-  # world can get at is decided by the ports: list further down, not by
-  # this - "127.0.0.1:3000:3000" there keeps the web port on this
-  # machine, "3000:3000" opens it to anything that can route here.
-  BIND_HOST: "0.0.0.0"
+# There is nothing to fill in. The domain, the login and the secrets are
+# all settings inside the studio: it makes its own secrets on the first
+# start and keeps them in its data volume, and you never type one. What
+# is left here is what Docker needs - the image, the ports, the volume.
 
 services:
   app:
     image: ghcr.io/lightmorphic/fossstudio:latest
     restart: unless-stopped
     environment:
-      <<: *config
+      # The address the app listens on INSIDE its container. It has to
+      # be 0.0.0.0, or a published port has nothing to reach. What the
+      # outside world can get at is decided by the ports: list below -
+      # "127.0.0.1:3000:3000" there keeps the web port on this machine,
+      # "3000:3000" opens it to anything that can route here.
+      BIND_HOST: "0.0.0.0"
     # Every port is published host:container with the same number on
     # both sides, and that is not tidiness: the media engine tells each
     # guest which port to send audio and video to, so a port that means
@@ -48,6 +38,14 @@ services:
       - "40000-40003:40000-40003/tcp"        # media, for networks that block UDP
     volumes:
       - fossstudio_data:/data
+    # The relay waits for this, because it reads a file the studio has
+    # not written yet on a first run.
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
 
   # ---------------------------------------------------------------------
   # HTTPS is not optional, but Caddy is. Browsers refuse camera and
@@ -67,6 +65,11 @@ services:
   # hashes on these sentences; they are only notes. Caddy then fetches
   # and renews the certificate and serves the studio on 80 and 443.
   #
+  # It asks the app before fetching one, which is how it works without
+  # being told your domain: before anybody owns the studio it will get a
+  # certificate for whatever name is pointed at it, and once the studio
+  # has an owner, only for that owner's domain.
+  #
   # With Caddy on, change the app's "3000:3000" above to
   # "127.0.0.1:3000:3000": Caddy reaches the app by its service name on
   # the compose network, so the web port no longer needs to leave this
@@ -81,8 +84,6 @@ services:
   # caddy:
   #   image: caddy:2-alpine
   #   restart: unless-stopped
-  #   environment:
-  #     <<: *config
   #   ports:
   #     - "80:80"
   #     - "443:443"
@@ -94,28 +95,31 @@ services:
   #     - caddy_data:/data
   #     - caddy_config:/config
 
+  # The relay, for guests behind a firewall that will not let their
+  # browser talk to this machine directly. Its settings are not here:
+  # the studio writes them into its own data volume on every start, so
+  # the shared secret and the public address can never drift apart from
+  # what the studio is using, and neither is in this file. Until the
+  # studio has written them - a few seconds on a first run - this
+  # container restarts, which is what restart: unless-stopped is for.
   coturn:
     image: coturn/coturn:4-alpine
     restart: unless-stopped
-    environment:
-      <<: *config
+    depends_on:
+      app:
+        condition: service_healthy
     ports:
       - "3478:3478/tcp"                      # relay control
       - "3478:3478/udp"                      # relay control
       - "49160-49189:49160-49189/udp"        # relayed media
-    # sh -c so the values come from the container's own environment
-    # (this file has no .env for compose-time substitution)
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - >
-        turnserver
-        --realm="$$DOMAIN"
-        --use-auth-secret
-        --static-auth-secret="$$TURN_SECRET"
-        --listening-port=3478
-        --min-port=49160 --max-port=49189
-        --external-ip="$$PUBLIC_IP"
-        --no-multicast-peers
+    volumes:
+      - type: volume
+        source: fossstudio_data
+        target: /etc/coturn
+        read_only: true
+        volume:
+          subpath: turn
+    command: ["-c", "/etc/coturn/turnserver.conf"]
 
 volumes:
   fossstudio_data:
@@ -129,13 +133,8 @@ volumes:
 #     content: |
 #       {
 #         on_demand_tls {
-#           ask http://app:{$$HTTP_PORT}/tls-allowed
+#           ask http://app:3000/tls-allowed
 #         }
-#       }
-#       {$$DOMAIN} {
-#         encode zstd gzip
-#         header Strict-Transport-Security "max-age=31536000"
-#         reverse_proxy app:{$$HTTP_PORT}
 #       }
 #       https:// {
 #         tls {
@@ -143,5 +142,5 @@ volumes:
 #         }
 #         encode zstd gzip
 #         header Strict-Transport-Security "max-age=31536000"
-#         reverse_proxy app:{$$HTTP_PORT}
+#         reverse_proxy app:3000
 #       }

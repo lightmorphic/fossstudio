@@ -26,6 +26,14 @@ services:
     volumes:
       - ${DATA_PATH:-./data}:/data
       - ./web:/app/web:ro
+    # The relay waits for this: on a first run it reads a config file the
+    # studio has not written yet.
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:' + (process.env.HTTP_PORT || 3000) + '/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
 
   # ---------------------------------------------------------------------
   # HTTPS. Most people want this. To switch it on, delete the "# " from
@@ -68,26 +76,30 @@ services:
   #     - caddy_data:/data
   #     - caddy_config:/config
 
+  # The relay's settings are not here. The studio writes them into its
+  # own data folder on every start - the shared secret it made itself,
+  # and the public address it is announcing - so the two can never drift
+  # apart and neither is in a file anybody edits. external-ip is in
+  # there too, which is what a bridged relay needs: coturn can see only
+  # the container's own address and would otherwise offer guests a relay
+  # that reaches nobody.
+  #
+  # On a first run this container restarts until the studio has written
+  # the file, which takes a few seconds.
   coturn:
     image: coturn/coturn:4-alpine
     restart: unless-stopped
-    env_file: .env
+    depends_on:
+      app:
+        condition: service_healthy
     mem_limit: 256m
     ports:
       - "3478:3478/tcp"
       - "3478:3478/udp"
       - "${TURN_MIN_PORT:-49160}-${TURN_MAX_PORT:-49189}:${TURN_MIN_PORT:-49160}-${TURN_MAX_PORT:-49189}/udp"
-    # --external-ip is what a bridged relay needs: coturn can see only
-    # the container's own address, and would otherwise offer guests a
-    # relay at an address that reaches nobody.
-    command: >
-      --realm=${DOMAIN}
-      --use-auth-secret
-      --static-auth-secret=${TURN_SECRET}
-      --listening-port=3478
-      --min-port=${TURN_MIN_PORT:-49160} --max-port=${TURN_MAX_PORT:-49189}
-      --external-ip=${PUBLIC_IP}
-      --no-multicast-peers
+    volumes:
+      - ${DATA_PATH:-./data}/turn:/etc/coturn:ro
+    command: ["-c", "/etc/coturn/turnserver.conf"]
 
 # volumes:
 #   caddy_data:

@@ -159,10 +159,44 @@
           <div class="field">
             <label for="newPassword">New password</label>
             <input type="password" id="newPassword" autocomplete="new-password">
-            <p class="hint">At least 10 characters. If <code>HOST_PASSWORD</code> is still filled in in your compose file, the next restart puts that one back - empty it there, or change it there instead, and the two can never disagree.</p>
+            <p class="hint">At least twelve characters, and not one of the passwords everybody guesses first. There are no rules about capitals and symbols; length is what makes a password hard to guess. If <code>HOST_PASSWORD</code> is still filled in in your compose file, the next restart puts that one back - empty it there and the password lives here instead. <a class="helplink" href="/help#login">More about the login</a></p>
           </div>
           <button class="btn primary" id="savePasswordBtn">Change password</button>
           <p class="msg" id="passwordMsg" hidden></p>
+        </div>
+        <div class="panel">
+          <h2>Passkeys</h2>
+          <p class="hint" style="margin-bottom:0.8rem">Your browser or phone keeps the key and this studio only stores the public half, so a stolen copy of the data folder gives nobody a way in. A passkey belongs to the address you made it on: move the studio to a different domain and it stops working, which is why the password above stays as the way back. <a class="helplink" href="/help#login">More about the login</a></p>
+          <div id="passkeyList"><p class="hint">Loading…</p></div>
+          <button class="btn primary" id="addPasskeyBtn" style="margin-top:0.8rem">Add a passkey</button>
+          <p class="msg err" id="passkeyMsg" hidden></p>
+        </div>
+      </section>
+
+      <!-- Settings: where the studio lives -->
+      <section id="pane-place" class="stack" hidden>
+        <div class="panel">
+          <h2>Studio address</h2>
+          <p class="hint" style="margin-bottom:0.9rem">Both of these used to be lines in a compose file. They take effect when the studio restarts.</p>
+          <div class="field">
+            <label for="placeDomain">Domain</label>
+            <input type="text" id="placeDomain" autocomplete="off" spellcheck="false" placeholder="studio.example.com">
+            <p class="hint" style="margin-top:0.4rem">The address people type to reach the studio, and the one its certificate is fetched for. <a class="helplink" href="/help#https">Why HTTPS is not optional</a></p>
+          </div>
+          <div class="field">
+            <label for="placePublicIp">This server's public address</label>
+            <input type="text" id="placePublicIp" autocomplete="off" spellcheck="false" placeholder="203.0.113.10">
+            <p class="hint" style="margin-top:0.4rem">Audio and video go straight between browsers and this machine rather than through the web server, so the studio has to tell every guest which address to send them to. Get it wrong and the room opens and stays silent. Find it with <code>curl -4 https://api.ipify.org</code> on the machine. <a class="helplink" href="/help#public-ip">More about this</a></p>
+          </div>
+          <div class="field">
+            <label for="placeTurnHost">Relay address (optional)</label>
+            <input type="text" id="placeTurnHost" autocomplete="off" spellcheck="false" placeholder="Leave empty unless the domain is behind Cloudflare">
+            <p class="hint" style="margin-top:0.4rem">Only needed when the domain above does not reach this machine directly - a proxied Cloudflare record or a tunnel. Relay traffic has to arrive here, so put an unproxied name or the raw address.</p>
+          </div>
+          <button class="btn primary" id="savePlaceBtn">Save</button>
+          <span class="msg ok" id="placeMsg" hidden>✓ Saved</span>
+          <span class="msg err" id="placeErrMsg" hidden></span>
+          <p class="hint" id="placeRestart" hidden style="margin-top:0.8rem">Restart the studio for this to take effect: the media engine is given the public address when it opens its sockets, so it cannot change under a session that is already running.</p>
         </div>
       </section>
 

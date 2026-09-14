@@ -72,7 +72,12 @@ export async function writeRelayConfig(dataDir, { turnSecret, publicIp, domain, 
   ];
   const file = path.join(dir, "turnserver.conf");
   const tmp = `${file}.${process.pid}.tmp`;
-  await fs.writeFile(tmp, lines.join("\n"), { encoding: "utf8", mode: 0o600 });
+  // Readable rather than owner-only, unlike everything else the studio
+  // writes: the relay is another container running as another user, and
+  // a file it cannot open is a relay that quietly runs on defaults with
+  // no shared secret at all. Anybody who can read this directory can
+  // already read the account file beside it.
+  await fs.writeFile(tmp, lines.join("\n"), { encoding: "utf8", mode: 0o644 });
   await fs.rename(tmp, file);
   return file;
 }

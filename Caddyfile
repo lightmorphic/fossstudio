@@ -1,6 +1,9 @@
-# On-demand certificates for the dashboard's own domain
-# (host.<domain>): the app approves exactly that name at /tls-allowed,
-# so no other name pointed at this server can ever mint a certificate.
+# Every certificate is fetched on demand, and the app decides which
+# names are allowed at /tls-allowed. That is what lets the domain be a
+# setting rather than a line in a file: before anybody owns the studio
+# it approves whatever name has been pointed at this server, and once
+# the studio has an owner it approves that owner's domain, the
+# dashboard's own name under it, and nothing else.
 {
 	on_demand_tls {
 		ask http://127.0.0.1:{$HTTP_PORT}/tls-allowed
@@ -12,16 +15,9 @@
 # glob is harmless when the folder is empty).
 import /etc/caddy/sites/*.caddy
 
-{$DOMAIN} {
-	encode zstd gzip
-	header Strict-Transport-Security "max-age=31536000"
-	reverse_proxy 127.0.0.1:{$HTTP_PORT}
-}
-
-# The dashboard's own domain (host.<domain>) needs no configuration:
-# point its DNS here and this catch-all serves it, fetching the
-# certificate on demand - the app's /tls-allowed allowlist (derived from
-# DOMAIN, plus any explicit HOST_DOMAIN) is the gate.
+# The studio's domain, and the dashboard's own name under it, both land
+# here: point their DNS at this server and the certificate is fetched
+# when the first request arrives.
 https:// {
 	tls {
 		on_demand
@@ -32,7 +28,9 @@ https:// {
 }
 
 # Optional old domain forwarding to the real one so old links keep
-# working; harmless no-op when LEGACY_DOMAIN is unset
+# working; harmless no-op when LEGACY_DOMAIN is unset. This is the one
+# thing still wanting DOMAIN in the environment, because Caddy is
+# writing the redirect and cannot ask the studio where it lives.
 {$LEGACY_DOMAIN::65534} {
 	redir https://{$DOMAIN}{uri} permanent
 }
