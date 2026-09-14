@@ -301,13 +301,20 @@ input[type="email"], input[type="url"] {
 
 /* ---------- Sessions list ---------- */
 
+/* The row wraps rather than running off the side. On a phone the five
+   icons would not fit beside the title and the last of them - delete -
+   was clipped off the edge of the screen, so a session could not be
+   deleted on a phone at all. They drop to their own line instead. */
 .session-row {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
   padding: 0.75rem 0;
   border-top: 1px solid var(--border);
 }
+.session-row > div:first-child { flex: 1 1 13rem; min-width: 0; }
+.session-row .meta { overflow-wrap: anywhere; }
 .session-row:first-child { border-top: 0; }
 .session-row .title { font-weight: 600; }
 .session-row .meta { font-size: 0.8125rem; color: var(--muted-fg); }

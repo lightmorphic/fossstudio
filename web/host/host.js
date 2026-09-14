@@ -71,7 +71,10 @@
     return MENUS;
   }
 
-  function visibleSubs(menu) {
+  // The pages under a menu. They used to be a second column of their
+  // own; they are lines in the one sidebar now, so nothing here means
+  // "submenu" any more.
+  function pagesIn(menu) {
     return menu.subs;
   }
 
@@ -98,7 +101,7 @@
       }
       const into = foot || nav;
       if (menu.rule) into.appendChild(document.createElement("hr"));
-      const subs = visibleSubs(menu);
+      const subs = pagesIn(menu);
       if (subs.length > 1) {
         const head = document.createElement("p");
         head.className = "menu-head";
@@ -163,7 +166,7 @@
     const menu = visibleMenus().find((x) => x.id === m);
     if (!menu) return false;
     currentMenu = menu;
-    const subs = visibleSubs(menu);
+    const subs = pagesIn(menu);
     showSub((subs.find((x) => x.id === sub) || subs[0]).id);
     return true;
   }
@@ -1000,7 +1003,7 @@
     $("accountUsername").value = me.username;
     if (!applyHash()) {
       currentMenu = visibleMenus()[0];
-      showSub(visibleSubs(currentMenu)[0].id);
+      showSub(pagesIn(currentMenu)[0].id);
     }
     load2fa();
     loadPasskeys();
