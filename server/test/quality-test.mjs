@@ -17,11 +17,16 @@ import { chromium, firefox } from "playwright";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { makeRoom, studioLogin, REPO } from "./helpers.mjs";
+import os from "node:os";
+import { makeRoom, studioLogin, downloadRecordingFile, mediaSeconds, REPO } from "./helpers.mjs";
 
 const B = process.argv[2] || "http://127.0.0.1:3999";
 const PW = process.argv[3] || "testpass123";
-const DATA = process.env.DATA_DIR || path.join(REPO, "data");
+// Files come over the download route, not out of a data folder this
+// test would have to guess at: a studio started with its own DATA_DIR
+// keeps them elsewhere, and a guess that misses reads as a recording
+// with nothing in it.
+const DOWNLOADS = fs.mkdtempSync(path.join(os.tmpdir(), "fossstudio-quality-"));
 const cookie = await studioLogin(B, PW);
 
 let pass = true;
@@ -106,9 +111,10 @@ for (const [value, expectExt] of [["best", "wav"], ["smaller", "opus"]]) {
     await page.waitForTimeout(2000);
   }
   const audio = (rec?.files || []).find((f) => /^Eric-audio\./.test(f));
-  const file = path.join(DATA, "recordings", rec?.id || "", "out", audio || "x");
-  const bytes = fs.statSync(file, { throwIfNoEntry: false })?.size || 0;
-  const dur = Number(probe(file, "format=duration")) || 0;
+  check(`"${value}" gives a track back at all (${audio || "none"})`, !!audio);
+  const file = await downloadRecordingFile(B, cookie, rec.id, audio, DOWNLOADS);
+  const bytes = fs.statSync(file).size;
+  const dur = mediaSeconds(file);
   const codec = probe(file, "stream=codec_name");
   sizes[value] = { bytes, dur };
   console.log(`    ${value}: ${audio}, ${codec}, ${dur.toFixed(2)}s, ` +
@@ -118,7 +124,6 @@ for (const [value, expectExt] of [["best", "wav"], ["smaller", "opus"]]) {
     `(${dur.toFixed(2)}s against ${(TAKE_MS / 1000).toFixed(2)}s)`,
     Math.abs(dur - TAKE_MS / 1000) < 1.5);
 
-  fs.rmSync(path.join(DATA, "recordings", rec?.id || "nothing"), { recursive: true, force: true });
   await ctx.close();
 }
 
@@ -180,6 +185,7 @@ for (const [value, expectExt] of [["best", "wav"], ["smaller", "opus"]]) {
     perHour("smaller") > 25e6 && perHour("smaller") < 110e6);
 }
 
+fs.rmSync(DOWNLOADS, { recursive: true, force: true });
 await setQuality("best");
 console.log(pass ? "ALL PASS" : "SOME CHECKS FAILED");
 await browser.close();

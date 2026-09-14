@@ -26,11 +26,17 @@ import { chromium } from "playwright";
 import { execFileSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { makeRoom, REPO } from "./helpers.mjs";
+import os from "node:os";
+import { makeRoom, studioLogin, downloadRecordingFile, REPO } from "./helpers.mjs";
 
 const B = process.argv[2] || "http://127.0.0.1:3999";
 const PW = process.argv[3] || "testpass123";
-const DATA = process.env.DATA_DIR || path.join(REPO, "data");
+// The bench in pass one needs somewhere to put a file, and passes
+// three's files come over the download route rather than out of a data
+// folder this test would have to guess at - a studio with its own
+// DATA_DIR keeps them elsewhere.
+const DOWNLOADS = fs.mkdtempSync(path.join(os.tmpdir(), "fossstudio-dropout-"));
+const cookie = await studioLogin(B, PW);
 const ROOM = await makeRoom(B, PW, "Dropout test");
 
 // The take, and the holes punched in the microphone during it. Five
@@ -204,8 +210,7 @@ const silencesIn = (file) => {
   check(`recording through the graph keeps the length (short by ${(BENCH_MS / 1000 - fixedSecs).toFixed(2)}s)`,
     BENCH_MS / 1000 - fixedSecs < 0.5);
 
-  const tmp = path.join(DATA, "dropout-bench.webm");
-  fs.mkdirSync(DATA, { recursive: true });
+  const tmp = path.join(DOWNLOADS, "dropout-bench.webm");
   fs.writeFileSync(tmp, fixedBuf);
   const quiet = silencesIn(tmp);
   fs.rmSync(tmp, { force: true });
@@ -315,12 +320,11 @@ check(`recording filed (status: ${rec?.status})`, rec?.status === "ready");
 
 const secondsOf = (file) => secondsOfBuffer(fs.readFileSync(file));
 
-const dir = path.join(DATA, "recordings", rec?.id || "", "out");
 const audio = (rec?.files || []).find((f) => /^Eric.*-audio\.(wav|opus|webm|mp4)$/.test(f));
 check(`Eric's track came back (${audio})`, !!audio);
 
 if (audio) {
-  const file = path.join(dir, audio);
+  const file = await downloadRecordingFile(B, cookie, rec.id, audio, DOWNLOADS);
   const secs = secondsOf(file);
   const short = takeSecs - secs;
   console.log(`    take ${takeSecs.toFixed(2)}s, file holds ${secs.toFixed(2)}s of samples, ` +
@@ -334,7 +338,7 @@ if (audio) {
 // it would slide the same way if the graph could starve
 const everyone = (rec?.files || []).find((f) => /^everyone\.(webm|mp4)$/.test(f));
 if (everyone) {
-  const secs = secondsOf(path.join(dir, everyone));
+  const secs = secondsOf(await downloadRecordingFile(B, cookie, rec.id, everyone, DOWNLOADS));
   console.log(`    the combined video holds ${secs.toFixed(2)}s of audio`);
   check(`the combined video is as long as the take (short by ${(takeSecs - secs).toFixed(2)}s)`,
     takeSecs - secs < 0.5);
@@ -355,7 +359,8 @@ if (everyone) {
 const video = (rec?.files || []).find((f) => /^Eric.*-video\.(webm|mp4)$/.test(f));
 if (video) {
   const out = execFileSync("ffprobe", ["-v", "error", "-select_streams", "v:0",
-    "-show_entries", "packet=pts_time", "-of", "csv=p=0", path.join(dir, video)],
+    "-show_entries", "packet=pts_time", "-of", "csv=p=0",
+    await downloadRecordingFile(B, cookie, rec.id, video, DOWNLOADS)],
   { encoding: "utf8", maxBuffer: 1 << 28 });
   const last = Number(out.trim().split("\n").pop().split(",")[0]);
   console.log(`    Eric's camera track runs to ${last.toFixed(2)}s`);
@@ -370,7 +375,7 @@ console.log(`    note beside the file: ${note?.text || "none"}`);
 check("the dashboard says which track lost audio and how much",
   !!note && /Eric/.test(note.text) && /\d+ (second|minute)/.test(note.text));
 
-fs.rmSync(path.join(DATA, "recordings", rec?.id || "nothing"), { recursive: true, force: true });
+fs.rmSync(DOWNLOADS, { recursive: true, force: true });
 
 console.log(pass ? "ALL PASS" : "SOME CHECKS FAILED");
 await browser.close();

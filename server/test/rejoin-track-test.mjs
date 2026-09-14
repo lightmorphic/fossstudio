@@ -20,14 +20,21 @@
 import { chromium } from "playwright";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import fsp from "node:fs/promises";
-import { makeRoom, REPO } from "./helpers.mjs";
+import { makeRoom, studioLogin, downloadRecordingFile, mediaSeconds, REPO } from "./helpers.mjs";
 import { assembleTrack } from "../src/recording/splice.js";
 
 const B = process.argv[2] || "http://127.0.0.1:3999";
 const PW = process.argv[3] || "testpass123";
-const DATA = process.env.DATA_DIR || path.join(REPO, "data");
+// Files are fetched over the download route rather than read out of
+// the studio's data folder: a studio started with its own DATA_DIR
+// keeps them somewhere this test has no business guessing, and a guess
+// that misses looks exactly like a recording with no audio in it.
+const DOWNLOADS = fs.mkdtempSync(path.join(os.tmpdir(), "fossstudio-rejoin-"));
+const SCRATCH = path.join(DOWNLOADS, "parts");
+const cookie = await studioLogin(B, PW);
 const ROOM = await makeRoom(B, PW, "Rejoin test");
 
 // The shape of the take, in milliseconds from the host pressing Record.
@@ -89,7 +96,6 @@ async function joinAs(ctx, name, asHost) {
   const ctx = await browser.newContext({ permissions: ["microphone"] });
   const page = await ctx.newPage();
   await page.goto(`${B}/host/login.html`);
-  const SCRATCH = path.join(DATA, "rejoin-parts");
   fs.mkdirSync(SCRATCH, { recursive: true });
 
   for (const [label, mime, ext] of [
@@ -152,12 +158,72 @@ async function joinAs(ctx, name, asHost) {
         && Math.abs((middle.end - middle.start) - away) < 1);
     check(`${label}: exactly two stretches of silence, not three (${quiet.length})`, quiet.length === 2);
   }
-  fs.rmSync(SCRATCH, { recursive: true, force: true });
   await ctx.close();
 }
 
 // ---------------------------------------------------------------
-// Pass two: the whole product - a real room, a real take, a real drop.
+// Pass two: an ordinary take. Nobody joins late, nobody drops out, one
+// person, stop.
+//
+// It goes first because if this is broken then nothing about joining
+// late or reconnecting matters, and because a download that is the
+// right length and full of samples is the thing every other check here
+// rests on.
+// ---------------------------------------------------------------
+{
+  const room = await makeRoom(B, PW, "Plain take");
+  const ctx = await context();
+  const login = await ctx.newPage();
+  await login.goto(`${B}/host/login.html`);
+  await login.fill("#username", "admin");
+  await login.fill("#password", PW);
+  await login.click("button[type=submit]");
+  await login.waitForURL("**/host/");
+
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => console.log("[plain] pageerror:", e.message));
+  await page.goto(`${B}/s/${room}?as=host`);
+  await page.waitForSelector("#joinBtn:not([disabled])");
+  await page.fill("#nameInput", "Solo");
+  await page.click("#joinBtn");
+  await page.waitForSelector("#session:not([hidden])");
+  await page.waitForTimeout(1500);
+
+  const began = Date.now();
+  await page.click("#hpRecordBtn");
+  await page.waitForTimeout(14000);
+  await page.click("#hpRecordBtn");
+  const secs = (Date.now() - began) / 1000;
+
+  let filed = null;
+  for (let i = 0; i < 45; i++) {
+    const list = await login.evaluate(() => fetch("/api/recordings").then((r) => r.json()));
+    filed = list.find((r) => r.roomId === room);
+    if (filed && filed.status === "ready") break;
+    await page.waitForTimeout(2000);
+  }
+  check(`a plain take is filed (status: ${filed?.status})`, filed?.status === "ready");
+  const audio = (filed?.files || []).filter((f) => /-audio\./.test(f));
+  check(`one audio file for the one person in the room (${audio.join(", ") || "none"})`, audio.length === 1);
+  if (audio.length === 1) {
+    const file = await downloadRecordingFile(B, cookie, filed.id, audio[0], DOWNLOADS);
+    const bytes = fs.statSync(file).size;
+    const dur = mediaSeconds(file);
+    console.log(`    plain take: ${audio[0]} downloads as ${(bytes / 1e6).toFixed(1)} MB, ${dur.toFixed(2)}s`);
+    // A header with nothing after it is what an assembler that never
+    // wrote the recorded parts produces, so the size is checked as well
+    // as the length.
+    check(`the downloaded file holds actual audio, not just a header (${bytes} bytes)`, bytes > 100000);
+    check(`a plain take is the full length (${dur.toFixed(2)}s against ${secs.toFixed(2)}s)`,
+      Math.abs(dur - secs) < 1.5);
+    check("nothing is said beside a track that had nothing happen to it",
+      !(filed.notes || []).some((n) => n.file === audio[0]));
+  }
+  await ctx.close();
+}
+
+// ---------------------------------------------------------------
+// Pass three: the whole product - a real room, a real take, a real drop.
 // ---------------------------------------------------------------
 
 const hostCtx = await context();
@@ -207,15 +273,16 @@ for (let i = 0; i < 60; i++) {
 }
 check(`recording filed (status: ${rec?.status})`, rec?.status === "ready");
 
-const dir = path.join(DATA, "recordings", rec?.id || "", "out");
-const nadia = (rec?.files || []).filter((f) => /^Nadia.*-audio\./.test(f));
-console.log(`    Nadia's files: ${(rec?.files || []).filter((f) => /^Nadia/.test(f)).join(", ") || "none"}`);
+const files = rec?.files || [];
+const nadia = files.filter((f) => /^Nadia.*-audio\./.test(f));
+console.log(`    Nadia's files: ${files.filter((f) => /^Nadia/.test(f)).join(", ") || "none"}`);
 check(`one audio file for Nadia, not two (${nadia.length})`, nadia.length === 1);
 
 if (nadia.length === 1) {
-  const file = path.join(dir, nadia[0]);
-  const dur = Number(probe(file, "format=duration"));
-  console.log(`    ${nadia[0]} is ${dur.toFixed(2)}s long; the take was ${takeSecs.toFixed(2)}s`);
+  const file = await downloadRecordingFile(B, cookie, rec.id, nadia[0], DOWNLOADS);
+  const dur = mediaSeconds(file);
+  console.log(`    ${nadia[0]} downloads as ${(fs.statSync(file).size / 1e6).toFixed(1)} MB, ` +
+    `${dur.toFixed(2)}s long; the take was ${takeSecs.toFixed(2)}s`);
   // A second and a half covers the last chunk the recorder had not yet
   // handed over when Stop was pressed. Anything more is a short track.
   check(`the track is the full length of the take (short by ${(takeSecs - dur).toFixed(2)}s, allowed 1.5s)`,
@@ -227,16 +294,29 @@ if (nadia.length === 1) {
     !!note && /Nadia/.test(note.text) && /joined/.test(note.text) && /dropped out/.test(note.text));
 }
 
-const eric = (rec?.files || []).filter((f) => /^Eric.*-audio\./.test(f));
+const eric = files.filter((f) => /^Eric.*-audio\./.test(f));
+check(`one audio file for the host (${eric.length})`, eric.length === 1);
 if (eric.length === 1) {
-  const dur = Number(probe(path.join(dir, eric[0]), "format=duration"));
-  console.log(`    ${eric[0]} is ${dur.toFixed(2)}s long`);
+  const file = await downloadRecordingFile(B, cookie, rec.id, eric[0], DOWNLOADS);
+  const dur = mediaSeconds(file);
+  console.log(`    ${eric[0]} downloads as ${(fs.statSync(file).size / 1e6).toFixed(1)} MB, ${dur.toFixed(2)}s long`);
   check(`the host's track is the full length too (short by ${(takeSecs - dur).toFixed(2)}s)`,
     takeSecs - dur < 1.5);
 }
-check(`one audio file for the host (${eric.length})`, eric.length === 1);
 
-fs.rmSync(path.join(DATA, "recordings", rec?.id || "nothing"), { recursive: true, force: true });
+// Nadia's camera comes back as one file per stretch, which is on
+// purpose and not the same bug: silence can be manufactured from
+// nothing and a picture cannot, and there is no encoder here to make
+// one with. What the host must not have to work out for themselves is
+// where each stretch belongs, so each one is told.
+const nadiaVideo = files.filter((f) => /^Nadia.*-video/.test(f));
+console.log(`    Nadia's camera: ${nadiaVideo.join(", ") || "none"}`);
+check(`one camera file per stretch she recorded (${nadiaVideo.length})`, nadiaVideo.length === 2);
+const placed = nadiaVideo.filter((f) => (rec.notes || []).some((n) => n.file === f && /into the take/.test(n.text)));
+check(`each camera file is told where in the take it starts (${placed.length} of ${nadiaVideo.length})`,
+  placed.length === nadiaVideo.length);
+
+fs.rmSync(DOWNLOADS, { recursive: true, force: true });
 console.log(pass ? "ALL PASS" : "SOME CHECKS FAILED");
 await browser.close();
 process.exit(pass ? 0 : 1);

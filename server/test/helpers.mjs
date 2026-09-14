@@ -1,3 +1,7 @@
+import { spawnSync } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
+
 // Shared test helpers. There is one account: the suite starts a server
 // with HOST_PASSWORD=testpass123 and signs in as that.
 export const STUDIO = { username: "admin", password: "testpass123" };
@@ -147,4 +151,42 @@ export async function probeMedia(page, url, { at = 5, crop = null } = {}) {
     v.remove();
     return out;
   }, { url, at, crop });
+}
+
+// Fetch a finished recording's file the way the host does - over the
+// download route, signed in - and hand back a path on disk.
+//
+// Tests used to reach straight into the data directory for these,
+// guessing where the studio keeps its files. That guess is wrong the
+// moment a studio is started with a DATA_DIR of its own, and the
+// failure was silent in the worst way: ffprobe prints nothing for a
+// file that is not there, Number("") is 0, and a missing file came
+// back looking exactly like a recording with no audio in it.
+// Downloading is both honest and the better test, because it is the
+// road a person actually uses.
+export async function downloadRecordingFile(base, cookie, recId, file, intoDir) {
+  const url = `${base}/api/recordings/${encodeURIComponent(recId)}/files/${encodeURIComponent(file)}`;
+  const res = await fetch(url, { headers: { Cookie: cookie } });
+  if (!res.ok) throw new Error(`downloading ${file} failed: ${res.status}`);
+  const body = Buffer.from(await res.arrayBuffer());
+  if (!body.length) throw new Error(`${file} downloaded as nothing at all`);
+  fs.mkdirSync(intoDir, { recursive: true });
+  const out = path.join(intoDir, file);
+  fs.writeFileSync(out, body);
+  return out;
+}
+
+// How long a media file is, according to ffprobe. Throws rather than
+// returning zero when there is no file or no answer: "0.00 seconds" is
+// what an empty recording looks like, and a test must never confuse the
+// two.
+export function mediaSeconds(file) {
+  const run = spawnSync("ffprobe",
+    ["-v", "error", "-show_entries", "format=duration", "-of", "default=nw=1:nk=1", file],
+    { encoding: "utf8" });
+  const text = (run.stdout || "").trim();
+  if (run.status !== 0 || !text || Number.isNaN(Number(text))) {
+    throw new Error(`ffprobe could not measure ${file}: ${(run.stderr || "it said nothing").trim()}`);
+  }
+  return Number(text);
 }

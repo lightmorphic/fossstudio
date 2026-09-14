@@ -1,51 +1,39 @@
-// The example config has to show the shape of a public IP, and someone
-// will always start the studio without changing it. That failure is
-// silent - the room opens and nobody can hear anybody - so config.js
-// refuses to start instead. These hold it to that.
+// The example config used to ship a documentation address that looks like
+// a real one, and leaving it produced the worst failure this product has:
+// the site loads, the room opens, guests appear in the list, and no sound
+// or picture ever arrives, because every guest has been handed an address
+// that reaches nobody.
+//
+// The address is a setting now rather than a line in a file, so refusing
+// to start is no longer the right answer - that would lock somebody out of
+// the very screen that fixes it. Instead the value is judged, refused, and
+// the reason said plainly. These hold it to that.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { publicIpProblem } from "../src/config.js";
 
-const configPath = path.join(
-  path.dirname(path.dirname(fileURLToPath(import.meta.url))),
-  "src",
-  "config.js",
-);
-
-function start(publicIp) {
-  return spawnSync(
-    process.execPath,
-    ["--input-type=module", "-e", `await import(${JSON.stringify(configPath)});`],
-    {
-      encoding: "utf8",
-      env: { ...process.env, PUBLIC_IP: publicIp, SESSION_SECRET: "x", TURN_SECRET: "x" },
-    },
-  );
-}
-
-test("refuses the documentation address the example ships with", () => {
-  const r = start("203.0.113.7");
-  assert.equal(r.status, 1);
-  assert.match(r.stderr, /still the example value/);
-  // The message has to say what to do, not only what is wrong.
-  assert.match(r.stderr, /api\.ipify\.org/);
-});
-
-test("refuses the other two documentation ranges", () => {
-  for (const ip of ["192.0.2.1", "198.51.100.44"]) {
-    assert.equal(start(ip).status, 1, `${ip} should have been refused`);
+test("refuses the three ranges reserved for documentation", () => {
+  for (const ip of ["203.0.113.7", "192.0.2.1", "198.51.100.44"]) {
+    const problem = publicIpProblem(ip);
+    assert.ok(problem, `${ip} should have been refused`);
+    // The message has to say what to do, not only what is wrong.
+    assert.match(problem, /ipify|find/i, `${ip}: the message must say how to find the real one`);
   }
 });
 
-test("refuses anything that is not an address at all", () => {
-  assert.equal(start("your-servers-public-ip").status, 1);
+test("refuses something that is not an address at all", () => {
+  assert.ok(publicIpProblem("your-servers-public-ip"));
+  assert.ok(publicIpProblem("studio.example.com"));
 });
 
-test("accepts a real address, and an empty one", () => {
-  assert.equal(start("88.97.12.4").status, 0);
+test("accepts a real address", () => {
+  assert.equal(publicIpProblem("88.97.12.4"), "");
+  assert.equal(publicIpProblem("192.168.68.120"), "");
+});
+
+test("accepts nothing at all", () => {
   // Empty is legitimate: on a machine whose public address is on its own
   // interface the media engine works it out without being told.
-  assert.equal(start("").status, 0);
+  assert.equal(publicIpProblem(""), "");
+  assert.equal(publicIpProblem(undefined), "");
 });
