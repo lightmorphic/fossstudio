@@ -1,7 +1,9 @@
 # FOSSStudio. Save as docker-compose.yml, then: docker compose up -d
 #
-# Nothing to fill in. `docker compose logs app` prints a code; open your
-# domain and the studio asks for it and sets itself up.
+# Nothing to fill in. Open your domain and choose a password: the first
+# person to open a studio nobody owns yet claims it. Do it as soon as it
+# is up - until you have, whoever reaches the address first could claim
+# it instead. https://fossstudio.org/install.html#code
 #
 # HTTPS is compulsory - browsers give no camera without it - and the
 # Caddy block below is one way to get it. What every line here means,

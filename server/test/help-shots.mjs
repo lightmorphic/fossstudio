@@ -165,14 +165,13 @@ await plain.close();
 
 // The setup screen cannot be photographed on a claimed studio - it
 // redirects - so this starts one of its own with an empty folder and
-// throws it away afterwards. The code in the picture belonged to that
-// studio for the few seconds it lived; setup codes are held in memory
-// and change on every restart.
+// throws it away afterwards.
 //
-// REQUIRE_SETUP_CODE, because this shot is the code step and a browser
-// on the same machine is not asked for a code any more. That is the
-// screen a Docker installer sees, which is everybody the help is
-// written for; the local one is a password box and needs no picture.
+// This used to set REQUIRE_SETUP_CODE so it could photograph the code
+// step. There is no code any more on any ordinary install, and a
+// picture of a screen almost nobody sees would send people looking in
+// a log for something that was never printed. So the shot is the first
+// screen as it really is: choose a password.
 const PORT = 3960 + Math.floor(Math.random() * 18) * 2;
 const RTC = 41500 + Math.floor(Math.random() * 50) * 8;
 const fresh = fs.mkdtempSync(path.join(os.tmpdir(), "fs-help-shot-"));
@@ -182,7 +181,7 @@ const child = spawn(process.execPath, ["src/index.js"], {
     ...process.env,
     DATA_DIR: fresh, HTTP_PORT: String(PORT), BIND_HOST: "127.0.0.1",
     WEB_DIR: `${REPO}web`, DOMAIN: "localhost",
-    HOST_PASSWORD: "", REQUIRE_SETUP_CODE: "1",
+    HOST_PASSWORD: "",
     RTC_MIN_PORT: String(RTC), RTC_MAX_PORT: String(RTC + 3)
   }
 });
@@ -197,7 +196,10 @@ try {
   const sctx = await sb.newContext({ viewport: { width: 900, height: 820 }, deviceScaleFactor: 2 });
   const sp = await sctx.newPage();
   await sp.goto(`${up}/host/setup.html`);
-  await sp.waitForSelector("#stepCode:not([hidden])");
+  await sp.waitForSelector("#stepLogin:not([hidden])");
+  // The offered passphrase arrives a moment after the step does, and a
+  // picture of an empty box beside two buttons explains nothing.
+  await sp.waitForFunction(() => document.getElementById("suggestion").textContent.trim().length > 0);
   await sp.waitForTimeout(600);
   await (await sp.$("#setup")).screenshot({ path: keep("setup", 1100) });
   await sb.close();

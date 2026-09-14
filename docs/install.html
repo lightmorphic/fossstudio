@@ -40,12 +40,12 @@ place, so the file itself can stay short.</p>
 <h2>The short version</h2>
 <p>Save the file from <a href="/">the front page</a> as
 <code>docker-compose.yml</code> on a Linux server, then run
-<code>docker compose up -d</code>. Run <code>docker compose logs app</code>
-and it prints a code. Open your domain in a browser, give it the code,
-choose a password, and the studio sets itself up. (The code is only
-asked for when your browser is on another machine than the studio -
-see <a href="#code">when the code is asked for</a> - and with Docker it
-almost always is.)</p>
+<code>docker compose up -d</code>. Open your domain in a browser,
+choose a password, and the studio sets itself up. There is no code to
+find: the first person to open a studio nobody owns yet claims it, and
+after that nobody else can. That leaves a window between starting it
+and claiming it - see <a href="#code">the minute before you claim
+it</a>.</p>
 <p>There is nothing to fill in beforehand. The domain, the login and the
 secrets are all settings inside the studio. It makes its own secrets on
 the first start and keeps them in its data volume, so you never type one
@@ -92,12 +92,11 @@ Caddy now reaches the studio from inside and nothing else needs to.</p></li>
 <li><p>Start it:</p>
 <pre><code>docker compose up -d</code></pre></li>
 
-<li><p>Read the setup code:</p>
-<pre><code>docker compose logs app</code></pre>
-<p>It prints a line with a code in it. Open
-<code>https://studio.yourdomain.com</code> in a browser, give it the
-code, choose a password, add a passkey if you want one, and it is
-yours.</p></li>
+<li><p>Claim it. Open <code>https://studio.yourdomain.com</code> in a
+browser, choose a password, add a passkey if you want one, and it is
+yours. Do this now rather than tomorrow: until somebody does, whoever
+reaches the address first could do it instead - see <a href="#code">the
+minute before you claim it</a>.</p></li>
 </ol>
 
 <h3>B. A server already running nginx</h3>
@@ -132,9 +131,8 @@ connects:</p>
 <p>Get the certificate with <code>certbot</code> as you would for any
 other site, then <code>sudo nginx -t &amp;&amp; sudo systemctl reload
 nginx</code>.</p></li>
-<li><p><code>docker compose up -d</code>, then
-<code>docker compose logs app</code> for the code, and open your
-domain.</p></li>
+<li><p><code>docker compose up -d</code>, then open your domain and
+choose a password.</p></li>
 </ol>
 <p><b>If nginx is on a different machine</b> from the studio, everything
 above still applies, with two differences: point <code>proxy_pass</code>
@@ -158,40 +156,51 @@ name, so Tailscale issues one instead. No firewall changes at all.</p></li>
 <pre><code>tailscale serve --bg https / http://127.0.0.1:3000</code></pre>
 <p>That prints the address it has given you, something like
 <code>https://homelab.your-tailnet.ts.net</code>.</p></li>
-<li><p><code>docker compose logs app</code> for the code, then open that
-address.</p></li>
+<li><p>Open that address and choose a password. Nothing outside your
+tailnet can reach it, so there is no hurry about it.</p></li>
 </ol>
 <p>Everyone you record with has to be on your tailnet, which means
 inviting them to it. That is the trade.</p>
 
-<h2 id="code">When the code is asked for</h2>
-<p>A setup page that anyone can reach would let the first stranger who
-finds it own your studio. The code proves you own the machine, because
-only somebody with a shell on it can read the log. It is printed once,
-on the first start, and never again after the studio has an owner.</p>
-<p>That is the only job it has, so the studio skips it when the job is
-already done. A request that arrives on <code>127.0.0.1</code> was
-opened on the machine the studio is running on - nothing off that
-machine can reach that address - and then setup is one step: choose a
-password, add a passkey or two-factor if you want them, done. There is
-no code box on the screen and nothing to look up.</p>
-<p>The address is read from the connection itself, never from a header.
-<code>X-Forwarded-For: 127.0.0.1</code> is a line of text anyone can put
-in a request, so a studio that believed it could be claimed by a
-stranger in one try. And because a reverse proxy in front of the studio
-is the one thing whose own address can be loopback while the visitor is
-anywhere in the world, any sign of a proxy - any of the usual
-forwarding headers, which Caddy, nginx, Apache and Traefik all send -
-puts the code back.</p>
-<p><b>All three installs above want the code</b>, even when you are
-sitting at the server. Your browser is outside the container, so the
-request reaches the studio across the Docker network rather than on
-loopback, and Caddy or nginx sets a forwarding header on top of that.
-Skipping the code is for a studio running directly on the machine in
-front of you.</p>
-<p>If you run your own proxy on the same machine and it strips those
-headers, set <code>REQUIRE_SETUP_CODE=1</code> in the app's environment
-and the code is always asked for.</p>
+<h2 id="code">The minute before you claim it</h2>
+<p>There is no setup code. The first person to open a studio that
+nobody owns yet chooses the password, and from then on the setup screen
+is gone and the route behind it refuses everybody - on that machine as
+much as anywhere else. This is how Jellyfin, Immich and Home Assistant
+work, and it is what most people expect.</p>
+<p><b>It has a cost, and it is worth saying plainly.</b> Between the
+container starting and you opening the page, anybody who can reach that
+address could claim the studio instead of you. On a home network that
+is a minute with nobody looking. On a VPS with port 443 open to the
+internet, it is a real window, and a scanner finding a new address is
+not a fanciful thing.</p>
+<p>So on a machine that is on the internet, do one of these:</p>
+<ul>
+<li><b>Claim it straight away.</b> Have the browser tab open before you
+run <code>docker compose up -d</code>, and the window is seconds
+long.</li>
+<li><b>Keep the port shut until you have.</b> Leave 443 closed in the
+firewall, claim the studio over SSH with a port forward
+(<code>ssh -L 3000:127.0.0.1:3000 you@server</code>, then
+<code>http://127.0.0.1:3000</code>), and open the port afterwards.</li>
+<li><b>Put the code back.</b> Set <code>REQUIRE_SETUP_CODE=1</code> in
+the app's environment in the compose file. The studio then prints a
+code in <code>docker compose logs app</code> on every start where it
+has no owner, and asks for it before it will let anyone choose a
+password. Being able to read that log is the proof that the machine is
+yours. The code is held in memory only, changes on every restart, and
+is never written to disk.</li>
+</ul>
+<p>With the code on, a browser opened on the machine the studio itself
+is running on is not asked for it - opening a connection to
+<code>127.0.0.1</code> is the same proof. The address is read from the
+connection, never from a header: <code>X-Forwarded-For: 127.0.0.1</code>
+is a line of text anyone can put in a request, so a studio that
+believed it could be claimed by a stranger in one try. And because a
+reverse proxy on the same machine is the one thing whose own address can
+be loopback while the visitor is anywhere in the world, any sign of a
+proxy - any of the usual forwarding headers, which Caddy, nginx, Apache
+and Traefik all send - asks for the code anyway.</p>
 
 <h2>HTTPS is not optional</h2>
 <p>Browsers refuse camera and microphone access on a plain

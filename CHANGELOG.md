@@ -122,12 +122,28 @@ container that cannot read the studio's settings, so the studio writes
 the relay's config file for it - same secret, same public address, and
 neither in a file anybody edits.
 
-Claiming the studio had to be closed at the same time, because a setup
-page anybody can reach is a studio the first stranger to find it owns.
-The code that claims it is printed in the log on a start where nobody
-owns it, held in memory for the life of the process, and written
-nowhere: being able to run `docker compose logs app` is the proof that
-the machine is yours.
+Claiming the studio is the first visitor's to do. Whoever opens it first
+sets the password and it is theirs; after that the setup screen is gone
+and the route behind it refuses everybody, from that machine as much as
+from anywhere else. There is no code to find, on the screen or in the
+log. This is how Jellyfin, Immich and Home Assistant all work, and what
+it costs is a window between the container starting and somebody
+claiming it, which the install notes, the README, the compose file's
+first comment and the studio's own log all say out loud. For the install
+that cannot afford that window - a port already open to the internet -
+`REQUIRE_SETUP_CODE=1` puts the code back: printed in the log on every
+start where nobody owns the studio, held in memory for the life of the
+process, and written nowhere.
+
+An earlier attempt at this asked for the code only when the browser was
+somewhere other than the machine itself, which read well and delivered
+nothing: in Docker the browser is outside the container, so the request
+crosses Docker's network and is never loopback however close you are
+sitting. Every documented install is Docker, so everybody still had a
+code to find. The loopback code stays, because with `REQUIRE_SETUP_CODE`
+on somebody sitting at the machine still should not have to read a log,
+and because the address is taken from the socket and never from a header
+- `X-Forwarded-For: 127.0.0.1` costs a stranger nothing.
 
 The password rule is enforced rather than advised. Twelve characters,
 and a check against the ones people actually choose, so password123 is
@@ -157,8 +173,8 @@ somebody installed. Each section starts with the question a person is
 actually asking. Why can nobody hear anything; what is really in the
 file; which quality to choose; why HTTPS is not optional and the several
 ways to get a certificate, Caddy being one of them rather than the way;
-how much disk a show takes; the setup code, passkeys and what to do when
-locked out; what happens to a guest who joins late or drops out. Every
+how much disk a show takes; how the first run claims the studio,
+passkeys and what to do when locked out; what happens to a guest who joins late or drops out. Every
 setting that needs explaining has a plain link straight to its own
 section.
 

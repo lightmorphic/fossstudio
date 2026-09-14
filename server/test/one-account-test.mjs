@@ -40,10 +40,11 @@ for (const [label, path, opts] of [
 }
 
 // The sign-up itself, which happens once in the life of an install.
-// Loopback skips the setup code now (see setup-test), and this is the
-// half of that which must never move: skipping the code is not a way to
-// sign up again. From this machine, with no cookie at all, the screen is
-// a 404 and the route behind it refuses.
+// There is no setup code any more (see setup-test) - the first visitor
+// claims the studio - and this is the half of that which must never
+// move: having nothing to prove is not a way to sign up again. From
+// this machine, with no cookie at all, the screen is a 404 and the
+// route behind it refuses.
 for (const [label, path, opts, want] of [
   ["the setup screen", "/host/setup.html", {}, 404],
   ["claiming it again", "/api/setup/claim", {

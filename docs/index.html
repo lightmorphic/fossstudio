@@ -131,7 +131,7 @@
    "name": "What do I need to run it?",
    "acceptedAnswer": {
     "@type": "Answer",
-    "text": "A Linux server with Docker, a domain pointed at it, and the listed ports open. The whole install is pasting one docker-compose file with nothing in it to fill in, then giving the studio the setup code it prints in its log - certificates sort themselves out."
+    "text": "A Linux server with Docker, a domain pointed at it, and the listed ports open. The whole install is pasting one docker-compose file with nothing in it to fill in, then opening your domain and choosing a password - there is no code to find and certificates sort themselves out."
    }
   },
   {
@@ -845,8 +845,8 @@
         <ol class="steps">
           <li><span><b>Point your domain</b> at a Linux server running Docker.</span></li>
           <li><span><b>Save the file</b> as <code>docker-compose.yml</code>. There is nothing in it to fill in.</span></li>
-          <li><span><b><code>docker compose up -d</code></b>, then <b><code>docker compose logs app</code></b> for the setup code.</span></li>
-          <li><span><b>Open your domain</b>, give it the code, and the studio sets itself up.</span></li>
+          <li><span><b><code>docker compose up -d</code></b>.</span></li>
+          <li><span><b>Open your domain</b> and choose a password. There is no code to find - the first person to open it claims it.</span></li>
         </ol>
         <p style="color:var(--muted); font-size:0.9rem">Opening the ports,
         turning HTTPS on, using your own proxy, or running it on Tailscale:
@@ -860,8 +860,10 @@
         <div class="bar">docker-compose.yml<button id="copyBtn" type="button">COPY</button></div>
         <pre id="composeSrc"><span class="c"># FOSSStudio. Save as docker-compose.yml, then: docker compose up -d</span>
 <span class="c">#</span>
-<span class="c"># Nothing to fill in. `docker compose logs app` prints a code; open your</span>
-<span class="c"># domain and the studio asks for it and sets itself up.</span>
+<span class="c"># Nothing to fill in. Open your domain and choose a password: the first</span>
+<span class="c"># person to open a studio nobody owns yet claims it. Do it as soon as it</span>
+<span class="c"># is up - until you have, whoever reaches the address first could claim</span>
+<span class="c"># it instead. https://fossstudio.org/install.html#code</span>
 <span class="c">#</span>
 <span class="c"># HTTPS is compulsory - browsers give no camera without it - and the</span>
 <span class="c"># Caddy block below is one way to get it. What every line here means,</span>
@@ -988,7 +990,7 @@
       </div>
       <div class="faq-item">
         <h3>What do I need to run it?</h3>
-        <p>A Linux server with Docker, a domain pointed at it, and the listed ports open. The whole install is pasting one docker-compose file with nothing in it to fill in, then giving the studio the setup code it prints in its log - certificates sort themselves out.</p>
+        <p>A Linux server with Docker, a domain pointed at it, and the listed ports open. The whole install is pasting one docker-compose file with nothing in it to fill in, then opening your domain and choosing a password - there is no code to find and certificates sort themselves out.</p>
       </div>
       <div class="faq-item">
         <h3>Where do recordings end up?</h3>

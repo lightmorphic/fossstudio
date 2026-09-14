@@ -258,7 +258,6 @@ the ranges, so instances never collide.)
 
 ```bash
 docker compose up -d
-docker compose logs app
 ```
 
 There is nothing to fill in. The file holds the image, the ports and the
@@ -268,20 +267,21 @@ its data volume, so nobody generates one with `openssl` and nobody
 pastes one anywhere.
 
 Open your domain in a browser and the studio asks for the password you
-want, offers you a passkey and two-factor, and asks where it lives. It
-asks for a setup code first if - and only if - your browser is on some
-other machine, because a code is only ever a way of proving the machine
-is yours. Open the studio on the machine it is running on and the
-connection itself is that proof, so there is no code and nothing to
-look up. The studio takes the address from the connection and never
-from a header, so `X-Forwarded-For: 127.0.0.1` buys a stranger nothing,
-and any sign of a proxy in front puts the code back.
+want, offers you a passkey and two-factor, and asks where it lives.
+There is no setup code: the first person to open a studio nobody owns
+yet claims it, and after that the setup screen is gone and the route
+behind it refuses everybody.
 
-With the compose install above you will want the code, even sitting at
-the server: your browser is outside the container, so the request
-arrives from the Docker network rather than from loopback. That is what
-`docker compose logs app` is for. The code is held in memory only, so a
-restart prints a new one and losing it costs nothing.
+**The minute that leaves open.** Between the container starting and you
+opening the page, anybody who can reach that address could claim it
+instead. On a home network that is a minute with nobody looking, and it
+is how Jellyfin, Immich and Home Assistant all work. On a server with
+the port open to the internet it is a real window: keep the port shut
+until you have claimed it, or set `REQUIRE_SETUP_CODE=1` in the app's
+environment, which puts back a code printed in `docker compose logs
+app` and asks for it before anyone may claim the studio. The studio
+takes the address from the connection and never from a header, so
+`X-Forwarded-For: 127.0.0.1` buys a stranger nothing.
 
 The password is enforced rather than advised: at least twelve
 characters, and not one of the ones everybody guesses. There are no
@@ -469,7 +469,7 @@ node test/spotlight-record-test.mjs <url> <password>  # a spotlit session record
 node test/obs-feed-test.mjs              # the view-only output: no controls, invisible, never recorded
 node test/session-block-test.mjs         # blocking a guest, and undoing it
 node test/one-account-test.mjs <url> <password>  # one account, and no road to a second
-node test/setup-test.mjs                         # first run: setup code, password rule, passkey, 2FA
+node test/setup-test.mjs                         # first run: no code, password rule, passkey, 2FA
 node test/rejoin-track-test.mjs <url> <password>  # a track is the full length of the take
 node test/quality-test.mjs <url> <password>       # the recording quality setting, both ways
 node test/help-test.mjs <url> <password>          # the Help tab, its pictures, every link into it, three widths
