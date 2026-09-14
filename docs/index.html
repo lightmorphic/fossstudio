@@ -649,6 +649,7 @@
       <a href="#show">The show</a>
       <a href="#rest">Everything</a>
       <a href="#install">Install</a>
+      <a href="install.html">Install notes</a>
       <a href="#faq">Questions</a>
       <a href="https://github.com/lightmorphic/fossstudio">GitHub</a>
     </nav>
@@ -809,7 +810,7 @@
           <li><span><b><code>docker compose up -d</code></b> - the app builds straight from GitHub, the pages ship inside the image, and the certificate arrives on its own.</span></li>
           <li><span><b><code>docker compose logs app</code></b> prints a setup code. Open your domain, give the studio the code, and it asks for the password you want, offers a passkey and two-factor, and asks where it lives. The code is what proves the machine is yours; it is held in memory only and a restart prints a new one.</span></li>
         </ol>
-        <p style="color:var(--muted); font-size:0.9rem">No clone, no <code>.env</code>, no other files. What this installs is exactly what development runs.</p>
+        <p style="color:var(--muted); font-size:0.9rem">No clone, no <code>.env</code>, no other files. Every line of that file explained, plus your own proxy, Tailscale, the ports and how much disk a show takes: <a href="install.html">the install notes</a>. What this installs is exactly what development runs.</p>
         <div class="aside">
           <h3>Already running a proxy?</h3>
           <p>Then leave the <code>caddy</code> block commented out, which is how
@@ -865,48 +866,30 @@
       </div>
       <div class="compose">
         <div class="bar">docker-compose.yml<button id="copyBtn" type="button">COPY</button></div>
-        <pre id="composeSrc"><span class="c"># FOSSStudio in one paste.</span>
+        <pre id="composeSrc"><span class="c"># FOSSStudio. Save as docker-compose.yml, then: docker compose up -d</span>
 <span class="c">#</span>
-<span class="c">#   1. Save this file as docker-compose.yml on a Linux server whose</span>
-<span class="c">#      DNS (your domain) points at it, with ports 80/443 (TCP) and</span>
-<span class="c">#      3478 + 40000-40003 + 49160-49189 (UDP) open.</span>
-<span class="c">#   2. Turn HTTPS on: see the note above the caddy service.</span>
-<span class="c">#   3. docker compose up -d</span>
-<span class="c">#   4. docker compose logs app - it prints a code. Open your domain in a</span>
-<span class="c">#      browser and the studio asks for it, then for the password you</span>
-<span class="c">#      want, and sets itself up.</span>
+<span class="c"># Nothing to fill in. `docker compose logs app` prints a code; open your</span>
+<span class="c"># domain and the studio asks for it and sets itself up.</span>
 <span class="c">#</span>
-<span class="c"># There is nothing to fill in. The domain, the login and the secrets are</span>
-<span class="c"># all settings inside the studio: it makes its own secrets on the first</span>
-<span class="c"># start and keeps them in its data volume, and you never type one. What</span>
-<span class="c"># is left here is what Docker needs - the image, the ports, the volume.</span>
+<span class="c"># HTTPS is compulsory - browsers give no camera without it - and the</span>
+<span class="c"># Caddy block below is one way to get it. What every line here means,</span>
+<span class="c"># and what to do if you already run nginx or use Tailscale:</span>
+<span class="c"># https://fossstudio.org/install.html</span>
 
 <span class="k">services:</span>
   <span class="k">app:</span>
     <span class="k">image:</span> <span class="v">ghcr.io/lightmorphic/fossstudio:latest</span>
     <span class="k">restart:</span> <span class="v">unless-stopped</span>
     <span class="k">environment:</span>
-<span class="c">      # The address the app listens on INSIDE its container. It has to</span>
-<span class="c">      # be 0.0.0.0, or a published port has nothing to reach. What the</span>
-<span class="c">      # outside world can get at is decided by the ports: list below -</span>
-<span class="c">      # "127.0.0.1:3000:3000" there keeps the web port on this machine,</span>
-<span class="c">      # "3000:3000" opens it to anything that can route here.</span>
       <span class="k">BIND_HOST:</span> <span class="v">"0.0.0.0"</span>
-<span class="c">    # Every port is published host:container with the same number on</span>
-<span class="c">    # both sides, and that is not tidiness: the media engine tells each</span>
-<span class="c">    # guest which port to send audio and video to, so a port that means</span>
-<span class="c">    # something different outside the container is a room that opens and</span>
-<span class="c">    # stays silent. The media range is four ports because mediasoup</span>
-<span class="c">    # multiplexes every connection over them; the relay range belongs to</span>
-<span class="c">    # coturn below.</span>
+<span class="c">    # Host and container ports must match: the media engine tells guests</span>
+<span class="c">    # which port to send to.</span>
     <span class="k">ports:</span>
-      - "3000:3000"                          # the studio, behind your HTTPS of choice
-      - "40000-40003:40000-40003/udp"        # media
-      - "40000-40003:40000-40003/tcp"        # media, for networks that block UDP
+      - "3000:3000"
+      - "40000-40003:40000-40003/udp"
+      - "40000-40003:40000-40003/tcp"
     <span class="k">volumes:</span>
       - fossstudio_data:/data
-<span class="c">    # The relay waits for this, because it reads a file the studio has</span>
-<span class="c">    # not written yet on a first run.</span>
     <span class="k">healthcheck:</span>
       <span class="k">test:</span> <span class="v">["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/healthz').then(r=&gt;process.exit(r.ok?0:1)).catch(()=&gt;process.exit(1))"]</span>
       <span class="k">interval:</span> <span class="v">5s</span>
@@ -914,40 +897,10 @@
       <span class="k">retries:</span> <span class="v">12</span>
       <span class="k">start_period:</span> <span class="v">5s</span>
 
-<span class="c">  # ---------------------------------------------------------------------</span>
-<span class="c">  # HTTPS is not optional, but Caddy is. Browsers refuse camera and</span>
-<span class="c">  # microphone access on a plain-http page and the session cookie is</span>
-<span class="c">  # Secure-only, so without a certificate there is no studio and nobody</span>
-<span class="c">  # can even log in. How you get one is entirely your affair: nginx,</span>
-<span class="c">  # Apache, Traefik, a Cloudflare tunnel, a proxy on another machine, or</span>
-<span class="c">  # Tailscale, where `tailscale serve` issues the certificate for your</span>
-<span class="c">  # .ts.net name - the one case Caddy cannot cover, since it cannot get a</span>
-<span class="c">  # certificate for that name. Any of those: leave this block alone and</span>
-<span class="c">  # point your own front at 3000.</span>
-<span class="c">  #</span>
-<span class="c">  # The block below is here only for the common case of a public server</span>
-<span class="c">  # with a domain and nothing else in front of it. Switch it on by</span>
-<span class="c">  # deleting the "# " from the caddy: block, and at the foot of the file</span>
-<span class="c">  # from the two caddy volumes and the whole configs: block. Leave the</span>
-<span class="c">  # hashes on these sentences; they are only notes. Caddy then fetches</span>
-<span class="c">  # and renews the certificate and serves the studio on 80 and 443.</span>
-<span class="c">  #</span>
-<span class="c">  # It asks the app before fetching one, which is how it works without</span>
-<span class="c">  # being told your domain: before anybody owns the studio it will get a</span>
-<span class="c">  # certificate for whatever name is pointed at it, and once the studio</span>
-<span class="c">  # has an owner, only for that owner's domain.</span>
-<span class="c">  #</span>
-<span class="c">  # With Caddy on, change the app's "3000:3000" above to</span>
-<span class="c">  # "127.0.0.1:3000:3000": Caddy reaches the app by its service name on</span>
-<span class="c">  # the compose network, so the web port no longer needs to leave this</span>
-<span class="c">  # machine at all.</span>
-<span class="c">  #</span>
-<span class="c">  # The one reason to leave it commented out: this machine already runs</span>
-<span class="c">  # nginx, Apache or another proxy, which already holds ports 80 and 443.</span>
-<span class="c">  # Then leave the hashes where they are, keep your own proxy terminating</span>
-<span class="c">  # TLS, and point it at 127.0.0.1:3000 - the README's "Bring your own</span>
-<span class="c">  # reverse proxy" section has a working nginx block.</span>
-<span class="c">  # ---------------------------------------------------------------------</span>
+<span class="c">  # HTTPS. Delete the "# " from this block, from the two caddy volumes</span>
+<span class="c">  # and from the whole configs: block, and change "3000:3000" above to</span>
+<span class="c">  # "127.0.0.1:3000:3000". Already running your own proxy? Leave it all</span>
+<span class="c">  # alone and point yours at 127.0.0.1:3000.</span>
 <span class="c">  # caddy:</span>
 <span class="c">  #   image: caddy:2-alpine</span>
 <span class="c">  #   restart: unless-stopped</span>
@@ -962,13 +915,8 @@
 <span class="c">  #     - caddy_data:/data</span>
 <span class="c">  #     - caddy_config:/config</span>
 
-<span class="c">  # The relay, for guests behind a firewall that will not let their</span>
-<span class="c">  # browser talk to this machine directly. Its settings are not here:</span>
-<span class="c">  # the studio writes them into its own data volume on every start, so</span>
-<span class="c">  # the shared secret and the public address can never drift apart from</span>
-<span class="c">  # what the studio is using, and neither is in this file. Until the</span>
-<span class="c">  # studio has written them - a few seconds on a first run - this</span>
-<span class="c">  # container restarts, which is what restart: unless-stopped is for.</span>
+<span class="c">  # The relay, for guests behind a strict firewall. The studio writes its</span>
+<span class="c">  # settings into the data volume on every start, so nothing is set here.</span>
   <span class="k">coturn:</span>
     <span class="k">image:</span> <span class="v">coturn/coturn:4-alpine</span>
     <span class="k">restart:</span> <span class="v">unless-stopped</span>
@@ -976,9 +924,9 @@
       <span class="k">app:</span>
         <span class="k">condition:</span> <span class="v">service_healthy</span>
     <span class="k">ports:</span>
-      - "3478:3478/tcp"                      # relay control
-      - "3478:3478/udp"                      # relay control
-      - "49160-49189:49160-49189/udp"        # relayed media
+      - "3478:3478/tcp"
+      - "3478:3478/udp"
+      - "49160-49189:49160-49189/udp"
     <span class="k">volumes:</span>
       - type: volume
         <span class="k">source:</span> <span class="v">fossstudio_data</span>
@@ -990,13 +938,11 @@
 
 <span class="k">volumes:</span>
   <span class="k">fossstudio_data:</span>
-<span class="c">  # HTTPS: these two go with the caddy: block above</span>
 <span class="c">  # caddy_data:</span>
 <span class="c">  # caddy_config:</span>
 
 <span class="c"># configs:</span>
 <span class="c">#   caddyfile:</span>
-<span class="c">#     # $$ keeps the {$VAR} placeholders for Caddy instead of compose</span>
 <span class="c">#     content: |</span>
 <span class="c">#       {</span>
 <span class="c">#         on_demand_tls {</span>

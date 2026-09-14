@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'self'">
+<meta name="theme-color" content="#0b0d11">
+<title>Installing FOSSStudio</title>
+<meta name="description" content="Everything you need to install FOSSStudio on your own server: HTTPS, the ports, your own proxy, Tailscale, and how much disk a show takes.">
+<link rel="canonical" href="https://fossstudio.org/install.html">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://fossstudio.org/install.html">
+<meta property="og:title" content="Installing FOSSStudio">
+<meta property="og:description" content="Everything you need to install FOSSStudio on your own server: HTTPS, the ports, your own proxy, Tailscale, and how much disk a show takes.">
+<meta property="og:site_name" content="FOSSStudio">
+<meta property="og:locale" content="en_GB">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="icon.png">
+<link rel="stylesheet" href="policy.css">
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+
+<div class="desk">
+  <div class="desk-in">
+    <a class="wordmark" href="/" translate="no"><b>FOSS</b>Studio</a>
+    <nav>
+      <a href="/">Home</a>
+      <a href="https://github.com/lightmorphic/fossstudio">GitHub</a>
+    </nav>
+  </div>
+</div>
+
+<main id="content">
+  <div class="wrap">
+    <h1>Installing FOSSStudio</h1>
+<p class="lede">Everything the compose file used to explain, in one
+place, so the file itself can stay short.</p>
+
+<h2>The short version</h2>
+<p>Save the file from <a href="/">the front page</a> as
+<code>docker-compose.yml</code> on a Linux server, then run
+<code>docker compose up -d</code>. Run <code>docker compose logs app</code>
+and it prints a code. Open your domain in a browser, give it the code,
+choose a password, and the studio sets itself up.</p>
+<p>There is nothing to fill in beforehand. The domain, the login and the
+secrets are all settings inside the studio. It makes its own secrets on
+the first start and keeps them in its data volume, so you never type one
+and none of them sits in a file you might commit or paste somewhere.</p>
+
+<h2>Why is there a code in the log?</h2>
+<p>A setup page that anyone can reach would let the first stranger who
+finds it own your studio. The code proves you own the machine, because
+only somebody with a shell on it can read the log. It is printed once,
+on the first start, and never again after the studio has an owner.</p>
+
+<h2>HTTPS is not optional</h2>
+<p>Browsers refuse camera and microphone access on a plain
+<code>http</code> page, and the login cookie is marked secure-only. So
+without a certificate there is no studio and nobody can even log in.</p>
+<p>How you get one is your affair. The compose file has a commented-out
+Caddy block that fetches and renews a certificate on its own, which
+suits a public server with a domain and nothing else in front of it. To
+switch it on, delete the <code># </code> from the <code>caddy:</code>
+block, from the two caddy volumes at the foot, and from the whole
+<code>configs:</code> block, then change <code>"3000:3000"</code> to
+<code>"127.0.0.1:3000:3000"</code> so the web port no longer needs to
+leave the machine.</p>
+<p>Caddy asks the studio before fetching a certificate, which is how it
+works without being told your domain: before anybody owns the studio it
+will get one for whatever name is pointed at it, and once the studio has
+an owner, only for that owner's domain.</p>
+
+<h2>I already run nginx, Apache or another proxy</h2>
+<p>Then leave the Caddy block alone and point your own proxy at
+<code>127.0.0.1:3000</code>. Two things Caddy does that nginx does not do
+by itself, both required: the WebSocket upgrade headers for
+<code>/ws</code>, without which the page loads and nothing ever connects;
+and terminating TLS. There is a working nginx block in the
+<a href="https://github.com/lightmorphic/fossstudio#bring-your-own-reverse-proxy-nginx-apache-etc">README</a>.</p>
+<p>If the proxy is on a <em>different</em> machine, the media still goes
+straight to the studio machine and never follows the proxy. So the UDP
+ports stay open on the studio machine, not on the proxy, and the studio
+needs a relay address that reaches it directly.</p>
+
+<h2>Tailscale</h2>
+<p>A studio reachable only inside your tailnet, with nothing exposed to
+the internet. Leave the Caddy block commented out - it cannot get a
+certificate for a <code>.ts.net</code> name - and let Tailscale issue
+one instead:</p>
+<pre><code>tailscale serve --bg https / http://127.0.0.1:3000</code></pre>
+<p>Guests have to be on your tailnet. That is the trade: no open ports,
+no certificate to manage, but nobody outside can join.</p>
+
+<h2>The ports, and why they match on both sides</h2>
+<p>Every port is published with the same number inside and outside the
+container. That is not tidiness. The media engine tells each guest which
+port to send their audio and video to, so a port that means something
+different outside the container is a room that opens and stays silent.</p>
+<ul>
+<li><b>3000</b> - the studio itself, behind your HTTPS.</li>
+<li><b>40000-40003</b>, UDP and TCP - the media. Four ports carry a full
+room, because every connection shares them.</li>
+<li><b>3478</b>, and <b>49160-49189</b> UDP - the relay, for guests behind
+a firewall strict enough to stop their browser reaching you directly.</li>
+</ul>
+
+<h2>Why can nobody hear anything?</h2>
+<p>Almost always the media ports never reach the machine. Everyone joins,
+everyone appears in the list, and no sound or picture arrives. Check the
+UDP ports above are open, and that the public address in Settings is one
+guests can actually reach - behind a home router that is the router's
+address, with those ports forwarded to the machine.</p>
+
+<h2>How much disk?</h2>
+<p>More than people expect. At best quality each person's track is about
+1.4 GB per hour, so four people for two hours is over 11 GB. There is a
+setting for smaller files at about 54 MB per person per hour, and the
+studio explains the trade where you choose it.</p>
+
+<h2>Updating</h2>
+<pre><code>docker compose pull &amp;&amp; docker compose up -d</code></pre>
+<p>Your settings and recordings live in the data volume and are not
+touched.</p>
+  </div>
+
+</main>
+
+<footer>
+  <div class="gh-foot">
+    <div class="gh-marks">
+      <a href="https://github.com/lightmorphic/fossstudio" aria-label="FOSSStudio on GitHub">
+        <svg viewBox="0 0 16 16" width="22" height="22" aria-hidden="true" fill="currentColor">
+          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/>
+        </svg>
+      </a>
+      <a href="https://opensource.org/license/agpl-v3" aria-label="AGPL-3.0, an Open Source Initiative approved licence">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none"
+             stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="9.2" r="6.4"/>
+          <path d="M9.6 14.4 7.9 21.5" stroke-linecap="round"/>
+          <path d="M14.4 14.4 16.1 21.5" stroke-linecap="round"/>
+        </svg>
+      </a>
+    </div>
+    <nav class="gh-links" aria-label="Source code">
+      <a href="https://github.com/lightmorphic/fossstudio">Repository</a>
+      <a href="https://github.com/lightmorphic/fossstudio#readme">Documentation</a>
+      <a href="https://github.com/lightmorphic/fossstudio/blob/main/SECURITY.md">Security</a>
+      <a href="https://github.com/lightmorphic/fossstudio/blob/main/LICENSE">Licence</a>
+      <a href="https://github.com/lightmorphic/fossstudio/blob/main/CHANGELOG.md">Changelog</a>
+      <a href="https://github.com/lightmorphic/fossstudio/issues">Issues</a>
+      <a href="https://github.com/lightmorphic/fossstudio/releases">Releases</a>
+    </nav>
+  </div>
+  <div class="subfoot">
+    <p>&copy; Lightmorphic Ltd. Registered in England and Wales, company number 17423646.
+    Registered office: 82A James Carter Road, Mildenhall, IP28 7DE.
+    <!-- The date this page last changed. GitHub Pages has no build step,
+       so it is typed: change it whenever you change the page above. -->
+    <span style="display:block">Page last updated <time datetime="2026-09-14">14 September 2026</time>.</span></p>
+    <p class="made-by">Created and supported by
+    <a href="https://castmorphic.com">Castmorphic</a>.</p>
+    <nav aria-label="Legal"><a href="privacy.html">Privacy</a> <a href="cookies.html">Cookies</a> <a href="terms.html">Terms</a> <a href="accessibility.html">Accessibility</a> <a href="complaints.html">Complaints</a></nav>
+  </div>
+</footer>
+
+</body>
+</html>
