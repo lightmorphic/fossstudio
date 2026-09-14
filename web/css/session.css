@@ -596,6 +596,9 @@ body.is-guest.rec-dim .controls:hover { opacity: 1; }
   justify-content: center;
   gap: 0.4rem;
   padding-bottom: 0.5rem;
+  /* Room at the end for the tips switch, which is positioned out of the
+     flow: without it the heading runs into the switch at this width */
+  padding-right: 1.3rem;
   margin-bottom: 0.6rem;
   border-bottom: 1px solid var(--lm-line);
   color: var(--lm-muted-fg);
