@@ -43,7 +43,7 @@ body {
   #bannerRow,
   #joinBtn,
   #previewError,
-  .preview-foot { grid-column: 1 / -1; }
+  .join-row { grid-column: 1 / -1; }
 }
 /* Grid items default to min-width:auto, so the video's native 1280px
    feed could force everything wider than the card - cap them all. */
@@ -157,17 +157,19 @@ body {
 }
 #joinBtn:disabled { opacity: 0.5; cursor: default; }
 .error { color: #e08f8f; font-size: 0.9rem; }
-/* The way out of the join screen, set apart from Join by a rule and
-   put in the far corner so the two are never confused for each other */
-.preview-foot {
+/* Join and the way out share a row, the round Close button matching
+   Join's height. On its own line under a full-width button it looked
+   stranded, which is what Charlie saw. */
+.join-row {
   display: flex;
-  justify-content: flex-end;
-  padding-top: 0.9rem;
-  border-top: 1px solid var(--line);
+  align-items: stretch;
+  gap: 0.6rem;
 }
+.join-row #joinBtn { flex: 1 1 auto; }
+.join-row #closeBtn { flex: 0 0 auto; align-self: stretch; height: auto; aspect-ratio: 1; }
 /* It is the session's Leave button, so it takes the .ctl rules whole;
    only the hover belongs to this screen */
-.preview-foot .ctl.leave:hover { background: #8f3636; border-color: #8f3636; }
+.join-row .ctl.leave:hover { background: #8f3636; border-color: #8f3636; }
 /* The goodbye that replaces the card: one column whatever the width,
    because it is three short lines and a button, not a form */
 .preview-card.bye { display: block; max-width: 26rem; text-align: center; }

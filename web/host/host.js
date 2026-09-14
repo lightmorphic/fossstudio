@@ -293,7 +293,7 @@
         setTimeout(() => { obs.classList.remove("done"); obs.innerHTML = ICONS.obs; }, 1500);
       });
       const open = iconBtn("open", "Open studio as host", () => {
-        window.open(`/s/${s.id}?as=host`, "_blank");
+        window.open(`/s/${s.id}`, "_blank");
       });
       const del = confirmBtn("del", "Delete session", async () => {
         await apiFetch(`/api/sessions/${s.id}`, { method: "DELETE" });

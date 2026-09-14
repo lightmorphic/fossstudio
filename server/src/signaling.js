@@ -78,8 +78,14 @@ export function attachSignaling() {
             // "viewer" is the OBS clean-feed connection: receive-only,
             // invisible to everyone else. Anyone with the session link
             // may open one (same trust level as joining as a guest).
-            const role = canHost && data.role === "host" ? "host"
-              : data.role === "viewer" ? "viewer" : "guest";
+            // Signed in means host. The link is the same one guests get,
+            // so the host can copy it out of the address bar and paste it
+            // into a chat without going back to the dashboard - and there
+            // is nothing on the end of it for a stranger to notice and
+            // try. The login was always the gate; now it is the only
+            // thing that looks like one.
+            const role = data.role === "viewer" ? "viewer"
+              : canHost ? "host" : "guest";
             // The browser's persistent marker, sent alongside the IP:
             // together they are what a session block matches on. Hosts
             // are never blocked - their login is the gate.

@@ -1,11 +1,10 @@
 /* FOSS Studio session: preview -> join -> live grid.
    Guests and the host share this page; the host (dashboard login +
-   ?as=host) additionally gets the control panel. */
+   signed in) additionally gets the control panel. */
 (() => {
   "use strict";
 
   const roomId = location.pathname.split("/")[2];
-  const wantHost = new URLSearchParams(location.search).get("as") === "host";
   // Clean-feed mode for OBS: no join screen, no controls, receive-only.
   // Load the session link with ?output=1 as an OBS Browser Source and
   // stream the show from OBS to anywhere.
@@ -2190,7 +2189,6 @@
         name: selfName,
         tagline: els.taglineInput.value.trim(),
         noiseOn: noisePref === "rnnoise",
-        role: wantHost ? "host" : "guest",
         marker: deviceMarker(),
         person: personMarker()
       });

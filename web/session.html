@@ -58,17 +58,18 @@
         <input id="taglineInput" maxlength="32" autocomplete="off">
       </label>
     </div>
-    <button id="joinBtn" disabled>Join session</button>
-    <p id="previewError" class="error" hidden></p>
-    <!-- A way out. A guest who opened the link and decided not to join
-         had nothing to press: the tab was the only exit, and people do
-         not always know that. It cannot close the tab - a browser
-         refuses window.close() on a tab a script did not open - so it
-         puts the camera and microphone down and says goodbye on the
-         page, with the way back in still on it. -->
-    <div class="preview-foot">
+    <!-- Join, and beside it the way out. A guest who opened the link
+         and decided not to join had nothing to press: the tab was the
+         only exit, and people do not always know that. It cannot close
+         the tab - a browser refuses window.close() on a tab a script did
+         not open - so it puts the camera and microphone down and says
+         goodbye on the page, with the way back in still on it. It sits
+         on Join's own row: alone underneath it looked stranded. -->
+    <div class="join-row">
+      <button id="joinBtn" disabled>Join session</button>
       <button type="button" id="closeBtn" class="ctl leave" data-tip="Close - puts your camera and microphone down without joining" aria-label="Close without joining"></button>
     </div>
+    <p id="previewError" class="error" hidden></p>
   </div>
   <!-- Shown in place of the card once Close is pressed -->
   <div class="preview-card bye" id="previewBye" hidden>
