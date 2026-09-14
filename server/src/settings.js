@@ -1,10 +1,26 @@
 // The studio's settings (validated patches) and its sessions. There is
 // one studio, so nothing here asks whose.
 import crypto from "node:crypto";
+import fs from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { config } from "./config.js";
 import { readJson, writeJson } from "./storage.js";
 import { legacyAccountSettings } from "./account.js";
 
 const FILE = "settings.json";
+
+// The banner a fresh install starts with, so the ad button in the host
+// controls does something the first time it is pressed instead of being
+// gray with nothing behind it. It is an example - an advert for
+// Castmorphic, which is the hosted version of this studio and what pays
+// for it being free - and the Ad Banner screen says so. From the moment
+// it is copied in it is an ordinary uploaded banner: replacing it and
+// deleting it go down the same paths as any other, with no special case
+// anywhere, which is also why deleting it sticks. It is only ever the
+// starting state, laid down once when settings.json is first written.
+const EXAMPLE_AD = "ad.png";
+const EXAMPLE_AD_SOURCE = fileURLToPath(new URL("../assets/example-ad.png", import.meta.url));
 
 // What a recording holds. "best" is every sample the microphone heard,
 // "smaller" is Opus - very good for speech and a twenty-sixth of the
@@ -19,14 +35,38 @@ export const SETTINGS_DEFAULTS = {
   recordingQuality: "best"
 };
 
-// Installs from the days when the look was carried on an account bring
-// it across the first time the settings are read, and never again.
+// Run once at startup, before anything reads the settings. It does the
+// two things a brand-new or an old install needs and then never fires
+// again, because writing settings.json is what makes it stop: installs
+// from the days when the look was carried on an account bring it across,
+// and an install with no settings at all gets the example ad banner.
+//
+// A studio that has settings already is left alone entirely, so this
+// can never land on top of a banner somebody uploaded.
 export async function migrateSettings() {
   if (await readJson(FILE)) return;
   const old = await legacyAccountSettings();
-  if (!old) return;
-  await writeJson(FILE, { ...SETTINGS_DEFAULTS, ...old });
-  console.log("moved the studio's look out of the account file into settings.json");
+  const next = { ...SETTINGS_DEFAULTS, ...(old || {}) };
+  if (await copyExampleAd()) next.adBanner = EXAMPLE_AD;
+  await writeJson(FILE, next);
+  if (old) console.log("moved the studio's look out of the account file into settings.json");
+}
+
+// Copy the shipped example into the uploads directory under the name an
+// uploaded banner would have, so every other piece of code - the
+// settings screen, the delete button, the overlay, the pinned theme -
+// sees a banner and nothing more. Failing is not fatal: an install
+// without the example works, it just starts with a gray ad button.
+async function copyExampleAd() {
+  const dir = path.join(config.dataDir, "uploads");
+  try {
+    await fs.mkdir(dir, { recursive: true });
+    await fs.copyFile(EXAMPLE_AD_SOURCE, path.join(dir, EXAMPLE_AD));
+    return true;
+  } catch (err) {
+    console.warn(`could not lay down the example ad banner: ${err.message}`);
+    return false;
+  }
 }
 
 export async function getSettings() {

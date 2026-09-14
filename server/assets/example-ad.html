@@ -1,0 +1,51 @@
+<!-- The source of example-ad.png, the banner a fresh install starts with
+     so a host can press the ad button and see what it does. It is not
+     served: it is here so the image can be made again rather than being
+     a picture nobody can edit. Rendered at 1200x300 (the overlay draws
+     it at up to 150px tall, so this is twice that) with:
+
+       node -e 'import("playwright").then(async ({chromium}) => {
+         const b = await chromium.launch();
+         const p = await b.newPage({ viewport:{width:1200,height:300} });
+         await p.goto("file://" + process.cwd() + "/server/assets/example-ad.html");
+         await p.evaluate(() => document.fonts.ready);
+         await p.locator(".ad").screenshot({ path: "server/assets/example-ad.png" });
+         await b.close(); })'
+-->
+<meta charset="utf-8">
+<style>
+@font-face { font-family:"Manrope"; src:url("../../web/fonts/Manrope.woff2") format("woff2"); font-weight:200 800; }
+* { margin:0; box-sizing:border-box; }
+html,body { width:1200px; height:300px; }
+body { font-family:"Manrope",system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+.ad {
+  width:1200px; height:300px; position:relative; overflow:hidden;
+  background:
+    radial-gradient(900px 420px at 88% 120%, rgba(255,87,33,.30), transparent 62%),
+    linear-gradient(100deg, #15171c 0%, #1b1a1d 58%, #241a15 100%);
+  display:flex; align-items:center; gap:34px; padding:0 52px;
+}
+.mark { width:104px; height:104px; flex:0 0 auto; }
+.words { flex:1 1 auto; min-width:0; }
+.name { color:#fff; font-size:60px; font-weight:800; letter-spacing:-.03em; line-height:1; }
+.name em { font-style:normal; color:#ff5721; }
+.line { margin-top:13px; color:#cdd1d9; font-size:27px; white-space:nowrap; font-weight:500; letter-spacing:-.005em; }
+.right { flex:0 0 auto; text-align:right; }
+.pill {
+  display:inline-block; background:#ff5721; color:#fff;
+  font-size:27px; font-weight:800; letter-spacing:-.01em;
+  padding:15px 30px; border-radius:999px;
+}
+.foot { margin-top:16px; color:#9aa0ab; font-size:20px; font-weight:600; }
+</style>
+<div class="ad">
+  <img class="mark" src="../../web/img/castmorphic-mark.png" alt="">
+  <div class="words">
+    <div class="name">Castmorphic</div>
+    <div class="line">Podcast hosting and this studio, run for you</div>
+  </div>
+  <div class="right">
+    <div class="pill">castmorphic.com</div>
+    <div class="foot">pays for FOSSStudio being free</div>
+  </div>
+</div>

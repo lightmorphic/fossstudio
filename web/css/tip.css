@@ -1,23 +1,33 @@
-/* The house tooltip bubble (see js/tip.js): solid blue with white
-   text - readable on light and dark alike - with a pointed corner
-   tail toward the control it describes. Fixed to the viewport and
-   above everything, so it can never be clipped or covered. */
+/* The house tooltip bubble (see js/tip.js): a pale gray card with dark
+   text and a pointed corner tail toward the control it describes. Fixed
+   to the viewport and above everything, so it can never be clipped or
+   covered.
+
+   It was solid blue with white text until 14 September 2026, when
+   Charlie asked for pale gray with dark text and a little smaller,
+   the shape kept exactly. #e7e8ec on #1f2126 is 13.2:1, and the bubble
+   carries its own background, so that ratio holds on the dark dashboard
+   and the dark session alike - it does not depend on what is behind it.
+
+   One value, --tip-bg, paints the bubble and its tail, so the two can
+   never drift apart. */
 
 #tipBubble {
+  --tip-bg: #e7e8ec;
   position: fixed;
   z-index: 2147483647;
-  background: #2295f1;
-  color: #fff;
+  background: var(--tip-bg);
+  color: #1f2126;
   border-radius: 12px;
-  padding: 0.4rem 0.8rem;
+  padding: 0.34rem 0.68rem;
   font-family: inherit;
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   font-weight: 600;
   line-height: 1.4;
-  max-width: 19rem;
+  max-width: 17rem;
   width: max-content;
   pointer-events: none;
-  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.45);
 }
 
 /* The tail: a slanted right-triangle hanging off the bubble's bottom
@@ -29,7 +39,7 @@
   left: var(--tail-x, 1rem);
   width: 12px;
   height: 12px;
-  background: #2295f1;
+  background: var(--tip-bg);
   clip-path: polygon(0 0, 100% 0, 0 100%);
 }
 #tipBubble.tail-right::after {
