@@ -5,18 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'self'">
 <meta name="theme-color" content="#0b0d11">
-<title>FOSSStudio: self-hosted video podcast studio</title>
-<meta name="description" content="FOSSStudio is a free, open-source, self-hosted video podcast studio. Guests join by link with no account. A track per person, recorded in their own browser and handed over exactly as recorded, plus one video of everyone that matches the screen. One-paste Docker install.">
+<title>FOSSStudio: self-hosted studio for podcasts and meetings</title>
+<meta name="description" content="FOSSStudio is a free, open-source video studio for podcasts and meetings, on a server you own. Guests join by link with no account and no email address, with no seat charge and no time limit. A track per person, recorded in their own browser and handed over exactly as recorded, plus one video of everyone that matches the screen. One-paste Docker install.">
 <link rel="canonical" href="https://fossstudio.org/">
 <link rel="icon" href="icon.png">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://fossstudio.org/">
-<meta property="og:title" content="FOSSStudio: self-hosted video podcast studio">
-<meta property="og:description" content="Guests click a link and they're in. A track per person, recorded in their own browser and handed over exactly as recorded, plus one video of everyone that matches the screen. One-paste Docker install.">
+<meta property="og:title" content="FOSSStudio: self-hosted studio for podcasts and meetings">
+<meta property="og:description" content="Record a podcast or hold a meeting on a server you own. Guests click a link and they're in - no account, no app, no time limit. A track per person, recorded in their own browser and handed over exactly as recorded, plus one video of everyone that matches the screen.">
 <meta property="og:image" content="https://fossstudio.org/shots/session.jpg">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="FOSSStudio: self-hosted video podcast studio">
-<meta name="twitter:description" content="Guests click a link and they're in. A track per person, recorded in their own browser and handed over exactly as recorded, plus one video of everyone that matches the screen. One-paste Docker install.">
+<meta name="twitter:title" content="FOSSStudio: self-hosted studio for podcasts and meetings">
+<meta name="twitter:description" content="Record a podcast or hold a meeting on a server you own. Guests click a link and they're in - no account, no app, no time limit. A track per person, recorded in their own browser and handed over exactly as recorded, plus one video of everyone that matches the screen.">
 <meta name="twitter:image" content="https://fossstudio.org/shots/session.jpg">
 <script type="application/ld+json">
 {
@@ -25,13 +25,13 @@
   "name": "FOSSStudio",
   "operatingSystem": "Linux",
   "applicationCategory": "MultimediaApplication",
-  "description": "Self-hosted video podcast studio: no-account guest links, up to ten people in a room, a track per person recorded in their own browser and served exactly as recorded, one video of everyone that matches the screen, RNNoise noise suppression, a view-only output link that works as an OBS browser source, one-paste Docker Compose install.",
+  "description": "Self-hosted video studio for podcasts and meetings: no-account guest links, up to ten people in a room with no seat charge and no time limit, a track per person recorded in their own browser and served exactly as recorded, one video of everyone that matches the screen, RNNoise noise suppression, a view-only output link that works as an OBS browser source, one-paste Docker Compose install.",
   "url": "https://fossstudio.org",
   "downloadUrl": "https://github.com/lightmorphic/fossstudio",
   "license": "https://www.gnu.org/licenses/agpl-3.0.html",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "GBP" },
   "creator": { "@type": "Organization", "name": "Lightmorphic", "url": "https://lightmorphic.com" },
-  "dateModified": "2026-09-13"
+  "dateModified": "2026-09-14"
 }
 </script>
 <script type="application/ld+json">
@@ -49,9 +49,9 @@
   "@context": "https://schema.org",
   "@type": "WebPage",
   "url": "https://fossstudio.org/",
-  "name": "FOSSStudio: self-hosted video podcast studio",
+  "name": "FOSSStudio: self-hosted studio for podcasts and meetings",
   "inLanguage": "en-GB",
-  "dateModified": "2026-09-13",
+  "dateModified": "2026-09-14",
   "isPartOf": { "@type": "WebSite", "url": "https://fossstudio.org" }
 }
 </script>
@@ -88,10 +88,26 @@
   },
   {
    "@type": "Question",
+   "name": "Is this only for podcasts?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "No. It records people talking, and it does not care whether you publish the result or keep it. Podcasters use it to make an episode; teams use it to hold a meeting on a machine they own, with no account for anyone, no seat charge and no time limit on a session. The recording lands on your server and stays there."
+   }
+  },
+  {
+   "@type": "Question",
    "name": "Do guests need an account or an app?",
    "acceptedAnswer": {
     "@type": "Answer",
-    "text": "No. Guests click a session link in any modern browser, pick their camera and microphone on a preview screen, and join. Nothing to install, nothing to sign up for, and it works on phones."
+    "text": "No. Guests click a session link in any modern browser, pick their camera and microphone on a preview screen, and join. Nothing to install, nothing to sign up for, no email address asked for, and it works on phones."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "What leaves the server?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Nothing, unless you switch it on. There is no analytics, no tracking, no crash reporting, no update check and no call to any domain but your own - the code and the fonts are served from your machine, and so is this website. Audio and video go between the browsers in the session and your server, never through anyone else. Two things do leave, and only because you asked for them: pressing Publish sends a recording to the FOSSCast address you typed in Settings, and turning on desktop notifications means the nudge travels through your browser maker's push service, as every web notification does. If you use the certificate block in the compose file, that server asks Let's Encrypt for a certificate for your domain."
    }
   },
   {
@@ -99,15 +115,15 @@
    "name": "How many people can be in a session?",
    "acceptedAnswer": {
     "@type": "Answer",
-    "text": "Ten people on screen, plus up to four invisible view-only connections. The media engine forwards video rather than decoding it, so the load on the server is mostly bandwidth."
+    "text": "Ten people on screen, plus up to four invisible view-only connections. There is no charge per seat and no time limit on a session. The media engine forwards video rather than decoding it, so the load on the server is mostly bandwidth."
    }
   },
   {
    "@type": "Question",
-   "name": "Can I broadcast the show somewhere?",
+   "name": "Can I send the session out live somewhere?",
    "acceptedAnswer": {
     "@type": "Answer",
-    "text": "Not from here. Every session has a view-only output link that works as a browser source in OBS or anything like it, so the broadcasting is done by software built for it and the show goes wherever that software can reach."
+    "text": "Not from here. Every session has a view-only output link that works as a browser source in OBS or anything like it, so the broadcasting is done by software built for it and the session goes wherever that software can reach."
    }
   },
   {
@@ -635,7 +651,7 @@
   <div class="wrap">
     <p><b>FOSSStudio is in public beta and is not ready to be relied
     on.</b> Data loss and breaking changes are possible, so please do not
-    put a real show on it yet.
+    put a real show or a meeting that matters on it yet.
     <span class="quiet">Install it, break it, and tell us what happened -
     that is exactly what we want right now.</span></p>
   </div>
@@ -646,7 +662,7 @@
     <a class="wordmark" href="/" translate="no"><b>FOSS</b>Studio</a>
     <span class="onair"><i></i>SELF&#8209;HOSTED</span>
     <nav>
-      <a href="#show">The show</a>
+      <a href="#show">In the room</a>
       <a href="#rest">Everything</a>
       <a href="#install">Install</a>
       <a href="install.html">Install notes</a>
@@ -659,9 +675,10 @@
 <header class="hero">
   <div class="wrap">
     <h1>The whole studio, on <em>your own</em> metal.</h1>
-    <p class="tag">Guests click a link and they're in - no accounts, no apps. A track
+    <p class="tag">Record a podcast, or hold a meeting nobody else gets a copy of.
+    Guests click a link and they're in - no account, no app, no time limit. A track
     per person, recorded in their own browser and handed to you exactly as recorded,
-    plus one video of the whole show. One paste, on a server you own.</p>
+    plus one video of everyone. One paste, on a server you own.</p>
     <div class="cta-row">
       <a class="cta primary" href="#install">Paste one file, own a studio</a>
       <a class="cta ghost" href="https://github.com/lightmorphic/fossstudio">Read the source</a>
@@ -681,14 +698,32 @@
 <main>
 <section class="cue" id="show">
   <div class="wrap">
-    <div class="cue-mark"><span class="tc">CUE 01</span><h2>The show itself</h2><span class="side">GUESTS / HOSTS / RECORDING</span></div>
+    <div class="cue-mark"><span class="tc">CUE 01</span><h2>A podcast, or a meeting</h2><span class="side">GUESTS / HOSTS / RECORDING</span></div>
+
+    <div class="solo">
+      <div>
+        <h3>The same room, either way</h3>
+        <p>A podcast and a meeting are the same thing until the end: a link,
+        people talking, a recording. What differs is what you do with the
+        files - publish them, or keep them. The studio is built for both and
+        runs on hardware you control, so the only copy of the conversation is
+        the one on your own disk.</p>
+        <ul>
+          <li>Nobody needs an account, and nobody is asked for an email address</li>
+          <li>No charge per seat and no time limit on a session</li>
+          <li>The recording lands on your server and goes nowhere else</li>
+          <li>No attendance report, no transcript sent away, no terms that change next year</li>
+        </ul>
+      </div>
+    </div>
 
     <div class="duo">
       <div>
         <h3>Guests just join</h3>
-        <p>Send one link. Your guest picks camera, mic and speaker, hears a test
-        sound, watches their level bounce, zooms their camera if they like, and
-        clicks join - arriving muted, so there are no accidental hot mics.</p>
+        <p>Send one link to a guest or a colleague. They pick camera, mic and
+        speaker, hear a test sound, watch their level bounce, zoom their camera
+        if they like, and click join - arriving muted, so there are no
+        accidental hot mics.</p>
         <ul>
           <li>No account, no install, phone-friendly</li>
           <li>RNNoise noise suppression on by default</li>
@@ -704,14 +739,14 @@
 
     <div class="solo">
       <div>
-        <h3>The host runs the show</h3>
-        <p>A panel only the host sees: record, spotlight a speaker, balance
-        quiet and loud voices, mute one person or everybody, put a subscribe
-        reminder or your own advertising banner on screen. Every control
-        explains itself from a little info dot.</p>
+        <h3>The host runs the room</h3>
+        <p>A panel only the host sees: record, spotlight whoever is talking,
+        balance quiet and loud voices, mute one person or everybody, put a
+        subscribe reminder or your own banner on screen. Every control explains
+        itself from a little info dot.</p>
         <ul>
           <li>Grid or spotlight, applied to every screen</li>
-          <li>Backdrops switch mid-show: a flat color, your wallpaper, or six layouts the browser generates from your logo on the spot</li>
+          <li>Backdrops switch mid-session: a flat color, your wallpaper, or six layouts the browser generates from your logo on the spot</li>
           <li>Set anybody's volume, or let the automatic levelling even out the room</li>
           <li>Overlays appear for everyone and stay in the recording at the moment you fired them</li>
         </ul>
@@ -722,11 +757,11 @@
       <div>
         <h3>What you see is what records</h3>
         <p>The video of everyone is the picture people were on: every tile in
-        the same order, the name banners, the logo and episode title exactly
-        where you dragged them, the spotlight when you spotlit someone. The
-        host's browser draws it as the show happens, so the server is handed a
-        finished file and never opens it. The screen and the recording share
-        one geometry, and a test holds them to it.</p>
+        the same order, the name banners, the logo and title exactly where you
+        dragged them, the spotlight when you spotlit someone. The host's browser
+        draws it as it happens, so the server is handed a finished file and
+        never opens it. The screen and the recording share one geometry, and a
+        test holds them to it.</p>
         <ul>
           <li>One video of everyone, drawn and encoded in the host's browser</li>
           <li>A track per person, served exactly as their browser recorded it</li>
@@ -748,12 +783,12 @@
 
     <div class="duo">
       <div>
-        <h3>A clean picture of the show, on its own URL</h3>
+        <h3>A clean picture of the room, on its own URL</h3>
         <p>Every session has a second link with no join screen and no
-        controls: just the show, drawn the same way the recording is. Add it
-        to <a href="https://obsproject.com">OBS</a> as a browser source and
-        the show goes wherever OBS can send it - a platform, a hall screen, a
-        second computer.</p>
+        controls: just the session, drawn the same way the recording is. Add
+        it to <a href="https://obsproject.com">OBS</a> as a browser source and
+        it goes wherever OBS can send it - a streaming platform, a screen in
+        the room, a second computer for the people watching but not speaking.</p>
         <ul>
           <li>Invisible to everyone in the session: no tile, no name, no notice</li>
           <li>Receive-only at the server, so it can never be heard or recorded</li>
@@ -786,12 +821,12 @@
       <div class="card"><h3>Camera zoom</h3><p>Guests zoom right on the preview screen: real lens zoom where supported, crop-zoom everywhere else. Rare even in the paid tools.</p></div>
       <div class="card"><h3>A track each</h3><p>Everyone is recorded in their own browser, and every track is the full length of the take - somebody who joins late, or drops out and comes back, still lines up with the rest with nothing to drag. A setting decides what is in the file: best quality is about 1.4 GB per person per hour, so four people for two hours is over 11 GB, and smaller files is about 54 MB. Plan the disk.</p></div>
       <div class="card"><h3>View-only output</h3><p>Every session has a second link with no controls: a browser source for <a href="https://obsproject.com">OBS</a>, or a clean second screen. Invisible to guests, never recorded.</p></div>
-      <div class="card"><h3>Ten in a room</h3><p>Ten people on screen, plus up to four view-only connections. The media engine (mediasoup) forwards video rather than decoding it.</p></div>
+      <div class="card"><h3>Ten in a room</h3><p>Ten people on screen, plus up to four view-only connections. No charge per seat, and no time limit on a session. The media engine (mediasoup) forwards video rather than decoding it.</p></div>
       <div class="card"><h3>No database, no media tools</h3><p>Flat JSON files in one folder, and nothing on the server that opens a recording. Back it up, export it as a zip, restore it with a click. Daily backups built in.</p></div>
-      <div class="card"><h3>Privacy by default</h3><p>No CDNs, no trackers, no cookies for guests, nothing fetched from another domain. Even the font is self-hosted. This page included.</p></div>
-      <div class="card"><h3>Your studio, one login</h3><p>An install is one person's studio: one login for the sessions, the recordings, the look and the box itself, lockable with a second factor. Guests need no account at all.</p></div>
-      <div class="card"><h3>Publish to FOSSCast</h3><p>One click pushes a finished recording to your <a href="https://fosscast.org">FOSSCast</a> instance as a draft episode for the archive and RSS half.</p></div>
-      <div class="card"><h3>Strict-network friendly</h3><p>A built-in TURN relay gets guests through corporate and mobile networks.</p></div>
+      <div class="card"><h3>Nothing leaves the machine</h3><p>No analytics, no tracking, no crash reports, no update check, no CDN, no cookies for guests, nothing fetched from another domain. Even the font is served from your own server - this page included. The exceptions are yours to switch on: see <a href="#faq">what leaves the server</a>.</p></div>
+      <div class="card"><h3>Your studio, one login</h3><p>An install belongs to one person: one login for the sessions, the recordings, the look and the box itself, lockable with a passkey and a second factor. Guests and colleagues need no account at all.</p></div>
+      <div class="card"><h3>Publish to FOSSCast</h3><p>For the podcast half: one click pushes a finished recording to your own <a href="https://fosscast.org">FOSSCast</a> instance as a draft episode. Nothing is sent unless you press it, and a meeting never needs it.</p></div>
+      <div class="card"><h3>Strict-network friendly</h3><p>A built-in relay, running on your own server, gets people through corporate and mobile networks. No third party's relay is ever used.</p></div>
       <div class="card"><h3>Installable dashboard</h3><p>The dashboard installs like an app and can nudge you when a guest arrives or a recording is ready, if you let it. Settings save themselves as you type.</p></div>
       <div class="card"><h3>Operable by humans</h3><p>Daily backups with tested restore, rollback deploys, and a plain-language runbook for the rare terminal case.</p></div>
     </div>
@@ -924,16 +959,25 @@
         <p>Yes. FOSSStudio is free software under the AGPL-3.0 license - no paid tier, no cloud service, no trial. You install it on your own server and it is yours. Lightmorphic built it and gives it away as is.</p>
       </div>
       <div class="faq-item">
+        <h3>Is this only for podcasts?</h3>
+        <p>No. It records people talking, and it does not care whether you publish the result or keep it. Podcasters make an episode with it; teams hold a meeting on a machine they own, with no account for anyone, no charge per seat and no time limit on a session. The recording lands on your server and stays there.</p>
+      </div>
+      <div class="faq-item">
         <h3>Do guests need an account or an app?</h3>
-        <p>No. Guests click a session link in any modern browser, pick their camera and microphone on a preview screen, and join. Nothing to install, nothing to sign up for, and it works on phones.</p>
+        <p>No. Guests click a session link in any modern browser, pick their camera and microphone on a preview screen, and join. Nothing to install, nothing to sign up for, no email address asked for, and it works on phones.</p>
+      </div>
+      <div class="faq-item">
+        <h3>What leaves the server?</h3>
+        <p>Nothing, unless you switch it on. There is no analytics, no tracking, no crash reporting, no update check, and no call to any domain but your own: the code and the fonts are served from your machine, and so is this website. Audio and video go between the browsers in the session and your server, never through anybody else's.</p>
+        <p style="margin-top:0.6rem">Two things do leave, and only because you asked for them. Pressing <b>Publish</b> sends that recording to the FOSSCast address you typed in Settings. Turning on <b>desktop notifications</b> means the nudge travels through your browser maker's push service, as every web notification does; leave them off and nothing is sent. And if you use the certificate block in the compose file, that server asks Let's Encrypt for a certificate for your domain, which is how HTTPS works anywhere.</p>
       </div>
       <div class="faq-item">
         <h3>How many people can be in a session?</h3>
-        <p>Ten people on screen, plus up to four invisible view-only connections. The media engine forwards video rather than decoding it, so the load on the server is mostly bandwidth.</p>
+        <p>Ten people on screen, plus up to four invisible view-only connections. There is no charge per seat and no time limit on a session. The media engine forwards video rather than decoding it, so the load on the server is mostly bandwidth.</p>
       </div>
       <div class="faq-item">
-        <h3>Can I broadcast the show somewhere?</h3>
-        <p>Not from here. Every session has a view-only output link that works as a browser source in <a href="https://obsproject.com">OBS</a> or anything like it, so the broadcasting is done by software built for it and the show goes wherever that software can reach.</p>
+        <h3>Can I send the session out live somewhere?</h3>
+        <p>Not from here. Every session has a view-only output link that works as a browser source in <a href="https://obsproject.com">OBS</a> or anything like it, so the broadcasting is done by software built for it and the session goes wherever that software can reach.</p>
       </div>
       <div class="faq-item">
         <h3>What do I need to run it?</h3>
@@ -949,9 +993,10 @@
 
 <footer>
   <div class="wrap foot">
-    <p class="sister">This studio records the show. <a href="https://fosscast.org" translate="no">FOSSCast</a> is the
-    other half: a separate self-hosted app that publishes a podcast, with its own website and RSS feed.
-    One click sends a finished recording from here to there as a draft episode.</p>
+    <p class="sister">This studio records the session and hands you the files. If the session is a
+    podcast, <a href="https://fosscast.org" translate="no">FOSSCast</a> is the other half: a separate
+    self-hosted app that publishes it, with its own website and RSS feed. One click sends a finished
+    recording from here to there as a draft episode.</p>
     <span class="gpl">Free software &middot; <a href="https://www.gnu.org/licenses/agpl-3.0.html">AGPL-3.0</a> &middot; <a href="https://github.com/lightmorphic/fossstudio">Source</a></span>
   </div>
   <div class="gh-foot">
@@ -985,7 +1030,7 @@
     Registered office: 82A James Carter Road, Mildenhall, IP28 7DE.
     <!-- The date this page last changed. GitHub Pages has no build step,
        so it is typed: change it whenever you change the page above. -->
-    <span style="display:block">Page last updated <time datetime="2026-09-13">13 September 2026</time>.</span></p>
+    <span style="display:block">Page last updated <time datetime="2026-09-14">14 September 2026</time>.</span></p>
     <p class="made-by">Created and supported by
     <a href="https://castmorphic.com">Castmorphic</a>.</p>
     <nav aria-label="Legal"><a href="privacy.html">Privacy</a> <a href="cookies.html">Cookies</a> <a href="terms.html">Terms</a> <a href="accessibility.html">Accessibility</a> <a href="complaints.html">Complaints</a></nav>

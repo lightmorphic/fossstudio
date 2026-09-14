@@ -1,20 +1,25 @@
 # FOSSStudio
 
-> FOSSStudio is a free, open-source, self-hosted video podcast studio
-> (AGPL-3.0) by Lightmorphic Ltd. Guests join by link with no account,
-> up to ten in a room; a track per person recorded in their own browser
-> and handed over exactly as recorded, plus one video of everyone that
-> matches what was on screen; a view-only output link that works as an
-> OBS browser source; one-paste Docker Compose install. No database, no
-> trackers, no external calls, and nothing on the server that opens a
-> recording. It records a show and hands you the files: it does not
-> publish a podcast, does not broadcast, does not edit, and has no
-> screen sharing.
+> FOSSStudio is a free, open-source, self-hosted video studio for
+> podcasts and meetings (AGPL-3.0) by Lightmorphic Ltd. Guests join by
+> link with no account and no email address, up to ten in a room, with
+> no charge per seat and no time limit on a session; a track per person
+> recorded in their own browser and handed over exactly as recorded,
+> plus one video of everyone that matches what was on screen; a
+> view-only output link that works as an OBS browser source; one-paste
+> Docker Compose install. No database, no trackers, no analytics, no
+> crash reporting, no update check, no call to any domain but your own,
+> and nothing on the server that opens a recording. Two things leave
+> only when the operator asks: pressing Publish sends a recording to
+> the operator's own FOSSCast address, and desktop notifications travel
+> through the browser maker's push service. It records people talking
+> and hands you the files: it does not publish a podcast, does not
+> broadcast, does not edit, and has no screen sharing.
 
 Version 0.1.0, a public beta. It is not ready to be relied on: data loss
-and breaking changes are possible, and nobody should put a show they
-cannot record again on it yet. Releases are marked as pre-release on
-GitHub.
+and breaking changes are possible, and nobody should put a show or a
+meeting they cannot record again on it yet. Releases are marked as
+pre-release on GitHub.
 
 - Home: https://fossstudio.org/
 - Source and README: https://github.com/lightmorphic/fossstudio

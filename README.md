@@ -1,30 +1,43 @@
 > ## Public beta. Not ready to be relied on.
 >
 > **This is a public beta. It is not ready to be relied on. Data loss
-> and breaking changes are possible. Please do not put a real show on
-> it yet.**
+> and breaking changes are possible. Please do not put a real show, or
+> a meeting that matters, on it yet.**
 >
 > We want people to install it, break it and tell us what happened.
 > That is what a beta is for. What we are not ready for is being the
 > only thing standing between you and a recording you cannot make
-> again. Record a test show first, and keep a second recording running
-> for anything that matters.
+> again. Record a test session first, and keep a second recording
+> running for anything that matters.
 >
 > Releases are marked as pre-release on GitHub. The current version is
 > `0.1.0`.
 
 # FOSSStudio
 
-Self-hosted video podcast studio. Guests join by link with no account;
-the host runs the session from a panel on the same page and gets the
-recording afterwards.
+Self-hosted video studio for podcasts and meetings. Guests join by link
+with no account and no email address; the host runs the session from a
+panel on the same page and gets the recording afterwards.
+
+A podcast and a meeting are the same thing until the end - a link,
+people talking, a recording - and the studio is built for both. What
+differs is what you do with the files: publish them, or keep them.
+Nobody needs an account, there is no charge per seat and no time limit
+on a session, and the recording lands on the server you control and
+goes nowhere else.
 
 ## Free, and staying free
 
 FOSSStudio is free software under the AGPL, and it always will be. Put
 the compose file on a machine you control and it is yours: no account,
 no key, no tier, no per-guest charge, no watermark, nothing phoning
-home. Everything in this repository is everything there is.
+home. There is no analytics, no tracking, no crash reporting and no
+update check, and the code, the fonts and the relay are all served from
+your own machine. Two things leave it, and only when you ask: pressing
+Publish sends that recording to the FOSSCast address you typed in
+Settings, and turning on desktop notifications means the nudge travels
+through your browser maker's push service, as every web notification
+does. Everything in this repository is everything there is.
 
 A studio needs a server with open UDP ports and enough bandwidth for
 everyone's video, which is more to think about than most web apps. If
@@ -158,8 +171,8 @@ and you never will.
 
 ## What it does not do
 
-FOSSStudio records a show. It does not publish one, and it does not
-broadcast one.
+FOSSStudio records people talking. It does not publish what it
+records, and it does not broadcast it.
 
 - **No broadcasting.** The studio does not push the show anywhere.
   Every session has a view-only output link that works as a browser
@@ -180,7 +193,10 @@ broadcast one.
 - **No audience accounts, memberships or payments.**
 - **No telephone dial-in and no SIP.** Guests join in a browser.
 - **No screen sharing.** FOSSStudio records people talking to each
-  other.
+  other, so a meeting that needs a slide deck on screen needs something
+  else as well.
+- **No calendar, no invitations and no attendance reports.** You send a
+  link however you already send links.
 - **No cloud anything.** There is no service behind this: no relay we
   run, no account with us, no limit we could lift. If your server
   cannot do it, it does not happen.
