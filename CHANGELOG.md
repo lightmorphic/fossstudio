@@ -4,6 +4,33 @@ All notable changes to FOSSStudio are documented here.
 
 ## Unreleased
 
+**It is for meetings too, and the site now says so from the first
+line.** A podcast and a meeting are the same thing until the end - a
+link, people talking, a recording - and what differs is whether you
+publish the files or keep them. The studio always did both; the website
+only ever described the first, so anybody looking for a way to hold a
+meeting on hardware they control read a page about episodes and left.
+The headline, the opening paragraph, the feature descriptions, the
+questions, the page title and description, `llms.txt` and the README's
+opening all say both now, rather than carrying a meetings paragraph at
+the bottom, which would have said the opposite. In the product, the
+dashboard asks for an "Episode or meeting title" instead of an episode
+title, renames a session rather than an episode, and heads the theme
+logo "Logo"; "Subscribe reminder" and "Publish to FOSSCast" stay as they
+are, being genuinely podcast features.
+
+**The privacy claim is printed with its exceptions beside it.** A new
+answer, "What leaves the server?", says there is no analytics, no
+tracking, no crash reporting, no update check and no fetch to any
+domain but your own - and then names the three things that do leave,
+each only when you ask: Publish sending a recording to your own
+FOSSCast address, desktop notifications traveling through your browser
+maker's push service as every web notification does, and the optional
+certificate block asking Let's Encrypt for a certificate. A promise with
+a hole in it is worse than a modest one. `server/test/site-test.mjs`
+holds the site to it: every page is opened and any request that leaves
+the machine fails the run.
+
 **Help is a tab in the dashboard, with pictures of the real screens.**
 It was a page of its own: a column of prose about as wide as a phone,
 reached from a button in the top right, opening with no menus around it.
