@@ -35,9 +35,15 @@
       { id: "themes", label: "Themes" },
       { id: "banner", label: "Ad Banner" },
       { id: "publish", label: "Publish" },
-      { id: "blocked", label: "Blocked" },
-      { id: "account", label: "Account" },
-      { id: "twofactor", label: "Two-factor" }
+      { id: "blocked", label: "Blocked" }
+    ] },
+    // Account and System stand apart at the foot of the column:
+    // everything above them is the show, these two are the machine and
+    // the person running it. Two-factor lives inside Account rather than
+    // beside it - a second way of proving who you are is part of your
+    // login, not a separate subject.
+    { id: "account", label: "Account", foot: true, subs: [
+      { id: "account", label: "Account" }
     ] },
     { id: "system", label: "System", subs: [
       { id: "service", label: "Service" },
@@ -66,6 +72,8 @@
       const b = document.createElement("button");
       b.textContent = menu.label;
       b.classList.toggle("active", menu === currentMenu);
+      // Account sits at the foot of the column with a gap above it
+      b.classList.toggle("foot", !!menu.foot);
       b.onclick = () => { currentMenu = menu; renderMainMenu(); showSub(visibleSubs(menu)[0].id); };
       nav.appendChild(b);
     }

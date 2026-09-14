@@ -20,7 +20,18 @@
   </div>
 
   <div class="layout">
-    <nav class="mainmenu" id="mainMenu" aria-label="Main menu"></nav>
+    <div class="menu-col">
+      <nav class="mainmenu" id="mainMenu" aria-label="Main menu"></nav>
+      <!-- Who pays for this. The studio is free and always will be; the
+           hosted product funds the work, and the foot of the menu is the
+           honest place to say so quietly. It sits below Account, which is
+           the last thing in the menu, so the column ends in the two
+           things that are about you rather than about the show. -->
+      <p class="sponsor">Created and sponsored by<br>
+        <a href="https://castmorphic.com" target="_blank" rel="noopener">
+          <img src="/img/castmorphic-mark.png" alt="" width="15" height="15">Castmorphic</a>
+      </p>
+    </div>
     <nav class="submenu" id="subMenu" aria-label="Section menu"></nav>
     <main class="content">
 
@@ -173,6 +184,29 @@
           <button class="btn primary" id="addPasskeyBtn" style="margin-top:0.8rem">Add a passkey</button>
           <p class="msg err" id="passkeyMsg" hidden></p>
         </div>
+        <div class="panel">
+          <h2>Two-factor login</h2>
+          <div id="tfaOff">
+            <p class="hint" style="margin-bottom:0.75rem">Adds a 6-digit code from an authenticator app on top of your password.</p>
+            <button class="btn" id="tfaSetupBtn">Set up 2FA</button>
+          </div>
+          <div id="tfaSetup" hidden>
+            <p class="hint">Add this secret to your authenticator app, then enter the code it shows:</p>
+            <p style="font-family:monospace; word-break:break-all; margin:0.5rem 0" id="tfaSecret"></p>
+            <div class="field">
+              <input type="text" id="tfaCode" inputmode="numeric" placeholder="6-digit code">
+            </div>
+            <button class="btn primary" id="tfaEnableBtn">Turn on 2FA</button>
+          </div>
+          <div id="tfaOn" hidden>
+            <p class="msg ok" style="margin:0 0 0.75rem">✓ 2FA is on</p>
+            <div class="field">
+              <input type="text" id="tfaDisableCode" inputmode="numeric" placeholder="6-digit code">
+            </div>
+            <button class="btn danger" id="tfaDisableBtn">Turn off 2FA</button>
+          </div>
+          <p class="msg err" id="tfaMsg" hidden></p>
+        </div>
       </section>
 
       <!-- Settings: where the studio lives -->
@@ -203,31 +237,6 @@
       </section>
 
       <!-- Security: 2FA -->
-      <section id="pane-twofactor" class="stack" hidden>
-        <div class="panel">
-          <h2>Two-factor login</h2>
-          <div id="tfaOff">
-            <p class="hint" style="margin-bottom:0.75rem">Adds a 6-digit code from an authenticator app on top of your password.</p>
-            <button class="btn" id="tfaSetupBtn">Set up 2FA</button>
-          </div>
-          <div id="tfaSetup" hidden>
-            <p class="hint">Add this secret to your authenticator app, then enter the code it shows:</p>
-            <p style="font-family:monospace; word-break:break-all; margin:0.5rem 0" id="tfaSecret"></p>
-            <div class="field">
-              <input type="text" id="tfaCode" inputmode="numeric" placeholder="6-digit code">
-            </div>
-            <button class="btn primary" id="tfaEnableBtn">Turn on 2FA</button>
-          </div>
-          <div id="tfaOn" hidden>
-            <p class="msg ok" style="margin:0 0 0.75rem">✓ 2FA is on</p>
-            <div class="field">
-              <input type="text" id="tfaDisableCode" inputmode="numeric" placeholder="6-digit code">
-            </div>
-            <button class="btn danger" id="tfaDisableBtn">Turn off 2FA</button>
-          </div>
-          <p class="msg err" id="tfaMsg" hidden></p>
-        </div>
-      </section>
 
       <!-- System -->
       <section id="pane-service" class="stack" hidden>

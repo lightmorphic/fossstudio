@@ -65,6 +65,11 @@ export async function pinTheme(room, session, settings) {
     // Which backdrop the show wears right now. The pinned copies mean
     // the dashboard can't change what any look means mid-show.
     active: "colour",
+    // Whether an advertising banner exists to play at all. Pinned like
+    // the rest of the look so a host cannot press a button for a file
+    // that was deleted mid-show, and so the browser can gray the button
+    // out rather than letting them find out by being refused.
+    hasAd: !!settings.adBanner,
     rev: 0
   };
   const dir = path.join(config.dataDir, "banners", room.id);

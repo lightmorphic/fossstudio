@@ -526,10 +526,33 @@
   const bannerImgs = new Map();     // peerId -> Image, the same PNG the recording would use
   let titleImg = null;
 
+
+  // Gray out a control without using the disabled attribute. A disabled
+  // button fires no pointer events in any browser, so its tooltip never
+  // appears - and a gray button that will not say why it is gray is
+  // worse than no button. This keeps the events and refuses the click.
+  function unavailable(btn, why) {
+    btn.setAttribute("aria-disabled", "true");
+    btn.dataset.tip = why;
+  }
+  function available(btn, tip) {
+    btn.removeAttribute("aria-disabled");
+    if (tip) btn.dataset.tip = tip;
+    else btn.removeAttribute("data-tip");
+  }
+  function refused(btn) { return btn.getAttribute("aria-disabled") === "true"; }
+
   // ---------- Theme ----------
 
   function applyTheme(theme) {
     if (theme.backdrops) backdrops = theme.backdrops;
+    // The ad button is gray and says why until a banner exists, rather
+    // than being pressable and then refusing. A host should be able to
+    // see what is available without trying it.
+    if (isHost && els.hpAdBtn) {
+      if (theme.hasAd) available(els.hpAdBtn, "Play your ad banner over the show");
+      else unavailable(els.hpAdBtn, "Upload an ad banner in Settings first");
+    }
     if (theme.backdrop) backdropMode = theme.backdrop === "wallpaper" ? "wallpaper" : "colour";
     if (theme.bg) backdropColour = theme.bg;
     if (isHost) renderBackdropUI();
@@ -975,9 +998,8 @@
     $("hpBackdropColour").setAttribute("aria-pressed", String(backdropMode !== "wallpaper"));
     const wp = $("hpBackdropWallpaper");
     wp.setAttribute("aria-pressed", String(backdropMode === "wallpaper"));
-    wp.disabled = !backdrops.wallpaper;
-    if (!backdrops.wallpaper) wp.dataset.tip = "No wallpaper uploaded in Themes";
-    else wp.removeAttribute("data-tip");
+    if (backdrops.wallpaper) available(wp);
+    else unavailable(wp, "Upload a wallpaper in Settings first");
     $("hpBackdropColourTools").style.display = backdropMode === "wallpaper" ? "none" : "";
     els.hpBackdropSwatches.innerHTML = "";
     for (const hex of BANNER_COLOURS) {
@@ -2011,12 +2033,19 @@
     els.dimBtn.classList.toggle("dim-on", on);
     els.dimBtn.dataset.tip = on ? "Brighten the controls" : "Dim the controls";
   };
-  els.hpSubBtn.onclick = () =>
+  // Never a browser popup. A refusal here means something changed under
+  // the host mid-show - the banner deleted from another tab - so the
+  // button goes gray and says so, the same as it would have on join.
+  els.hpSubBtn.onclick = () => {
+    if (refused(els.hpSubBtn)) return;
     request("hostControl", { action: "overlay", kind: "subscribe" })
-      .catch((e) => alert(e.message));
-  els.hpAdBtn.onclick = () =>
+      .catch((e) => unavailable(els.hpSubBtn, e.message));
+  };
+  els.hpAdBtn.onclick = () => {
+    if (refused(els.hpAdBtn)) return;
     request("hostControl", { action: "overlay", kind: "ad" })
-      .catch((e) => alert(e.message));
+      .catch((e) => unavailable(els.hpAdBtn, e.message));
+  };
   els.hpMuteAllBtn.onclick = () =>
     request("hostControl", {
       action: "muteAll",

@@ -543,7 +543,27 @@ body.is-guest.rec-dim .controls:hover { opacity: 1; }
   overflow-y: auto;
   z-index: 10;
 }
-.host-panel h2 { font-size: 0.82rem; font-weight: 600; margin-bottom: 0.45rem; }
+/* The heading sat as bare text against the top of the panel with
+   nothing under it, which read as a label somebody forgot to finish.
+   It is a header row now: the sliders mark, the words, and a rule that
+   closes it off from the controls below. */
+.hp-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.6rem;
+  border-bottom: 1px solid var(--lm-line);
+  color: var(--lm-muted-fg);
+}
+.hp-head svg { width: 15px; height: 15px; flex: 0 0 auto; }
+.host-panel h2 {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 0;
+}
 /* Icon buttons share their row evenly; the dot at the end keeps its
    own width (see .hp-row > .info-btn below) */
 .hp-btn.hp-icon {
@@ -555,6 +575,15 @@ body.is-guest.rec-dim .controls:hover { opacity: 1; }
 }
 .hp-btn.hp-icon svg { width: 1.1rem; height: 1.1rem; }
 .hp-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+/* A control that is gray because something has to be uploaded first.
+   It keeps its pointer events on purpose, so the tooltip can say what
+   is missing - a disabled button fires none, and a gray button that
+   will not say why it is gray is worse than no button. */
+.hp-btn[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.hp-btn[aria-disabled="true"]:hover { background: none; }
 .hp-divider {
   border: 0;
   border-top: 1px solid var(--lm-line);

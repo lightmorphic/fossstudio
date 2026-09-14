@@ -129,7 +129,8 @@ export function attachSignaling() {
                 backdrops: {
                   wallpaper: !!room.theme.wallpaperPath,
                   logo: !!room.theme.logoPath
-                }
+                },
+                hasAd: !!room.theme.hasAd
               },
               peers: [...room.peers.values()]
                 .filter((p) => p.id !== peer.id && p.role !== "viewer")
