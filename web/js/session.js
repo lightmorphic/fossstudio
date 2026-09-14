@@ -298,7 +298,13 @@
 
   // ---------- Mirror ----------
 
-  let mirrored = true;
+  // Off to start with. The mirror is for the preview only, so having it
+  // on by default meant the picture flipped the moment you joined -
+  // which reads as a fault rather than as a setting (Charlie, 14
+  // September 2026: "the reverse image should not be selected by
+  // default"). It is one click away for anybody who wants it, and the
+  // choice is remembered for next time.
+  let mirrored = false;
   function applyMirror() {
     // The mirror is for the preview only - checking yourself works
     // like a mirror. Your tile in the session shows your true

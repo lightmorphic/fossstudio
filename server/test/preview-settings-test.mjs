@@ -42,10 +42,18 @@ await a.click("#spkTestBtn");
 await a.waitForTimeout(300);
 check("test sound played without page error", true);
 
-// Mirror off via the button
-await a.click("#mirrorBtn");
-check("mirror button unmirrors preview",
+// The preview starts the right way round. It used to start mirrored,
+// which meant the picture flipped the moment you joined - a setting
+// that looks like a fault.
+check("the preview is not mirrored to start with",
   await a.$eval("#previewVideo", (el) => el.style.transform === "none"));
+check("and the button says so",
+  await a.$eval("#mirrorBtn", (el) => el.getAttribute("aria-pressed") === "false"));
+
+// Mirror on via the button, for anybody who wants one
+await a.click("#mirrorBtn");
+check("mirror button mirrors the preview",
+  await a.$eval("#previewVideo", (el) => el.style.transform === "scaleX(-1)"));
 
 // Join with zoom active; a second guest must still receive video
 await a.fill("#nameInput", "Zoomed Zoe");
@@ -77,7 +85,7 @@ await a.waitForSelector("#joinBtn:not([disabled])");
 check("name remembered after reload",
   await a.$eval("#nameInput", (el) => el.value === "Zoomed Zoe"));
 check("mirror preference remembered",
-  await a.$eval("#mirrorBtn", (el) => el.getAttribute("aria-pressed") === "false"));
+  await a.$eval("#mirrorBtn", (el) => el.getAttribute("aria-pressed") === "true"));
 
 console.log(pass ? "ALL PASS" : "SOME CHECKS FAILED");
 await browser.close();

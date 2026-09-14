@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FOSSStudio - Dashboard</title>
-<link rel="stylesheet" href="/host/host.css?v=20260914g">
+<link rel="stylesheet" href="/host/host.css?v=20260914i">
 <link rel="stylesheet" href="/host/help.css?v=20260914b">
 <link rel="stylesheet" href="/css/tip.css?v=20260914d">
 <link rel="manifest" href="/manifest.json">
@@ -106,6 +106,7 @@
           <h2>The video of everyone</h2>
           <p class="hint">One finished video of the whole show, the way it looked on screen - the file most people upload somewhere and never think about again. Pick what you want it to be.</p>
           <div class="fmt-list" id="showFormat"></div>
+          <span class="msg ok fmt-mark" data-mark="show" hidden>✓ Saved</span>
           <p class="hint fmt-warn">Whoever hosts makes this file: their browser draws the show and encodes it, and nobody else's browser touches it. So an MP4 needs the host on Chrome or Edge. A host on Firefox gets WebM whatever is picked here, and the recording says so beside the file.</p>
         </div>
 
@@ -128,6 +129,7 @@
               </span>
             </label>
           </div>
+          <span class="msg ok fmt-mark" data-mark="parts" hidden>✓ Saved</span>
         </div>
 
         <div class="panel" id="partsPanel" hidden>
@@ -139,6 +141,7 @@
 
           <h3 class="fmt-head">Cameras, one file per person</h3>
           <div class="fmt-list" id="cameraFormats"></div>
+          <span class="msg ok fmt-mark" data-mark="formats" hidden>✓ Saved</span>
           <p class="hint fmt-warn" id="cameraWarn" hidden>More than one camera format means every person's browser encodes their camera that many times over and sends every copy up their own connection while the show is running. On a slow connection that bites long before the disk does.</p>
         </div>
 
@@ -152,7 +155,7 @@
             <ul class="fmt-break" id="sumBreak"></ul>
             <p class="hint">An upper limit, not a promise: the picture is recorded at a fixed rate and a still room comes in well under it. Sound is exact.</p>
           </div>
-          <span class="msg ok" id="qualityMsg" hidden>Saved</span>
+          <span class="msg note" id="qualityMsg" hidden></span>
           <p class="hint" style="margin-top:1rem">A setting applies to the next recording you start. A take already running keeps what it began with, so nobody ends up with one person's track in a format of its own. <a class="helplink" href="#help/recording-quality">More about what is in the file</a></p>
         </div>
       </section>
@@ -557,6 +560,6 @@
 </div>
 
 <script src="/js/tip.js?v=20260914e"></script>
-<script src="/host/host.js?v=20260914d"></script>
+<script src="/host/host.js?v=20260914f"></script>
 </body>
 </html>

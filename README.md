@@ -55,9 +55,9 @@ and you never will.
 - **Guest flow:** open link, then a preview screen - camera, microphone
   and speaker pick, a test sound, a microphone meter, **camera zoom**
   (the real lens where the camera supports it, a digital crop
-  everywhere else), a mirror toggle, a name, noise suppression on by
-  default - then join, arriving muted so there are no accidental hot
-  mics. The room holds ten people, plus up to four view-only
+  everywhere else), a mirror toggle that starts off, a name, noise
+  suppression on by default - then join, arriving muted so there are no
+  accidental hot mics. The room holds ten people, plus up to four view-only
   connections. Choices are remembered for next time.
 - **One account:** an install is one person's studio. One login runs
   the sessions, holds the recordings, sets the look and looks after the

@@ -443,7 +443,20 @@ input[type="email"], input[type="url"] {
 /* ---------- Feedback ---------- */
 
 .msg { border-radius: var(--radius); padding: 0.6rem 0.9rem; font-size: 0.9rem; margin-top: 0.75rem; }
-.msg.ok { background: var(--success-bg); color: var(--success); }
+/* A saved confirmation is a mark, never a painted green box that
+   appears over the page (Charlie, 14 September 2026: "never ever ever
+   use those green pop-up toast messages"). The tick is the whole
+   message; it sits at the control it belongs to and paints nothing. */
+.msg.ok {
+  background: none;
+  padding: 0;
+  color: var(--success);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+/* Something the studio is refusing to do, said in the same place and
+   with no color at all: it is an explanation, not an alarm. */
+.msg.note { background: none; padding: 0; color: var(--muted-fg); font-size: 0.8125rem; }
 .msg.err { background: var(--danger-bg); color: var(--danger); }
 
 /* ---------- Login ---------- */
@@ -713,3 +726,7 @@ body.embedded .topbar { display: none; }
 
 /* A note about the whole take rather than one file in it. */
 .rec-note-top { margin-bottom: 0.6rem; }
+
+/* The saved mark sits under the control it belongs to, inline, so it
+   never reads as something arriving from elsewhere on the page. */
+.fmt-mark { display: inline-block; margin-top: 0.6rem; }

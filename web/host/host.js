@@ -556,7 +556,7 @@
         onPick: () => {
           chosen.showFormat = f.id;
           drawFormats();
-          save().catch(() => {});
+          save("show").catch(() => {});
         }
       }));
     }
@@ -588,7 +588,7 @@
             }
             chosen[key] = list.map((x) => x.id).filter((id) => next.includes(id));
             row.classList.toggle("on", box.checked);
-            save().catch(() => {});
+            save("formats").catch(() => {});
             sumUp();
           }
         }));
@@ -607,17 +607,30 @@
     input.addEventListener("change", () => {
       chosen.separateFiles = input.value === "yes";
       $("partsPanel").hidden = !chosen.separateFiles;
-      save().catch(() => {});
+      save("parts").catch(() => {});
       sumUp();
     });
   }
 
+  // Saved is a bare tick, and it appears at the card that changed -
+  // never a green box, and never something that pops up somewhere else
+  // on the page while you are looking here.
+  function marked(which) {
+    const el = document.querySelector(`.fmt-mark[data-mark="${which}"]`);
+    if (!el) return;
+    el.hidden = false;
+    clearTimeout(el._t);
+    el._t = setTimeout(() => { el.hidden = true; }, 2000);
+  }
+
+  // A refusal is a plain gray sentence, no color and no box: it is an
+  // explanation, not an alarm.
   function say(text) {
     const el = $("qualityMsg");
     el.textContent = text;
     el.hidden = false;
     clearTimeout(el._t);
-    el._t = setTimeout(() => { el.hidden = true; el.textContent = "Saved"; }, 5000);
+    el._t = setTimeout(() => { el.hidden = true; }, 6000);
   }
 
   // What the answers add up to, in the shape of a real show.
@@ -670,7 +683,7 @@
     $(id).addEventListener("input", sumUp);
   }
 
-  async function save() {
+  async function save(which) {
     await apiFetch("/api/settings", {
       method: "PUT",
       body: JSON.stringify({
@@ -680,7 +693,7 @@
         cameraFormats: chosen.camera
       })
     });
-    say("Saved");
+    marked(which);
   }
 
   // ---------- passkeys ----------
