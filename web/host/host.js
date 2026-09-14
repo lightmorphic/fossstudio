@@ -37,8 +37,8 @@
       { id: "publish", label: "Publish" },
       { id: "blocked", label: "Blocked" }
     ] },
-    // Account and System stand apart at the foot of the column:
-    // everything above them is the show, these two are the machine and
+    // Account, System and Help stand apart at the foot of the sidebar:
+    // everything above them is the show, these three are the machine and
     // the person running it. Two-factor lives inside Account rather than
     // beside it - a second way of proving who you are is part of your
     // login, not a separate subject.
@@ -55,7 +55,9 @@
     // left. Make it part of the system, so it doesn't just open to a
     // blank page with no menus." It is the studio's own answers, not a
     // website, so it belongs in the same frame as everything else.
-    { id: "help", label: "Help", subs: [
+    // A rule above it, so Help reads as its own thing rather than as the
+    // fourth page of System
+    { id: "help", label: "Help", rule: true, subs: [
       { id: "help", label: "Help" }
     ] }
   ];
@@ -73,38 +75,55 @@
     return menu.subs;
   }
 
-  function renderMainMenu() {
+  // The whole sidebar is drawn from MENUS every time the page changes:
+  // one button per pane, under a quiet heading where a menu has more
+  // than one. A menu with a single pane is its own button and needs no
+  // heading. There used to be a second column for those sub-pages - two
+  // menus to reach one screen - and it is gone.
+  //
+  // The fragment scheme is untouched: a button still stands for a
+  // menu and a sub, so #settings/themes and #help/public-ip address
+  // exactly what they always addressed.
+  function renderMainMenu(activeSub) {
     const nav = $("mainMenu");
     nav.innerHTML = "";
+    // Everything from the first menu marked foot goes in a block pushed
+    // to the bottom of the sidebar by the space left over
+    let foot = null;
     for (const menu of visibleMenus()) {
-      const b = document.createElement("button");
-      b.textContent = menu.label;
-      b.classList.toggle("active", menu === currentMenu);
-      // Account sits at the foot of the column with a gap above it
-      b.classList.toggle("foot", !!menu.foot);
-      b.onclick = () => { currentMenu = menu; renderMainMenu(); showSub(visibleSubs(menu)[0].id); };
-      nav.appendChild(b);
+      if (menu.foot && !foot) {
+        foot = document.createElement("div");
+        foot.className = "menu-foot";
+        nav.appendChild(foot);
+      }
+      const into = foot || nav;
+      if (menu.rule) into.appendChild(document.createElement("hr"));
+      const subs = visibleSubs(menu);
+      if (subs.length > 1) {
+        const head = document.createElement("p");
+        head.className = "menu-head";
+        head.textContent = menu.label;
+        into.appendChild(head);
+      }
+      for (const sub of subs) {
+        const b = document.createElement("button");
+        // One pane under a menu means the menu's own name is the name of
+        // the page: "Sessions", not "Sessions / Your sessions"
+        b.textContent = subs.length > 1 ? sub.label : menu.label;
+        b.classList.toggle("active", menu === currentMenu && sub.id === activeSub);
+        b.onclick = () => { currentMenu = menu; showSub(sub.id); };
+        into.appendChild(b);
+      }
     }
   }
 
   function showSub(subId) {
-    const nav = $("subMenu");
-    nav.innerHTML = "";
-    const subs = visibleSubs(currentMenu);
-    // One section only: the main-menu item is enough - no submenu bar
-    const single = subs.length <= 1;
-    nav.hidden = single;
-    document.querySelector(".layout").classList.toggle("no-sub", single);
-    for (const sub of subs) {
-      const b = document.createElement("button");
-      b.textContent = sub.label;
-      b.classList.toggle("active", sub.id === subId);
-      b.onclick = () => showSub(sub.id);
-      nav.appendChild(b);
-    }
+    renderMainMenu(subId);
     document.querySelectorAll("section[id^=pane-]").forEach((s) => {
       s.hidden = s.id !== `pane-${subId}`;
     });
+    // A new page starts at its top, not wherever the last one was left
+    document.querySelector(".workspace").scrollTop = 0;
     if (subId === "blocked") loadSessionBlocked();
     // Remember the spot in the URL so a refresh comes back here
     history.replaceState(null, "", `#${currentMenu.id}/${subId}`);
@@ -124,7 +143,6 @@
 
   function showHelp(section) {
     currentMenu = visibleMenus().find((x) => x.id === "help");
-    renderMainMenu();
     showSub("help");
     const el = helpSection(section);
     if (!el) return;
@@ -145,7 +163,6 @@
     const menu = visibleMenus().find((x) => x.id === m);
     if (!menu) return false;
     currentMenu = menu;
-    renderMainMenu();
     const subs = visibleSubs(menu);
     showSub((subs.find((x) => x.id === sub) || subs[0]).id);
     return true;
@@ -983,7 +1000,6 @@
     $("accountUsername").value = me.username;
     if (!applyHash()) {
       currentMenu = visibleMenus()[0];
-      renderMainMenu();
       showSub(visibleSubs(currentMenu)[0].id);
     }
     load2fa();

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FOSSStudio - Dashboard</title>
-<link rel="stylesheet" href="/host/host.css?v=20260914c">
+<link rel="stylesheet" href="/host/host.css?v=20260914d">
 <link rel="stylesheet" href="/host/help.css?v=20260914b">
 <link rel="stylesheet" href="/css/tip.css?v=20260914c">
 <link rel="manifest" href="/manifest.json">
@@ -13,26 +13,34 @@
 </head>
 <body>
 <div class="shell">
-  <div class="topbar">
-    <h1><span class="foss">FOSS</span>Studio</h1>
-    <span class="whoami" id="whoami"></span>
-    <button class="btn" id="logoutBtn">Log out</button>
-  </div>
+  <!-- One sidebar, the height of the window, holding every page the
+       studio has under a heading for the group it belongs to. It
+       replaced a main menu and a submenu side by side: two columns to
+       reach one page, and both of them ending halfway down the screen.
+       Charlie, 14 September 2026: "that column should be full length,
+       not just tucked up at the top of the screen."
 
-  <div class="layout">
-    <div class="menu-col">
-      <nav class="mainmenu" id="mainMenu" aria-label="Main menu"></nav>
-      <!-- Who pays for this. The studio is free and always will be; the
-           hosted product funds the work, and the foot of the menu is the
-           honest place to say so quietly. It sits below Account, which is
-           the last thing in the menu, so the column ends in the two
-           things that are about you rather than about the show. -->
-      <p class="sponsor">created and sponsored by<br>
-        <a href="https://castmorphic.com" target="_blank" rel="noopener">
-          <img src="/img/castmorphic-mark.png" alt="" width="15" height="15">castmorphic</a>
-      </p>
+       The wordmark heads it rather than sitting on a bar across
+       everything. With a sidebar this tall the product name reads as
+       the top of the sidebar, and who you are and Log out stay where
+       they were, at the top of the page beside the work. -->
+  <aside class="sidebar">
+    <h1 class="wordmark"><span class="foss">FOSS</span>Studio</h1>
+    <nav class="mainmenu" id="mainMenu" aria-label="Main menu"></nav>
+    <!-- Who pays for this. The studio is free and always will be; the
+         hosted product funds the work, and the foot of the sidebar is
+         the honest place to say so quietly. -->
+    <p class="sponsor">created and sponsored by<br>
+      <a href="https://castmorphic.com" target="_blank" rel="noopener">
+        <img src="/img/castmorphic-mark.png" alt="" width="15" height="15">castmorphic</a>
+    </p>
+  </aside>
+
+  <div class="workspace">
+    <div class="topbar">
+      <span class="whoami" id="whoami"></span>
+      <button class="btn" id="logoutBtn">Log out</button>
     </div>
-    <nav class="submenu" id="subMenu" aria-label="Section menu"></nav>
     <main class="content">
 
       <!-- Sessions -->
@@ -533,6 +541,6 @@
 </div>
 
 <script src="/js/tip.js?v=20260823f"></script>
-<script src="/host/host.js?v=20260914a"></script>
+<script src="/host/host.js?v=20260914d"></script>
 </body>
 </html>

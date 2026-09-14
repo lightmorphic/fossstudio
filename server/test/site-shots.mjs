@@ -65,7 +65,7 @@ await dash.screenshot({ path: `${OUT}/dashboard.png` });
 
 // The System screen: backups, the log and the restart, all in the one
 // dashboard now rather than behind a panel of their own.
-await dash.click('#mainMenu button:has-text("System")');
+await dash.click('#mainMenu button:has-text("Service")');
 await dash.waitForTimeout(500);
 await dash.screenshot({ path: `${OUT}/system.png` });
 
