@@ -136,45 +136,30 @@ export function attachSignaling() {
                 .filter((p) => p.id !== peer.id && p.role !== "viewer")
                 .map(peerSummary)
             });
-            // One seat per person, and one host in the chair.
+            // One seat per person, and one host in the chair: a newer
+            // window takes the seat and the older one is closed with a
+            // reason it can say out loud.
             //
-            // Two windows signed in to the same account both used to get
-            // the host panel: two Record buttons, two mute-alls, each
-            // undoing the other, and nothing in the room to say which of
-            // them did what. The same browser could also open a room
-            // twenty times and arrive as twenty people, with twenty
-            // microphones of one room echoing into twenty tracks.
+            // This is for the ordinary accident - a duplicated tab, a
+            // window left open from an earlier take - not a guard
+            // against anybody determined: another browser or a private
+            // window has no person id of ours and is simply a new
+            // person, which is fine. Where there is no id there is no
+            // rule.
             //
-            // The newest window takes the seat and the older one is
-            // closed with a reason it can say out loud. Refusing the
-            // newcomer instead would be simpler, but it locks a person
-            // out of their own show whenever a browser has crashed or a
-            // laptop has slept: the dead connection can look alive for
-            // minutes, and being told "you are already in there" when
-            // you plainly are not is the worst answer we could give.
+            // Newest wins rather than refusing the newcomer, so a wrong
+            // guess costs nothing: a browser that really went away has
+            // already left room.peers and there is nothing here to
+            // close, so a genuine reconnection is untouched, and a
+            // connection still open is either a duplicate or a corpse
+            // the network has not confessed to. Nobody is ever kept out
+            // of a room they are trying to join.
             //
-            // Taking over also means the room never has to tell a
-            // reconnection from a second tab, which is the thing it
-            // cannot do honestly. A connection whose browser really went
-            // away is already gone from room.peers and there is nothing
-            // here to close; a connection that is still open is either a
-            // live duplicate or a corpse the network has not confessed
-            // to yet, and closing it is the right answer to both. The
-            // rejoin path is untouched, because a genuine rejoin finds
-            // no live connection of its own to displace.
-            //
-            // Order matters: the newcomer is already in room.peers and
-            // has been answered before anyone is closed, so a handover
-            // can never leave the room without a host, and the person's
-            // recording track never goes empty - manager.js keeps a list
-            // of live connections per person, and the new one is on it
-            // before the old one comes off.
-            //
-            // A browser with no localStorage (a private window, storage
-            // blocked) sends no person id and simply gets a fresh seat,
-            // which is what it always did. Nobody is kept out for being
-            // untidy. Viewers - the receive-only OBS feed - are outside
-            // all of this: they are invisible and hold no seat.
+            // The newcomer is in room.peers and answered before anyone
+            // is closed, so a handover cannot leave a room hostless,
+            // and manager.js's per-person list of live connections has
+            // the new one on it before the old comes off - a track
+            // never goes empty. Viewers (the OBS feed) hold no seat.
             if (role !== "viewer") {
               for (const other of [...room.peers.values()]) {
                 if (other.id === peer.id || other.role === "viewer") continue;

@@ -516,8 +516,8 @@
           steppedAside(e.code === 4410
             ? ["Hosting moved to another window",
                "You opened this session again somewhere else, and that window is the host now. Only one window can run a session: two Record buttons and two sets of controls would undo each other."]
-            : ["You joined again in another window",
-               "This session is open in another window of this browser, and that one has your place in the room. One window each keeps the recording usable."]);
+            : ["This room is already open in another window",
+               "You have this session open in another window of this browser, and that is the one in the room. Two of the same person would be two tiles and two tracks. Carry on over there, or come back in here and this window takes over."]);
           return;
         }
         leaveToPreview(e.code === 4403
