@@ -48,6 +48,119 @@ secrets are all settings inside the studio. It makes its own secrets on
 the first start and keeps them in its data volume, so you never type one
 and none of them sits in a file you might commit or paste somewhere.</p>
 
+<h2>Worked examples</h2>
+<p>Three whole setups, start to finish. Find the one nearest yours and
+follow it line by line. If none of them fits, the first is the one to
+read, because the others are that one with a change.</p>
+
+<h3>A. A VPS with a domain, nothing else on it</h3>
+<p>The ordinary case, and the easiest. You have rented a small Linux
+server, it has its own public address, and nothing else is using ports
+80 and 443.</p>
+<ol>
+<li><p>Point your domain at the server. In your DNS control panel, an
+<code>A</code> record for <code>studio.yourdomain.com</code> with the
+server's IP address. Wait a few minutes, then check from your own
+machine:</p>
+<pre><code>host studio.yourdomain.com</code></pre>
+<p>It should print the server's address. If it does not, nothing below
+will work, so wait until it does.</p></li>
+
+<li><p>Open the ports in the server's firewall. On a machine using
+<code>ufw</code>:</p>
+<pre><code>sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw allow 3478
+sudo ufw allow 40000:40003/udp
+sudo ufw allow 40000:40003/tcp
+sudo ufw allow 49160:49189/udp</code></pre>
+<p>Many hosts also have a firewall of their own in their control panel.
+Open the same ports there. This is the step people miss, and it is the
+one that makes a room open and stay silent.</p></li>
+
+<li><p>Save the file from <a href="/">the front page</a> as
+<code>docker-compose.yml</code>, then switch HTTPS on: delete the
+<code>#&nbsp;</code> from the <code>caddy:</code> block, from the two
+caddy volumes at the foot, and from the whole <code>configs:</code>
+block. Then change the app's port line from
+<code>"3000:3000"</code> to <code>"127.0.0.1:3000:3000"</code>, because
+Caddy now reaches the studio from inside and nothing else needs to.</p></li>
+
+<li><p>Start it:</p>
+<pre><code>docker compose up -d</code></pre></li>
+
+<li><p>Read the setup code:</p>
+<pre><code>docker compose logs app</code></pre>
+<p>It prints a line with a code in it. Open
+<code>https://studio.yourdomain.com</code> in a browser, give it the
+code, choose a password, add a passkey if you want one, and it is
+yours.</p></li>
+</ol>
+
+<h3>B. A server already running nginx</h3>
+<p>Something else on that machine already answers on 80 and 443, so
+Caddy cannot have them.</p>
+<ol>
+<li><p>Open the same ports as above <b>except</b> 80 and 443, which
+nginx already has.</p></li>
+<li><p>Save the file and change nothing. Leave the Caddy block
+commented out - that is how it ships - and leave the app's port line as
+<code>"3000:3000"</code>.</p></li>
+<li><p>Add a server block to nginx. The two lines people forget are the
+WebSocket ones; without them the page loads perfectly and nothing ever
+connects:</p>
+<pre><code>server {
+    listen 443 ssl http2;
+    server_name studio.yourdomain.com;
+
+    ssl_certificate     /etc/letsencrypt/live/studio.yourdomain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/studio.yourdomain.com/privkey.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}</code></pre>
+<p>Get the certificate with <code>certbot</code> as you would for any
+other site, then <code>sudo nginx -t &amp;&amp; sudo systemctl reload
+nginx</code>.</p></li>
+<li><p><code>docker compose up -d</code>, then
+<code>docker compose logs app</code> for the code, and open your
+domain.</p></li>
+</ol>
+<p><b>If nginx is on a different machine</b> from the studio, everything
+above still applies, with two differences: point <code>proxy_pass</code>
+at the studio machine's address instead of <code>127.0.0.1</code>, and
+keep the UDP ports open on the <em>studio</em> machine. The video never
+goes through nginx - it goes straight from each guest to the studio - so
+opening those ports on the proxy achieves nothing.</p>
+
+<h3>C. At home, on Tailscale, nothing exposed to the internet</h3>
+<p>No open ports, no certificate to manage, and no way for anyone
+outside your tailnet to join. For a show with the same few people every
+week, this is the least trouble of the three.</p>
+<ol>
+<li><p>Install Tailscale on the machine and find its address:</p>
+<pre><code>tailscale ip -4</code></pre>
+<p>It prints something like <code>100.94.12.7</code>.</p></li>
+<li><p>Save the file and change nothing. Leave the Caddy block
+commented out - it cannot get a certificate for a <code>.ts.net</code>
+name, so Tailscale issues one instead. No firewall changes at all.</p></li>
+<li><p><code>docker compose up -d</code>, then hand it to Tailscale:</p>
+<pre><code>tailscale serve --bg https / http://127.0.0.1:3000</code></pre>
+<p>That prints the address it has given you, something like
+<code>https://homelab.your-tailnet.ts.net</code>.</p></li>
+<li><p><code>docker compose logs app</code> for the code, then open that
+address.</p></li>
+</ol>
+<p>Everyone you record with has to be on your tailnet, which means
+inviting them to it. That is the trade.</p>
+
 <h2>Why is there a code in the log?</h2>
 <p>A setup page that anyone can reach would let the first stranger who
 finds it own your studio. The code proves you own the machine, because

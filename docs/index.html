@@ -804,65 +804,15 @@
     <div class="install">
       <div>
         <ol class="steps">
-          <li><span><b>Point your domain</b> at a Linux server with Docker, ports 80/443 (TCP) and 3478, 40000-40003, 49160-49189 (UDP) open.</span></li>
-          <li><span><b>Save this file</b> as <code>docker-compose.yml</code>. There is nothing in it to fill in.</span></li>
-          <li><span><b>Turn HTTPS on</b> unless another proxy already holds ports 80 and 443 on that machine: delete the <code>#</code> from the <code>caddy</code> block and from the two volumes and the <code>configs</code> block at the foot. Without HTTPS the browser will not give the studio a camera.</span></li>
-          <li><span><b><code>docker compose up -d</code></b> - the app builds straight from GitHub, the pages ship inside the image, and the certificate arrives on its own.</span></li>
-          <li><span><b><code>docker compose logs app</code></b> prints a setup code. Open your domain, give the studio the code, and it asks for the password you want, offers a passkey and two-factor, and asks where it lives. The code is what proves the machine is yours; it is held in memory only and a restart prints a new one.</span></li>
+          <li><span><b>Point your domain</b> at a Linux server running Docker.</span></li>
+          <li><span><b>Save the file</b> as <code>docker-compose.yml</code>. There is nothing in it to fill in.</span></li>
+          <li><span><b><code>docker compose up -d</code></b>, then <b><code>docker compose logs app</code></b> for the setup code.</span></li>
+          <li><span><b>Open your domain</b>, give it the code, and the studio sets itself up.</span></li>
         </ol>
-        <p style="color:var(--muted); font-size:0.9rem">No clone, no <code>.env</code>, no other files. Every line of that file explained, plus your own proxy, Tailscale, the ports and how much disk a show takes: <a href="install.html">the install notes</a>. What this installs is exactly what development runs.</p>
-        <div class="aside">
-          <h3>Already running a proxy?</h3>
-          <p>Then leave the <code>caddy</code> block commented out, which is how
-          it ships, and point nginx, Apache, a Cloudflare Tunnel or Tailscale at
-          <code>127.0.0.1:3000</code> - the app binds only to loopback, and
-          never assumes it owns ports 80 and 443. Your proxy must terminate TLS,
-          pass WebSocket upgrades and add HSTS; the
-          <a href="https://github.com/lightmorphic/fossstudio#bring-your-own-reverse-proxy-nginx-apache-etc">README
-          has a ready nginx config</a>, plus Cloudflare Tunnel and
-          Tailscale-only setups.</p>
-        </div>
-        <div class="aside">
-          <h3>Proxy on a different machine?</h3>
-          <p>Also fine - the proxy only ever carries the web half.
-          Guests' video and the TURN relay go straight to the studio
-          machine, so its public IP and UDP ports stay open wherever
-          the proxy lives. On top of leaving <code>caddy</code> commented out,
-          add three lines to the config block:</p>
-          <ol>
-            <li><code>BIND_HOST: "0.0.0.0"</code> (or the studio
-            machine's private/VPN address), then firewall port 3000 so
-            <b>only the proxy's IP</b> can reach it - never the open
-            internet.</li>
-            <li><code>PUBLIC_IP</code> stays the <b>studio machine's</b>
-            public IPv4, with the UDP ranges open there, not on the
-            proxy box.</li>
-            <li><code>TURN_HOST:</code> an address that reaches the
-            studio machine directly. Your domain now points at the
-            proxy, so without this the relay traffic knocks on the
-            wrong door.</li>
-          </ol>
-          <p>Then point your proxy's <code>proxy_pass</code> at the
-          studio machine's address instead of <code>127.0.0.1:3000</code> -
-          <a href="https://github.com/lightmorphic/fossstudio#bring-your-own-reverse-proxy-nginx-apache-etc">same
-          nginx block, full recipe in the README</a>.</p>
-        </div>
-        <div class="aside">
-          <h3>Would rather not run a server?</h3>
-          <p>A studio wants open UDP ports and bandwidth for everyone's
-          video, which is more to think about than most web apps. If that
-          is not an evening you fancy, the people who write FOSSStudio
-          will host it for you:
-          <a href="https://castmorphic.com">Castmorphic</a> runs this same
-          software, and paying for it is what funds the work here. It is
-          an alternative to self-hosting, not a better version of it.</p>
-        </div>
-        <div class="aside">
-          <h3>Updating</h3>
-          <p><code>docker compose build app &amp;&amp; docker compose up -d</code> -
-          the build fetches the newest code from GitHub; your data lives in a
-          named volume and is left alone.</p>
-        </div>
+        <p style="color:var(--muted); font-size:0.9rem">Opening the ports,
+        turning HTTPS on, using your own proxy, or running it on Tailscale:
+        <a href="install.html">the install notes</a> take it slowly, with
+        worked examples.</p>
       </div>
       <div class="compose">
         <div class="bar">docker-compose.yml<button id="copyBtn" type="button">COPY</button></div>
