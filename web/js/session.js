@@ -18,6 +18,8 @@
     spkSelect: $("spkSelect"), spkRow: $("spkRow"), spkTestBtn: $("spkTestBtn"),
     zoomSlider: $("zoomSlider"), zoomValue: $("zoomValue"), mirrorBtn: $("mirrorBtn"),
     nameInput: $("nameInput"), taglineInput: $("taglineInput"), joinBtn: $("joinBtn"),
+    closeBtn: $("closeBtn"), previewBye: $("previewBye"), rejoinBtn: $("rejoinBtn"),
+    previewCard: document.querySelector("#preview .preview-card:not(.bye)"),
     previewError: $("previewError"), micMeterFill: $("micMeterFill"),
     mediaWarning: $("mediaWarning"), mediaWarningText: $("mediaWarningText"),
     mediaWarningClose: $("mediaWarningClose"), mediaWarningLink: $("mediaWarningLink"),
@@ -373,7 +375,11 @@
     src.connect(analyser);
     const buf = new Uint8Array(analyser.frequencyBinCount);
     (function tick() {
-      if (!previewStream && els.preview.hidden) return;
+      // Either is enough to stop it: no stream to read, or the preview
+      // gone from the screen. It used to need both, so pressing Close -
+      // which stops the stream but leaves the preview showing a goodbye -
+      // left this spinning on a frame timer with nothing to measure.
+      if (!previewStream || els.preview.hidden) return;
       analyser.getByteTimeDomainData(buf);
       let peak = 0;
       for (const v of buf) peak = Math.max(peak, Math.abs(v - 128));
@@ -2442,6 +2448,25 @@
   els.leaveBtn.onclick = () => {
     stopPreview();
     leaveToPreview();
+  };
+
+  // Close on the join screen. window.close() is ignored for a tab the
+  // browser did not open from a script, which is every tab a guest
+  // arrives in from a link, so this does not pretend: it puts the
+  // camera and microphone down, replaces the form with a line saying
+  // nothing is running, and leaves the way back in on the page. Trying
+  // window.close() first costs nothing and does close the tab in the
+  // one case where it is allowed - a link opened with target=_blank.
+  els.closeBtn.onclick = () => {
+    stopPreview();
+    els.previewCard.hidden = true;
+    els.previewBye.hidden = false;
+    window.close();
+  };
+  els.rejoinBtn.onclick = () => {
+    els.previewBye.hidden = true;
+    els.previewCard.hidden = false;
+    initPreview();
   };
 
   window.addEventListener("beforeunload", () => { try { ws && ws.close(); } catch { /* ignore */ } });

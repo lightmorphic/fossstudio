@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>FOSSStudio session</title>
-<link rel="stylesheet" href="/css/session.css?v=20260914b">
+<link rel="stylesheet" href="/css/session.css?v=20260914c">
 <link rel="stylesheet" href="/css/tip.css?v=20260914b">
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icons/icon-192.png">
@@ -60,6 +60,23 @@
     </div>
     <button id="joinBtn" disabled>Join session</button>
     <p id="previewError" class="error" hidden></p>
+    <!-- A way out. A guest who opened the link and decided not to join
+         had nothing to press: the tab was the only exit, and people do
+         not always know that. It cannot close the tab - a browser
+         refuses window.close() on a tab a script did not open - so it
+         puts the camera and microphone down and says goodbye on the
+         page, with the way back in still on it. -->
+    <div class="preview-foot">
+      <button type="button" id="closeBtn" class="small-btn">Close</button>
+    </div>
+  </div>
+  <!-- Shown in place of the card once Close is pressed -->
+  <div class="preview-card bye" id="previewBye" hidden>
+    <h1>Nothing is running</h1>
+    <p>Your camera and microphone are switched off and you have not joined.
+       This tab can be closed whenever you like.</p>
+    <p class="soft">Changed your mind? The link still works.</p>
+    <button type="button" id="rejoinBtn" class="small-btn">Back to the join screen</button>
   </div>
 </div>
 
@@ -197,6 +214,6 @@
 <script src="/assets/mediasoup-client.js?v=20260807e"></script>
 <script src="/js/tip.js?v=20260914b"></script>
 <script src="/js/mixer.js?v=20260913a"></script>
-<script src="/js/session.js?v=20260914b"></script>
+<script src="/js/session.js?v=20260914c"></script>
 </body>
 </html>
