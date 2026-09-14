@@ -1942,10 +1942,13 @@
         micBus.gain.value = micProducer.paused ? 0 : 1;
         ctx.createMediaStreamSource(new MediaStream([micProducer.track])).connect(micBus).connect(m.audioDest);
       }
-      // H.264 first because it plays in more editors, then VP8, then
-      // whatever the browser offers - one of these always works, so the
-      // show always comes back as a single finished file
-      const mimes = ["video/webm;codecs=h264,opus", "video/mp4;codecs=avc1,mp4a.40.2",
+      // MP4 first, because that is the file everything opens. Chrome and
+      // Edge record it directly; H.264 with AAC where the browser has an
+      // AAC encoder, H.264 with Opus where it does not. Firefox records
+      // no MP4 at all, so it falls through to WebM and the file is still
+      // a finished show - just in the container Firefox can write.
+      const mimes = ["video/mp4;codecs=avc1,mp4a.40.2", "video/mp4;codecs=avc1,opus",
+        "video/mp4;codecs=avc1", "video/webm;codecs=h264,opus",
         "video/webm;codecs=avc1,opus", "video/webm;codecs=vp8,opus", "video/webm"];
       const type = mimes.find((t) => MediaRecorder.isTypeSupported(t));
       if (type) {
@@ -1981,7 +1984,7 @@
     startOne(micProducer?.track && steadyTrack(micProducer.track), "audio", audioTypes);
     watchMicDelivery();
     startOne(camProducer?.track, "video",
-      ["video/webm;codecs=vp8", "video/webm"], 2_500_000);
+      ["video/mp4;codecs=avc1", "video/webm;codecs=vp8", "video/webm"], 2_500_000);
     setRecIndicator(true);
   }
 
