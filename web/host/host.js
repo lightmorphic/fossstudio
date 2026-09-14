@@ -643,7 +643,11 @@
     canPublish = !!(s.fosscastUrl && s.fosscastToken);
     updateWallpaperPreview(s.wallpaper);
     updateLogoPreview(!!s.logo);
-    updateAdPreview(!!s.adBanner);
+    // The note explaining the example only makes sense while the example
+    // is what is there. Upload your own or remove it and the whole block
+    // goes, rather than sitting under somebody else's banner explaining
+    // a banner that is no longer on screen.
+    updateAdPreview(!!s.adBanner, !!s.adBannerIsExample);
   }
 
   function updateWallpaperPreview(name) {
@@ -658,7 +662,7 @@
   }
 
 
-  function updateAdPreview(has) {
+  function updateAdPreview(has, isExample = false) {
     const el = $("adPreview");
     if (has) {
       el.style.backgroundImage = `url(/api/adbanner?${Date.now()})`;
@@ -667,6 +671,7 @@
       el.style.backgroundImage = "";
       el.textContent = "No banner uploaded";
     }
+    $("adExampleNote").hidden = !isExample;
   }
   $("adPick").onclick = () => $("adFile").click();
   $("adFile").onchange = async () => {

@@ -79,6 +79,11 @@ h2 { font-size: 1.0625rem; font-weight: 600; margin-bottom: 0.75rem; }
   height: 100dvh;
   overflow: hidden;
   padding: 1.25rem;
+  /* The pair sits in the middle of the window. Left against the edge on
+     a wide screen, the whole product looked shoved into the corner with
+     an empty half beside it (Charlie, 14 September 2026). */
+  max-width: 90rem;
+  margin: 0 auto;
 }
 /* The menu is a card that floats with a gap around it, not a slab
    pinned to the edge of the window - pinned, it made the whole product
@@ -118,7 +123,7 @@ h2 { font-size: 1.0625rem; font-weight: 600; margin-bottom: 0.75rem; }
      foot so the last panel is not flush against the window. */
   padding: 0 0.25rem 3rem;
 }
-.workspace > * { max-width: 64rem; }
+.workspace > * { max-width: none; }
 .topbar {
   display: flex;
   align-items: center;

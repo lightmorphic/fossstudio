@@ -35,20 +35,37 @@ export const SETTINGS_DEFAULTS = {
   recordingQuality: "best"
 };
 
-// Run once at startup, before anything reads the settings. It does the
-// two things a brand-new or an old install needs and then never fires
-// again, because writing settings.json is what makes it stop: installs
-// from the days when the look was carried on an account bring it across,
-// and an install with no settings at all gets the example ad banner.
+// Run once at startup, before anything reads the settings.
 //
-// A studio that has settings already is left alone entirely, so this
-// can never land on top of a banner somebody uploaded.
+// Two jobs. Installs from the days when the look was carried on an
+// account bring it across. And a studio that has never had an ad banner
+// gets the example one, so the ad button does something on a new studio
+// instead of being gray with no way to find out what it would have done.
+//
+// Keying the example off settings.json existing was wrong: a studio set
+// up before the example shipped has settings and no banner, so it got
+// the note about an example and no example - which is how Charlie found
+// it. It is keyed off `exampleAdOffered` instead. That flag is written
+// the one time the example is laid down and never cleared, so deleting
+// the banner deletes it for good and a restart does not bring it back.
 export async function migrateSettings() {
-  if (await readJson(FILE)) return;
-  const old = await legacyAccountSettings();
-  const next = { ...SETTINGS_DEFAULTS, ...(old || {}) };
-  if (await copyExampleAd()) next.adBanner = EXAMPLE_AD;
-  await writeJson(FILE, next);
+  const current = await readJson(FILE);
+  const old = current ? null : await legacyAccountSettings();
+  const next = { ...SETTINGS_DEFAULTS, ...(old || {}), ...(current || {}) };
+  let changed = !current;
+
+  if (!next.exampleAdOffered && !next.adBanner) {
+    next.exampleAdOffered = true;
+    if (await copyExampleAd()) {
+      next.adBanner = EXAMPLE_AD;
+      // Says the banner on screen is ours, so the Ad Banner screen can
+      // explain it - and stop explaining it the moment it is replaced.
+      next.adBannerIsExample = true;
+    }
+    changed = true;
+  }
+
+  if (changed) await writeJson(FILE, next);
   if (old) console.log("moved the studio's look out of the account file into settings.json");
 }
 
@@ -86,6 +103,12 @@ export async function updateSettings(patch) {
   }
   if (patch.adBanner === null || typeof patch.adBanner === "string") {
     clean.adBanner = patch.adBanner;
+  }
+  // Says whether the banner on screen is the one we ship. It is only
+  // ever cleared: uploading your own or removing it both mean the note
+  // explaining our example has nothing left to explain.
+  if (patch.adBannerIsExample === false) {
+    clean.adBannerIsExample = false;
   }
   // FOSSCast publish API, for pushing finished recordings as episodes
   if (typeof patch.fosscastUrl === "string") {

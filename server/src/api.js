@@ -320,7 +320,8 @@ api.post("/adbanner", requireAuth,
       if (/^ad[-.]/.test(f)) await fs.unlink(path.join(dir, f));
     }
     await fs.writeFile(path.join(dir, name), req.body);
-    await updateSettings({ adBanner: name });
+    // Their own banner, so the note explaining the example goes with it.
+    await updateSettings({ adBanner: name, adBannerIsExample: false });
     res.json({ ok: true });
   });
 
@@ -331,7 +332,7 @@ api.delete("/adbanner", requireAuth, async (req, res) => {
       if (/^ad[-.]/.test(f)) await fs.unlink(path.join(dir, f));
     }
   } catch { /* nothing uploaded yet */ }
-  await updateSettings({ adBanner: null });
+  await updateSettings({ adBanner: null, adBannerIsExample: false });
   res.json({ ok: true });
 });
 
