@@ -1191,7 +1191,13 @@
       const everyone = [...tiles.keys()];
       const allMuted = everyone.length > 0 && everyone.every((id) => control.muted?.[id]);
       els.hpMuteAllBtn.classList.toggle("active", allMuted);
-      els.hpMuteAllBtn.textContent = allMuted ? "Unmute all" : "Mute all";
+      // The button is an icon, so the state change is the icon and the
+      // name it carries: a struck-through microphone to mute everyone,
+      // a plain one to give them back
+      els.hpMuteAllBtn.innerHTML = allMuted ? ICONS.mic : ICONS.micOff;
+      const muteAllName = allMuted ? "Unmute all" : "Mute all";
+      els.hpMuteAllBtn.dataset.tip = muteAllName;
+      els.hpMuteAllBtn.setAttribute("aria-label", muteAllName);
       updateRowTip(); // the row dot's mute line follows
     }
     if (control.backdrop) {
@@ -1703,7 +1709,9 @@
     const allMuted = els.hpMuteAllBtn.classList.contains("active");
     $("hpRowInfo").dataset.tip = [
       "Auto level: evens out quiet and loud voices for everyone.",
-      allMuted ? "Unmute all: unmutes everyone at once." : "Mute all: mutes everyone at once, including you."
+      allMuted ? "Unmute all: unmutes everyone at once." : "Mute all: mutes everyone at once, including you.",
+      "Subscribe reminder: plays the subscribe-and-bell reminder over the show.",
+      "Ad banner: shows your advertising banner for about 18 seconds."
     ].join("\n");
   }
 

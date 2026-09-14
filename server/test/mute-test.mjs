@@ -73,9 +73,11 @@ const g1Muted = await g1.evaluate(() => document.querySelector("#muteBtn").class
 const g2Muted = await g2.evaluate(() => document.querySelector("#muteBtn").classList.contains("off"));
 check(`mute-all mutes everyone, host included (${hostMuted},${g1Muted},${g2Muted})`,
   g1Muted && g2Muted && hostMuted);
+// The button is an icon now, so its name is the aria-label and the tip
 check("Mute all button lights up and flips to Unmute all",
   await host.$eval("#hpMuteAllBtn", (el) =>
-    el.classList.contains("active") && el.textContent === "Unmute all"));
+    el.classList.contains("active") &&
+    el.getAttribute("aria-label") === "Unmute all" && el.dataset.tip === "Unmute all"));
 
 // Clicking again unmutes everyone
 await host.click("#hpMuteAllBtn");
@@ -86,7 +88,8 @@ check("Unmute all unmutes everyone",
   !(await g2.evaluate(() => document.querySelector("#muteBtn").classList.contains("off"))));
 check("Mute all button back to normal",
   await host.$eval("#hpMuteAllBtn", (el) =>
-    !el.classList.contains("active") && el.textContent === "Mute all"));
+    !el.classList.contains("active") &&
+    el.getAttribute("aria-label") === "Mute all" && el.dataset.tip === "Mute all"));
 
 // Mute everyone again so the unmute-one-guest check still applies
 await host.click("#hpMuteAllBtn");

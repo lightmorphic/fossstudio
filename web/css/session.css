@@ -529,8 +529,11 @@ body.is-guest.rec-dim .controls:hover { opacity: 1; }
   --lm-on-accent: #f4f5f7;
   --lm-danger: #f34236;
   --lm-btn-border: #4a5160;
-  flex: 0 0 200px;
-  width: 200px;
+  /* The controls are icons rather than words, so the panel's width is
+     set by what fits - four icons and their dot on a row, and the six
+     swatches of a palette below - instead of by the longest label */
+  flex: 0 0 172px;
+  width: 172px;
   font-family: "Manrope", system-ui, sans-serif;
   color: var(--lm-fg);
   background: var(--lm-panel);
@@ -541,11 +544,14 @@ body.is-guest.rec-dim .controls:hover { opacity: 1; }
   z-index: 10;
 }
 .host-panel h2 { font-size: 0.82rem; font-weight: 600; margin-bottom: 0.45rem; }
+/* Icon buttons share their row evenly; the dot at the end keeps its
+   own width (see .hp-row > .info-btn below) */
 .hp-btn.hp-icon {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
+  min-width: 0;
   display: grid;
   place-items: center;
-  padding: 0.3rem 0.5rem;
+  padding: 0.32rem 0.3rem;
 }
 .hp-btn.hp-icon svg { width: 1.1rem; height: 1.1rem; }
 .hp-btn:disabled { opacity: 0.45; cursor: not-allowed; }
@@ -753,6 +759,9 @@ body.dim-ui .host-panel:hover { opacity: 1; }
    and gap to make room for the dot - the fit is a few px fine */
 .hp-row:has(> .info-btn) { flex-wrap: nowrap; gap: 0.2rem; }
 .hp-row:has(> .info-btn) .hp-btn { flex: 1 1 auto; min-width: 0; padding-inline: 0.3rem; }
+/* Random and Guests choose keep their words - an icon pair cannot say
+   "one or the other" - so they stack rather than squeeze */
+.hp-pop .hp-row .hp-btn { flex: 1 0 auto; }
 
 .hp-styles { display: flex; flex-wrap: wrap; gap: 0.2rem; margin-top: 0.4rem; }
 .hp-styles .hp-btn { flex: 1 1 auto; min-width: 0; padding-inline: 0.3rem; font-size: 0.68rem; }

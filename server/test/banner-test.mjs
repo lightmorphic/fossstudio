@@ -49,7 +49,7 @@ check("banner overlays the bottom-left of the video, compact width",
   }));
 
 // Host changes banner colour to pink; guest should follow
-// The colour tools live behind the "Banner colours" button now
+// The color tools live behind the banner-colors button now
 await host.page.click("#hpBannerColorsBtn");
 await host.page.waitForSelector("#hpBannerPop:not([hidden])");
 await host.page.evaluate(() => {
