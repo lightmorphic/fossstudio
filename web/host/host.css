@@ -315,6 +315,15 @@ input[type="email"], input[type="url"] {
 }
 .session-row > div:first-child { flex: 1 1 13rem; min-width: 0; }
 .session-row .meta { overflow-wrap: anywhere; }
+/* On a phone the title takes the whole line so the five icons stay
+   together on the next one. Left to share the line they split two and
+   three across two lines, which is worse than the clipping it fixed.
+   It lives here rather than with the rest of the narrow-screen rules
+   because the rule it overrides is written below those. */
+@media (max-width: 820px) {
+  .session-row > div:first-child { flex: 0 0 100%; }
+  .session-row .spacer { display: none; }
+}
 .session-row:first-child { border-top: 0; }
 .session-row .title { font-weight: 600; }
 .session-row .meta { font-size: 0.8125rem; color: var(--muted-fg); }
