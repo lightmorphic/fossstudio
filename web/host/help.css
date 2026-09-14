@@ -1,0 +1,37 @@
+/* The help page. Long prose, so it is set for reading: one column at a
+   comfortable measure, generous line height, and headings that are
+   questions rather than labels. Nothing here is loaded from anywhere
+   else - the typeface and the colours come from host.css, which the
+   studio serves itself. */
+.help-wrap {
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 5rem;
+}
+.help-wrap h1 { font-size: 1.6rem; margin-bottom: 0.6rem; }
+.help-wrap .back { margin-bottom: 1.5rem; font-size: 0.875rem; }
+.help-wrap .lead { color: var(--muted-fg); margin-bottom: 2.5rem; }
+.help-wrap section { margin-bottom: 2.75rem; }
+/* Landing from a deep link puts the heading under the top of the
+   window rather than flush against it, so it reads as the start of
+   something rather than as a page that has been cut off. */
+.help-wrap section { scroll-margin-top: 1.5rem; }
+.help-wrap h2 {
+  font-size: 1.15rem;
+  margin-bottom: 0.9rem;
+  line-height: 1.35;
+}
+.help-wrap p { margin-bottom: 0.9rem; line-height: 1.65; max-width: 38rem; }
+.help-wrap ul { margin: 0 0 1.1rem 1.1rem; max-width: 38rem; }
+.help-wrap li { margin-bottom: 0.6rem; line-height: 1.6; }
+.help-wrap code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+}
+.help-wrap .cmd {
+  background: rgba(127,127,127,0.12);
+  border-radius: 6px;
+  padding: 0.6rem 0.8rem;
+  margin-bottom: 1.1rem;
+  overflow-x: auto;
+}

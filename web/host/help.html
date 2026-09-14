@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Help - FOSSStudio</title>
+<link rel="stylesheet" href="/host/host.css?v=20260914a">
+<link rel="stylesheet" href="/host/help.css?v=20260914a">
+</head>
+<body>
+<div class="help-wrap">
+  <p class="back"><a href="/host/">Back to the dashboard</a></p>
+  <h1>Help</h1>
+  <p class="lead">This page is part of the studio, not a website. It works with no internet connection and it describes the version you have installed, not whatever is current somewhere else.</p>
+
+  <section id="whats-in-the-file">
+    <h2>What is actually in my recording?</h2>
+    <p>A file ending in <code>.webm</code> is a box. The name on the box tells you how it is packed and nothing at all about what is inside, and the same box can hold two things that differ by a factor of twenty-five.</p>
+    <p>One is every sample your microphone heard, kept exactly as it arrived. The other is a compressed version of it, which throws away what the ear does not miss and is perfectly good for speech. Open them side by side in a player and they sound alike. One is about 1.4 GB per person per hour; the other is about 54 MB.</p>
+    <p>That is why the studio does not ask you to choose a codec. It asks whether you want <b>Best quality</b> or <b>Smaller files</b>, and it says the sizes.</p>
+  </section>
+
+  <section id="recording-quality">
+    <h2>Which recording quality should I choose?</h2>
+    <p>Best quality if the recording is going to be worked on afterwards - levelled, cleaned up, noise removed, a bad patch repaired. Every one of those jobs is better done on the real samples, and compressing once at the end is better than compressing twice.</p>
+    <p>Smaller files if the show is two people talking and it goes out more or less as recorded. A two-hour show with four people is a few hundred megabytes instead of eleven gigabytes.</p>
+    <p>You can change it between sessions. A recording already running keeps whatever it started with, so one person's track can never come back in a different form from everybody else's.</p>
+    <p><b>Firefox cannot record uncompressed audio at all.</b> Nothing can be done about that from here. A guest using Firefox comes back compressed however this is set, and the Recordings list says so beside their track rather than leaving you to notice the file is small.</p>
+    <p>Whichever you choose, the file you download is a <code>.wav</code> or an <code>.opus</code>. That is the same audio your browser recorded, repackaged rather than re-encoded, in a form an editor opens without help - Audacity reads both on its own and needs an extra library installed for anything in a <code>.webm</code>.</p>
+  </section>
+
+  <section id="disk">
+    <h2>Why is my recording eleven gigabytes?</h2>
+    <p>Because at best quality every person in the room is producing about 1.4 GB an hour of their own audio, plus their camera, plus the one video of the whole show that your browser draws. Four people for two hours is over 11 GB, and it lands on this server.</p>
+    <p>The studio never opens a recording to shrink it - there is no media tool in it and nothing on the server decodes a single sample, which is why a full room does not need a powerful machine. The price of that is disk. Download what you want and delete the rest; a recording deleted here is gone.</p>
+    <p>If disk is the tighter constraint, that is what Smaller files is for.</p>
+  </section>
+
+  <section id="https">
+    <h2>Why does it insist on HTTPS?</h2>
+    <p>Two hard reasons, neither of them ours. Browsers refuse to hand any page a camera or a microphone unless the page arrived over HTTPS, so without a certificate nobody can join a session. And the studio's login cookie is marked secure-only, so without one nobody can even sign in.</p>
+    <p>How you get a certificate is entirely up to you. Any of these is fine:</p>
+    <ul>
+      <li><b>The bundled Caddy.</b> Switch it on in the compose file and it fetches and renews the certificate itself. This is the easy path for a public server with a domain and nothing else in front of it. It is not compulsory and it is not the recommended way - it is one way.</li>
+      <li><b>Your own proxy.</b> nginx, Apache, Traefik, HAProxy, whatever already holds ports 80 and 443 on that machine. Leave Caddy switched off and point your proxy at the studio's port.</li>
+      <li><b>A tunnel.</b> Cloudflare Tunnel and the like terminate TLS for you. If the domain is proxied that way, set the relay address separately - see below.</li>
+      <li><b>Tailscale.</b> <code>tailscale serve</code> issues a certificate for your <code>.ts.net</code> name. This is the one case Caddy cannot cover, because it cannot get a certificate for that name.</li>
+    </ul>
+    <p>A studio reached only over your own network, with no certificate, will load its pages and then fail at the first camera. That is the browser, not the studio.</p>
+  </section>
+
+  <section id="public-ip">
+    <h2>Why can nobody hear anything?</h2>
+    <p><b>The room opens, everybody appears in the list, and no sound or picture ever arrives.</b> If that is what you are seeing, the public address is almost certainly wrong or missing.</p>
+    <p>Here is why it exists. The pages come to you through your web server. The audio and video do not: they go straight between each person's browser and this machine, on their own ports, because sending them through a web server would add delay to a live conversation. So the studio has to tell every guest which address to send them to, and it cannot work that out for itself - inside a container it can see only a private address that means nothing to anybody outside.</p>
+    <p>Find the right one by running this on the server:</p>
+    <p class="cmd"><code>curl -4 https://api.ipify.org</code></p>
+    <p>Put that in Settings, Studio address, and restart the studio. The engine is given the address when it opens its sockets, so a change cannot take effect under a session already running.</p>
+    <p>Behind a home router it is the router's address, and these have to be forwarded to this machine:</p>
+    <ul>
+      <li><b>UDP 40000-40003</b>, and the same four on TCP for networks that block UDP. Only four, because the media engine multiplexes every connection in the room over them.</li>
+      <li><b>UDP and TCP 3478</b>, and <b>UDP 49160-49189</b>, for the relay.</li>
+    </ul>
+    <p>The relay is for guests whose own network will not let their browser reach this machine directly - a locked-down office, some mobile networks. Their audio goes through this server instead. It is not needed often and it costs nothing when it is not used.</p>
+    <p>If your domain is behind a proxied Cloudflare record or a tunnel, relay traffic will not reach this machine through it. Put an unproxied name or the raw address in the relay address field, or that fallback will never work.</p>
+  </section>
+
+  <section id="login">
+    <h2>How does the login work, and what if I am locked out?</h2>
+    <p><b>The first time.</b> A studio nobody has claimed prints a code in its own log and asks for it before letting anybody set a password. Being able to read that log is the proof that the machine is yours - otherwise the first stranger to find the address would own your studio. On the server:</p>
+    <p class="cmd"><code>docker compose logs app</code></p>
+    <p>The code is near the end, in a box. It is held in memory only, never written to disk, and changes every time the studio restarts - so if you have lost it, restart and read the new one.</p>
+    <p><b>The password.</b> At least twelve characters, and not one of the ones everybody guesses. There are no rules about capitals and symbols: those produce <code>Password1!</code>, which is short, hard to remember and not much harder to guess. Four or five unrelated words in a row is longer, easier to keep in your head, and nobody has a list of them. The studio will offer you one.</p>
+    <p><b>Passkeys.</b> Your browser or phone keeps the private key and the studio stores only the public half, so somebody who steals the data folder gets nothing they can log in with, and there is no password for anybody to phish out of you. Add one from Settings, Account.</p>
+    <p>A passkey belongs to the address it was made on. Move the studio to a different domain and every passkey made on the old one stops working - which is exactly why the password stays, rather than being replaced. Keep it somewhere you can get at it.</p>
+    <p><b>Two-factor.</b> A six-digit code from an app on your phone, on top of the password. Worth the minute it takes; almost nobody comes back to do it later. The studio shows the secret and a link that opens your authenticator app - there is no code to scan, so on a desktop you copy the secret across.</p>
+    <p><b>Locked out.</b> You have the machine, so you have a way in. Stop the studio, delete <code>users.json</code> from its data folder, start it again, and it will print a fresh setup code and let you claim it anew. Everything else - sessions, recordings, settings - is in other files and is untouched.</p>
+  </section>
+
+  <section id="guests">
+    <h2>What happens to a guest who joins late or drops out?</h2>
+    <p>Guests need no account and nothing installed. You send them a session link, they land on a screen where they pick their camera and microphone, and they join in their browser.</p>
+    <p><b>Joining late.</b> Their own track still starts at zero, with silence in front of it for the time before they arrived, so every track in the take is the same length and lines up in an editor with nothing to drag.</p>
+    <p><b>Dropping out and coming back.</b> Their browser remembers who they are for that session, so they come back as the same person and carry on the same track. The time they were away becomes silence in the middle of one file, not a second file. A three-second blip does not split a recording in two.</p>
+    <p>Two things will produce a second track under the same name: coming back on a different device, or on a browser whose site data has been cleared. There is no honest way round that - a browser with no memory of the session is a stranger - so the studio says so beside the second track instead of pretending.</p>
+    <p>Cameras are the exception. Silence can be manufactured without an encoder and a picture of nothing cannot, so a person who dropped out has one camera file per stretch, each one told where in the take it starts. The sound beside it is still the full length.</p>
+    <p>Two people sharing one link stay two people. The link is not what identifies anybody.</p>
+  </section>
+
+  <section id="elsewhere">
+    <h2>Elsewhere</h2>
+    <p>These leave this machine and need an internet connection.</p>
+    <ul>
+      <li><a href="https://fossstudio.org" rel="noopener">fossstudio.org</a> - the product site.</li>
+      <li><a href="https://github.com/lightmorphic/fossstudio" rel="noopener">github.com/lightmorphic/fossstudio</a> - the source, the changelog and where to report a bug.</li>
+    </ul>
+  </section>
+</div>
+</body>
+</html>

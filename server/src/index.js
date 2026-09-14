@@ -131,6 +131,15 @@ app.get("/tls-allowed", async (req, res) => {
   res.status(404).end();
 });
 
+// The studio's own help, behind the login and served from here. A
+// self-hosted box may have no internet at all, and a help link that
+// reaches a website describes whatever is current rather than what this
+// person installed. Nothing on the page is fetched from anywhere else.
+app.get("/help", (req, res) => {
+  if (!isAuthedRequest(req)) return res.redirect("/host/login.html");
+  res.sendFile(path.join(config.webDir, "host", "help.html"));
+});
+
 // Session links guests receive: https://<domain>/s/<room-id>
 app.get("/s/:roomId([a-zA-Z0-9_-]{4,32})", (req, res) => {
   res.sendFile(path.join(config.webDir, "session.html"));
