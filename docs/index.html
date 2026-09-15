@@ -589,10 +589,33 @@
   .sister a { color: var(--accent); font-weight: 700; text-decoration: none; }
   .sister a:hover { text-decoration: underline; }
   .foot .gpl { margin-left: auto; }
-  /* min() so the track can go under its own minimum on a narrow phone;
-     a bare minmax(320px, 1fr) pushes the page sideways below 340px. */
-  .faq { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); }
-  .faq-item { background: var(--panel); border: 1px solid var(--line-soft); border-radius: 14px; padding: 1.1rem 1.3rem; }
+  /* A bento: twelve columns, and each answer takes as many of them as
+     its length deserves. The two long ones - what leaves the server,
+     and where recordings end up - run the full width; the short ones
+     sit three to a row. Every row adds up to twelve, so there is no
+     hole anywhere and no filler card to plug one. Dense flow pulls a
+     short card up into a gap a taller neighbor leaves. */
+  .faq {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    grid-auto-rows: minmax(120px, auto);
+    grid-auto-flow: row dense;
+    gap: 1rem;
+  }
+  .faq-item { grid-column: span 4; }
+  .faq-item.wide { grid-column: span 12; }
+  /* Six columns: the threes become halves and the wide ones stay whole.
+     One column below that, in the order they are written. */
+  @media (max-width: 1024px) {
+    .faq { grid-template-columns: repeat(6, 1fr); }
+    .faq-item { grid-column: span 3; }
+    .faq-item.wide { grid-column: span 6; }
+  }
+  @media (max-width: 768px) {
+    .faq { grid-template-columns: 1fr; }
+    .faq-item, .faq-item.wide { grid-column: span 1; }
+  }
+  .faq-item { background: var(--panel); border: 1px solid var(--line-soft); border-radius: 14px; padding: 1.1rem 1.3rem; min-height: 120px; overflow: hidden; }
   .faq-item h3 { font-size: 1rem; margin-bottom: 0.4rem; }
   .faq-item p { color: var(--muted); font-size: 0.92rem; }
   /* The open-source sub-footer: the marks, then where the code lives. */
@@ -953,7 +976,7 @@
         <h3>Do guests need an account or an app?</h3>
         <p>No. Guests click a session link in any modern browser, pick their camera and microphone on a preview screen, and join. Nothing to install, nothing to sign up for, no email address asked for, and it works on phones.</p>
       </div>
-      <div class="faq-item">
+      <div class="faq-item wide">
         <h3>What leaves the server?</h3>
         <p>Nothing, unless you switch it on. No analytics, no tracking, no crash reporting, no update check, no call to any domain but your own: the code and the fonts come from your machine, and so does this website. Audio and video go between the browsers in the session and your server, never through anybody else's.</p>
         <p style="margin-top:0.6rem">Two things leave, each because you asked. <b>Desktop notifications</b> travel through your browser maker's push service, as every web notification does - leave them off and nothing is sent. And the certificate block in the compose file asks Let's Encrypt for a certificate, which is how HTTPS works anywhere. A recording is not on that list and cannot be: the studio has nowhere to send one, and no way to be given one.</p>
@@ -970,7 +993,7 @@
         <h3>What do I need to run it?</h3>
         <p>A Linux server with Docker, a domain pointed at it, and the listed ports open. The whole install is pasting one docker-compose file with nothing in it to fill in, then opening your domain and choosing a password - there is no code to find and certificates sort themselves out.</p>
       </div>
-      <div class="faq-item">
+      <div class="faq-item wide">
         <h3>Where do recordings end up?</h3>
         <p>On your server, nowhere else. The settings ask one question first - what the finished video of everyone should be, MP4, WebM VP8, VP9 or AV1 - and then whether you want a file for each person as well. Say no and a recording is one file. Say yes and each person is recorded on their own track in their own browser: WAV, every sample as the microphone heard it at about 1.4 GB per person per hour, or Opus at about 58 MB. The screen adds up what a show of your size comes to. Nothing on the server opens or converts any of it.</p>
       </div>
