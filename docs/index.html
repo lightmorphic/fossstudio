@@ -305,18 +305,28 @@
       0 20px 50px -18px rgba(0, 0, 0, 0.9),
       inset 0 0 0 1px rgba(255, 255, 255, 0.07);
   }
-  /* The glint: a soft band of light crossing the face, on a long enough
-     cycle to be noticed rather than watched. */
+  /* The glint: a soft band of light crossing the face.
+     It must start and end out of sight or the loop shows: a percentage
+     translate is a share of the BAND's width, which moved it about a
+     fifth of the way across and then snapped it back in full view.
+     These are shares of the seal instead, and the figure is worked out
+     rather than guessed - tilted 18 degrees the band covers
+     0.30w x cos18 + 1.74w x sin18, about 0.82 of the seal across, so
+     clearing the face needs half of that plus half the seal, near
+     enough 0.91. At 0.95 it is just clear at both ends, and the reset
+     happens where nobody can see it. Constant speed, because an eased
+     one visibly loiters. */
   .seal .glint {
     position: absolute;
     width: 30%; height: 174%;
     background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.16), transparent);
-    animation: seal-sweep 5s ease-in-out infinite;
+    animation: seal-sweep 5s linear infinite;
     pointer-events: none;
+    will-change: transform;
   }
   @keyframes seal-sweep {
-    0%   { transform: translateX(-70%) rotate(18deg); }
-    100% { transform: translateX(70%) rotate(18deg); }
+    from { transform: translateX(calc(var(--seal) * -0.95)) rotate(18deg); }
+    to   { transform: translateX(calc(var(--seal) * 0.95)) rotate(18deg); }
   }
   .seal .rim {
     position: absolute;
@@ -339,34 +349,42 @@
     letter-spacing: 0.02em;
     fill: #adb8c7;
   }
+  /* The name as Castmorphic writes it: Manrope, bold, one capital.
+     Their own shell sets it that way beside the mark, and a seal that
+     shouts CASTMORPHIC is not their wordmark. */
   .seal .ring-name {
     font-family: "Manrope", system-ui, sans-serif;
-    font-size: 25px;
+    font-size: 27px;
     font-weight: 800;
+    letter-spacing: -0.01em;
     fill: #ff5a1f;
   }
-  /* The mark, in relief: the bars are staggered as Castmorphic sets
-     them, and the glow under them is what lifts them off the well. */
+  /* The mark, in relief. The proportions are measured from Castmorphic's
+     own file rather than eyeballed: on their 192px square the bars are
+     144, 60 and 144 wide and 37 tall, with 16 between them, and all
+     three start at the same edge. They are not staggered - the design
+     that came in had them stepped, and they are not. The glow under
+     them is what lifts them off the well.
+     A percentage gap in a column resolves against the box's own height,
+     which is what the bars set, so every figure here is a share of
+     --seal instead. */
   .seal .mark {
     position: relative;
     display: flex;
     flex-direction: column;
-    /* A share of the seal, not a percentage: a percentage gap in a
-       column resolves against the box's own height, which is what the
-       bars set, so the three of them drifted into each other. */
-    gap: calc(var(--seal) * 0.03);
+    gap: calc(var(--seal) * 0.0321);
     align-items: flex-start;
     filter: drop-shadow(0 4px 12px rgba(255, 90, 31, 0.45));
   }
   .seal .mark i {
     display: block;
-    height: calc(var(--seal) * 0.0633);
+    height: calc(var(--seal) * 0.0719);
     border-radius: 999px;
     background: linear-gradient(90deg, #ff6a2c, #ff4d0f);
   }
-  .seal .mark i:nth-child(1) { width: calc(var(--seal) * 0.2533); }
-  .seal .mark i:nth-child(2) { width: calc(var(--seal) * 0.1433); margin-left: calc(var(--seal) * -0.02); }
-  .seal .mark i:nth-child(3) { width: calc(var(--seal) * 0.28); margin-left: calc(var(--seal) * 0.0133); }
+  .seal .mark i:nth-child(1),
+  .seal .mark i:nth-child(3) { width: calc(var(--seal) * 0.28); }
+  .seal .mark i:nth-child(2) { width: calc(var(--seal) * 0.1167); }
   @media (prefers-reduced-motion: reduce) { .seal .glint { animation: none; } }
   /* Narrow: the words take the width and the seal sits under them,
      smaller, rather than squeezing the headline into a column. */
@@ -882,7 +900,7 @@
             <path id="sealfoot" d="M 56.5 191.4 A 102 102 0 0 0 243.5 191.4" fill="none"/>
           </defs>
           <text class="ring-text"><textPath href="#sealtop" startOffset="50%" text-anchor="middle" textLength="326" lengthAdjust="spacing">CREATED AND SPONSORED BY</textPath></text>
-          <text class="ring-name"><textPath href="#sealfoot" startOffset="50%" text-anchor="middle" textLength="204" lengthAdjust="spacing">CASTMORPHIC</textPath></text>
+          <text class="ring-name"><textPath href="#sealfoot" startOffset="50%" text-anchor="middle">Castmorphic</textPath></text>
         </svg>
         <span class="mark"><i></i><i></i><i></i></span>
       </a>
