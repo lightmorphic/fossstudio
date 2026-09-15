@@ -453,16 +453,37 @@
   }
 
   /* ---------- the rest: index cards ---------- */
+  /* A bento: twelve columns, and a card takes as many as its length
+     earns. The two long ones - the tracks and what leaves the machine -
+     take two thirds of a row; the short ones sit three abreast. Every
+     row adds up to twelve, so there is no hole and no filler card to
+     plug one, and dense flow pulls a short card up into a gap a taller
+     neighbor leaves. */
   .grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(12, 1fr);
+    grid-auto-rows: minmax(120px, auto);
+    grid-auto-flow: row dense;
     gap: 1.1rem;
     counter-reset: card;
   }
-  @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, 1fr); } }
-  @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+  .card { grid-column: span 4; }
+  .card.wide { grid-column: span 8; }
+  /* Six columns: every span halved and rounded up. One column below
+     that, in the order they are written. */
+  @media (max-width: 900px) {
+    .grid { grid-template-columns: repeat(6, 1fr); }
+    .card { grid-column: span 2; }
+    .card.wide { grid-column: span 4; }
+  }
+  @media (max-width: 600px) {
+    .grid { grid-template-columns: 1fr; }
+    .card, .card.wide { grid-column: span 1; }
+  }
   .card {
     counter-increment: card;
+    min-height: 120px;
+    overflow: hidden;
     background: var(--panel);
     border: 1px solid var(--line);
     border-radius: 12px;
@@ -487,7 +508,18 @@
     gap: 2.4rem;
     align-items: start;
   }
-  @media (max-width: 900px) { .install { grid-template-columns: 1fr; } }
+  /* The four steps ride down the page while the compose file scrolls
+     past them. The file is long and the steps are what a person is
+     actually following, so losing them off the top is losing the thread.
+     The header above is about 3.2rem tall, so this leaves a clear gap
+     under it rather than tucking the first step against its edge. */
+  .install-steps { position: sticky; top: 4.8rem; }
+  @media (max-width: 900px) {
+    .install { grid-template-columns: 1fr; }
+    /* One column: the steps are above the file, so there is nothing for
+       them to ride alongside. */
+    .install-steps { position: static; }
+  }
   .steps { list-style: none; padding: 0; counter-reset: step; }
   .steps li {
     counter-increment: step;
@@ -825,11 +857,11 @@
     <div class="cue-mark"><span class="tc">CUE 03</span><h2>Everything in the box</h2><span class="side">NO DATABASE / NO TRACKERS</span></div>
     <div class="grid">
       <div class="card"><h3>Camera zoom</h3><p>Guests zoom right on the preview screen: real lens zoom where supported, crop-zoom everywhere else. Rare even in the paid tools.</p></div>
-      <div class="card"><h3>A track each</h3><p>Everyone is recorded in their own browser, and every track is the full length of the take - somebody who joins late, or drops out and comes back, still lines up with the rest with nothing to drag. You choose whether to keep them at all, and what they are: WAV is about 1.4 GB per person per hour, so four people for two hours is over 11 GB, and Opus is about 58 MB. The settings screen adds it up before you record.</p></div>
+      <div class="card wide"><h3>A track each</h3><p>Everyone is recorded in their own browser, and every track is the full length of the take - somebody who joins late, or drops out and comes back, still lines up with the rest with nothing to drag. You choose whether to keep them at all, and what they are: WAV is about 1.4 GB per person per hour, so four people for two hours is over 11 GB, and Opus is about 58 MB. The settings screen adds it up before you record.</p></div>
       <div class="card"><h3>View-only output</h3><p>Every session has a second link with no controls: a browser source for <a href="https://obsproject.com">OBS</a>, or a clean second screen. Invisible to guests, never recorded.</p></div>
       <div class="card"><h3>Ten in a room</h3><p>Ten people on screen, plus up to four view-only connections. No charge per seat, and no time limit on a session. The media engine (mediasoup) forwards video rather than decoding it.</p></div>
       <div class="card"><h3>No database, no media tools</h3><p>Flat JSON files in one folder, and nothing on the server that opens a recording. Back it up, export it as a zip, restore it with a click. Daily backups built in.</p></div>
-      <div class="card"><h3>Nothing leaves the machine</h3><p>No analytics, no tracking, no crash reports, no update check, no CDN, no cookies for guests, nothing fetched from another domain. Even the font is served from your own server - this page included. The exceptions are yours to switch on: see <a href="#faq">what leaves the server</a>.</p></div>
+      <div class="card wide"><h3>Nothing leaves the machine</h3><p>No analytics, no tracking, no crash reports, no update check, no CDN, no cookies for guests, nothing fetched from another domain. Even the font is served from your own server - this page included. The exceptions are yours to switch on: see <a href="#faq">what leaves the server</a>.</p></div>
       <div class="card"><h3>Your studio, one login</h3><p>An install belongs to one person: one login for the sessions, the recordings, the look and the box itself, lockable with a passkey and a second factor. Guests and colleagues need no account at all.</p></div>
       <div class="card"><h3>Strict-network friendly</h3><p>A built-in relay, running on your own server, gets people through corporate and mobile networks. No third party's relay is ever used.</p></div>
       <div class="card"><h3>Installable dashboard</h3><p>The dashboard installs like an app and can nudge you when a guest arrives or a recording is ready, if you let it. Settings save themselves as you type.</p></div>
@@ -842,7 +874,7 @@
   <div class="wrap">
     <div class="cue-mark"><span class="tc">CUE 04</span><h2>Install: paste one file</h2><span class="side">DOCKER COMPOSE</span></div>
     <div class="install">
-      <div>
+      <div class="install-steps">
         <ol class="steps">
           <li><span><b>Point your domain</b> at a Linux server running Docker.</span></li>
           <li><span><b>Save the file</b> as <code>docker-compose.yml</code>. There is nothing in it to fill in.</span></li>
