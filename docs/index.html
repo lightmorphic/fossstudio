@@ -277,56 +277,53 @@
     animation: lamp 2.4s ease-in-out infinite;
   }
   @keyframes lamp { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
-  /* The sponsor's seal, far right of the header. A circle because it is
-     a maker's mark rather than a menu item: the three bars are
-     Castmorphic's own, drawn here rather than fetched, and the ring is
-     their orange so it reads as theirs and not as one of ours.
-     The header row is 29px tall, so the words cannot be curved around a
-     circle this size and stay words - they are the badge's name for a
-     screen reader, and they appear under it on hover and on focus. */
-  .seal {
-    position: relative;
-    margin-left: 1.1rem;
+  /* The sponsor's seal, beside the opening words. A pressed circle
+     rather than a line of small print: the three bars are Castmorphic's
+     own, drawn here rather than fetched, so the page still asks nothing
+     of anybody else's server, and the ring is their orange so it reads
+     as theirs and not as one of ours.
+     Two arcs, both traveling left to right, so the name at the foot
+     stands the right way up instead of hanging upside down as it does
+     on a single ring path. */
+  .hero-top {
     display: grid;
-    place-items: center;
-    width: 2.5rem; height: 2.5rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 3rem;
+    align-items: center;
+  }
+  .seal {
+    display: block;
+    width: 250px; height: 250px;
     flex: none;
     border-radius: 50%;
     background: var(--panel);
-    border: 1px solid color-mix(in srgb, var(--cm) 55%, transparent);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--cm) 8%, transparent);
-    transition: box-shadow 160ms ease, border-color 160ms ease;
+    box-shadow: 0 24px 70px var(--shadow);
+    transition: transform 300ms ease;
   }
-  .seal:hover, .seal:focus-visible {
-    border-color: var(--cm);
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--cm) 16%, transparent);
+  .seal:hover, .seal:focus-visible { transform: rotate(6deg); }
+  .seal svg { width: 100%; height: 100%; display: block; }
+  .seal .ring-text {
+    font-family: var(--mono);
+    font-size: 2.5px;
+    letter-spacing: 0.34px;
+    fill: var(--muted);
+    text-transform: uppercase;
   }
-  .seal svg { width: 1.15rem; height: 1.15rem; display: block; }
-  .seal .said {
-    position: absolute;
-    top: calc(100% + 0.7rem);
-    right: 0;
-    width: max-content;
-    max-width: 11rem;
-    padding: 0.45rem 0.65rem;
-    border-radius: 8px;
-    background: var(--panel);
-    border: 1px solid var(--line);
-    box-shadow: 0 18px 40px var(--shadow);
-    font-size: 0.72rem;
-    line-height: 1.35;
-    color: var(--muted);
-    text-align: right;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 160ms ease;
+  .seal .ring-name {
+    font-family: var(--mono);
+    font-size: 3.1px;
+    letter-spacing: 0.5px;
+    fill: var(--cm);
+    font-weight: 700;
+    text-transform: uppercase;
   }
-  .seal:hover .said, .seal:focus-visible .said { opacity: 1; }
-  .seal .said b { color: var(--text); font-weight: 700; }
-  /* Below 700px the header already wraps its links onto a second line;
-     the seal stands down with the SELF-HOSTED lamp, being the same kind
-     of thing. */
-  @media (max-width: 700px) { .seal { display: none; } }
+  .seal:hover .ring-text, .seal:focus-visible .ring-text { fill: var(--text); }
+  /* Narrow: the words take the width and the seal sits under them,
+     smaller, rather than squeezing the headline into a column. */
+  @media (max-width: 900px) {
+    .hero-top { grid-template-columns: 1fr; gap: 2rem; justify-items: start; }
+    .seal { width: 170px; height: 170px; }
+  }
 
   .desk nav { margin-left: auto; display: flex; gap: 1.1rem; align-items: center; }
   .desk nav a {
@@ -808,23 +805,40 @@
       <a href="#faq">Questions</a>
       <a href="https://github.com/lightmorphic/fossstudio">GitHub</a>
     </nav>
-    <a class="seal" href="https://castmorphic.com" aria-label="Created and sponsored by Castmorphic">
-      <svg viewBox="0 0 24 24" aria-hidden="true" fill="#ff5721"><rect x="2.2" y="3.8" width="19.6" height="4.2" rx="2.1"/><rect x="2.2" y="9.9" width="8.8" height="4.2" rx="2.1"/><rect x="2.2" y="16" width="19.6" height="4.2" rx="2.1"/></svg>
-      <span class="said">created and sponsored by <b>Castmorphic</b></span>
-    </a>
   </div>
 </div>
 
 <header class="hero">
   <div class="wrap">
-    <h1>The whole studio, on <em>your own</em> metal.</h1>
-    <p class="tag">Record a podcast, or hold a meeting nobody else gets a copy of.
-    Guests click a link and they're in - no account, no app, no time limit. One
-    video of everyone, and a track per person if you want one, recorded in their
-    own browser and handed to you exactly as recorded. One paste, on a server you own.</p>
-    <div class="cta-row">
-      <a class="cta primary" href="#install">Paste one file, own a studio</a>
-      <a class="cta ghost" href="https://github.com/lightmorphic/fossstudio">Read the source</a>
+    <div class="hero-top">
+      <div>
+        <h1>The whole studio, on <em>your own</em> metal.</h1>
+        <p class="tag">Record a podcast, or hold a meeting nobody else gets a copy of.
+        Guests click a link and they're in - no account, no app, no time limit. One
+        video of everyone, and a track per person if you want one, recorded in their
+        own browser and handed to you exactly as recorded. One paste, on a server you own.</p>
+        <div class="cta-row">
+          <a class="cta primary" href="#install">Paste one file, own a studio</a>
+          <a class="cta ghost" href="https://github.com/lightmorphic/fossstudio">Read the source</a>
+        </div>
+      </div>
+      <a class="seal" href="https://castmorphic.com" aria-label="Created and sponsored by Castmorphic">
+        <svg viewBox="0 0 48 48" aria-hidden="true">
+          <defs>
+            <path id="sealtop" d="M 6.2 24 A 17.8 17.8 0 0 1 41.8 24"/>
+            <path id="sealfoot" d="M 7.4 24 A 16.6 16.6 0 0 0 40.6 24"/>
+          </defs>
+          <circle cx="24" cy="24" r="23.2" fill="none" stroke="#ff5721" stroke-opacity="0.5" stroke-width="0.7"/>
+          <circle cx="24" cy="24" r="13.4" fill="none" stroke="#ff5721" stroke-opacity="0.2" stroke-width="0.5"/>
+          <text class="ring-text"><textPath href="#sealtop" startOffset="50%" text-anchor="middle">created and sponsored by</textPath></text>
+          <text class="ring-name"><textPath href="#sealfoot" startOffset="50%" text-anchor="middle">Castmorphic</textPath></text>
+          <g fill="#ff5721" transform="translate(17.4 18.2) scale(0.55)">
+            <rect x="2.2" y="3.8" width="19.6" height="4.2" rx="2.1"/>
+            <rect x="2.2" y="9.9" width="8.8" height="4.2" rx="2.1"/>
+            <rect x="2.2" y="16" width="19.6" height="4.2" rx="2.1"/>
+          </g>
+        </svg>
+      </a>
     </div>
     <figure class="monitor" id="pgm">
       <div class="strip"><i></i><span id="pgmLabel">PGM &middot; GRID &middot; 3 IN THE ROOM</span><span class="tc">00:41:07</span></div>
