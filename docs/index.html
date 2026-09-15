@@ -810,6 +810,10 @@
   .foot-tagline { margin: 0; color: var(--muted); font-size: 0.875rem; line-height: 1.65; }
   .foot-tagline a { color: var(--accent); font-weight: 700; text-decoration: none; }
   .foot-tagline a:hover { text-decoration: underline; }
+  /* The seal again, two thirds the size, standing in the gap the row
+     had between the name and the pages. */
+  .foot-seal { --seal: 165px; align-self: center; }
+  @media (max-width: 62rem) { .foot-seal { display: none; } }
   .foot-nav { display: flex; flex-direction: column; }
   .foot-nav-title {
     margin: 0 0 0.6rem;
@@ -1290,6 +1294,23 @@
       podcast, <a href="https://fosscast.org" translate="no">FOSSCast</a> is the other half: a separate
       self-hosted app that publishes it, with its own website and RSS feed.</p>
     </div>
+
+    <a class="seal foot-seal" href="https://castmorphic.com" aria-label="Created and sponsored by Castmorphic">
+      <span class="glint"></span>
+      <span class="rim"></span>
+      <span class="well"></span>
+      <svg viewBox="0 0 300 300" aria-hidden="true">
+        <defs>
+          <!-- Its own ids: two elements answering to one id is not a
+               page, and the arcs are the same shape either way. -->
+          <path id="fsealtop" d="M 42.6 165.4 A 108 108 0 1 1 257.4 165.4" fill="none"/>
+          <path id="fsealfoot" d="M 56.5 191.4 A 102 102 0 0 0 243.5 191.4" fill="none"/>
+        </defs>
+        <text class="ring-text"><textPath href="#fsealtop" startOffset="50%" text-anchor="middle" textLength="326" lengthAdjust="spacing">CREATED AND SPONSORED BY</textPath></text>
+        <text class="ring-name"><textPath href="#fsealfoot" startOffset="50%" text-anchor="middle">Castmorphic</textPath></text>
+      </svg>
+      <span class="mark"><i></i><i></i><i></i></span>
+    </a>
 
     <nav class="foot-nav" aria-label="Footer">
       <p class="foot-nav-title">Pages</p>
