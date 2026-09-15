@@ -41,15 +41,27 @@ main a { color: var(--accent); font-weight: 600; text-decoration: none; }
 main a:hover { text-decoration: underline; }
 .updated { font-size: 0.85rem; margin-top: 2.4rem; }
 footer { border-top: 1px solid var(--line-soft); background: var(--bg2); }
-.subfoot { max-width: 72rem; margin: 0 auto; padding: 1.5rem 1.4rem 2rem; font-size: 0.8rem; color: var(--muted); }
-.subfoot p { margin: 0 0 0.7rem; }
-/* One quiet line saying who keeps this going. Same size and color as the
-   company number beside it on purpose: a fact in the footer, not an
-   advert. */
-.made-by { margin: 0 0 0.7rem; }
-.made-by a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
-.subfoot nav { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem; }
-.subfoot nav a { color: inherit; font-weight: 600; }
+/* The legal line, the same shape as the front page and the rest of the
+   estate: the company on the left, the five pages level with the last
+   line of the address on the right. */
+.legal { border-top: 1px solid var(--line-soft); background: var(--bg); padding: 1.25rem 0 1.75rem; }
+.legal-inner {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 0 1.4rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 2rem;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+.legal-text { margin: 0; color: var(--muted); font-size: 0.8125rem; line-height: 1.6; }
+.legal-links { display: flex; flex-wrap: wrap; gap: 1.25rem; margin-left: auto; justify-content: flex-end; }
+.legal-links a { color: var(--muted); text-decoration: none; font-size: 0.8125rem; font-weight: 600; padding: 0.55rem 0; }
+.legal-links a:hover { color: var(--text); text-decoration: underline; }
+@media (max-width: 46rem) {
+  .legal-links { margin-left: 0; justify-content: flex-start; gap: 1rem; }
+}
 
 /* The same wrap the front page needs: below about 700px the links stop
    fitting beside the wordmark and push the page sideways. */
@@ -59,11 +71,11 @@ footer { border-top: 1px solid var(--line-soft); background: var(--bg2); }
 }
 
 /* The open-source sub-footer: the marks, then where the code lives. */
-.gh-foot {
+.gh-foot { border-top: 1px solid var(--line-soft); padding: 1.25rem 0; }
+.gh-inner {
   max-width: 72rem;
   margin: 0 auto;
-  padding: 1.25rem 1.4rem;
-  border-top: 1px solid var(--line-soft);
+  padding: 0 1.4rem;
   display: flex;
   flex-wrap: wrap;
   gap: 1rem 2rem;

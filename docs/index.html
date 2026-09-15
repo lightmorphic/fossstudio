@@ -764,29 +764,86 @@
   .compose .v  { color: var(--code-val); }
   .compose .hl { color: var(--code-hl); }
 
-  /* ---------- footer ---------- */
-  footer {
+  /* ---------- footer ----------
+     The same three bands as talk.lightmorphic.com: what this is on the
+     left with the pages beside it, then where the code lives, then the
+     legal line. */
+  footer.foot {
     margin-top: 5rem;
     border-top: 1px solid var(--line);
-    padding: 2.2rem 0 3rem;
+    padding: 2.75rem 0 2.25rem;
     color: var(--muted);
-    font-size: 0.85rem;
+    font-size: 0.875rem;
   }
-  .foot { display: flex; gap: 1.4rem; align-items: center; flex-wrap: wrap; }
-  .sister {
-    flex-basis: 100%;
-    text-align: center;
-    order: -1;
-    padding: 0.9rem 1rem;
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    background: var(--panel);
-    margin-bottom: 0.8rem;
+  .foot-inner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem 4rem;
+    align-items: flex-start;
+    justify-content: space-between;
   }
-  .sister b { color: var(--text); }
-  .sister a { color: var(--accent); font-weight: 700; text-decoration: none; }
-  .sister a:hover { text-decoration: underline; }
-  .foot .gpl { margin-left: auto; }
+  /* The brand side carries the weight: the mark, the name, and a line
+     saying what this is. Without it the row is an image at one edge and
+     a list at the other with nothing in between. */
+  .foot-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    max-width: 52ch;
+  }
+  .foot-lockup {
+    display: inline-flex;
+    align-items: center;
+    /* No gap: the reference has a mark beside its name and needs one.
+       Here the wordmark is the name, and a gap splits FOSS from Studio. */
+    gap: 0;
+    font-size: 1.0625rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--text);
+    text-decoration: none;
+    padding: 0.35rem 0;
+  }
+  .foot-lockup b { color: var(--accent); }
+  .foot-lockup:hover { color: var(--accent); }
+  .foot-tagline { margin: 0; color: var(--muted); font-size: 0.875rem; line-height: 1.65; }
+  .foot-tagline a { color: var(--accent); font-weight: 700; text-decoration: none; }
+  .foot-tagline a:hover { text-decoration: underline; }
+  .foot-nav { display: flex; flex-direction: column; }
+  .foot-nav-title {
+    margin: 0 0 0.6rem;
+    padding-bottom: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--line-soft);
+  }
+  /* Column-major: the list reads downwards and then across, the way a
+     menu is read, rather than left to right along each row. */
+  .foot-nav-links {
+    display: grid;
+    grid-auto-flow: column;
+    grid-template-rows: repeat(3, auto);
+    column-gap: 3rem;
+  }
+  /* 0.7rem either side of a 22px line clears the 44px a touch target
+     wants. */
+  .foot-nav a {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.7rem 0;
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 600;
+    opacity: 0.8;
+  }
+  .foot-nav a:hover { opacity: 1; color: var(--accent); }
+  @media (max-width: 46rem) {
+    .foot-nav-links { grid-auto-flow: row; grid-template-rows: none; }
+  }
   /* A bento: twelve columns, and each answer takes as many of them as
      its length deserves. The two long ones - what leaves the server,
      and where recordings end up - run the full width; the short ones
@@ -817,11 +874,11 @@
   .faq-item h3 { font-size: 1rem; margin-bottom: 0.4rem; }
   .faq-item p { color: var(--muted); font-size: 0.92rem; }
   /* The open-source sub-footer: the marks, then where the code lives. */
-  .gh-foot {
+  .gh-foot { border-top: 1px solid var(--line-soft); padding: 1.25rem 0; }
+  .gh-inner {
     max-width: 72rem;
     margin: 0 auto;
-    padding: 1.25rem 1.4rem;
-    border-top: 1px solid var(--line-soft);
+    padding: 0 1.4rem;
     display: flex;
     flex-wrap: wrap;
     gap: 1rem 2rem;
@@ -838,24 +895,37 @@
   @media (max-width: 46rem) {
     .gh-links { margin-left: 0; justify-content: flex-start; gap: 1rem; }
   }
-  .subfoot {
+  /* ---------- the legal line ---------- */
+  .legal {
+    border-top: 1px solid var(--line-soft);
+    background: var(--bg);
+    padding: 1.25rem 0 1.75rem;
+  }
+  .legal-inner {
     max-width: 72rem;
     margin: 0 auto;
-    padding: 1.3rem 1.4rem 2rem;
-    border-top: 1px solid var(--line-soft);
-    font-size: 0.8rem;
-    color: var(--muted);
+    padding: 0 1.4rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 2rem;
+    /* Level with the last line of the address, rather than floating up
+       beside the first. */
+    align-items: flex-end;
+    justify-content: space-between;
   }
-  .subfoot p { margin: 0 0 0.7rem; }
-  .subfoot a { color: inherit; }
-  /* One quiet line saying who keeps this going. Same size and color as
-     the company number beside it on purpose: a fact in the footer, not
-     an advert. */
-  .made-by { margin: 0 0 0.7rem; }
-  .made-by a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
-  .subfoot nav { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem; }
-  .subfoot nav a { font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
-  .foot a { color: var(--muted); }
+  .legal-text { margin: 0; color: var(--muted); font-size: 0.8125rem; line-height: 1.6; }
+  .legal-links { display: flex; flex-wrap: wrap; gap: 1.25rem; margin-left: auto; justify-content: flex-end; }
+  .legal-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    padding: 0.55rem 0;
+  }
+  .legal-links a:hover { color: var(--text); text-decoration: underline; }
+  @media (max-width: 46rem) {
+    .legal-links { margin-left: 0; justify-content: flex-start; gap: 1rem; }
+  }
 </style>
 </head>
 <body>
@@ -1211,14 +1281,33 @@
   </div>
 </section>
 
-<footer>
-  <div class="wrap foot">
-    <p class="sister">This studio records the session and hands you the files. If the session is a
-    podcast, <a href="https://fosscast.org" translate="no">FOSSCast</a> is the other half: a separate
-    self-hosted app that publishes it, with its own website and RSS feed.</p>
-    <span class="gpl">Free software &middot; <a href="https://www.gnu.org/licenses/agpl-3.0.html">AGPL-3.0</a> &middot; <a href="https://github.com/lightmorphic/fossstudio">Source</a></span>
+<footer class="foot">
+  <div class="wrap foot-inner">
+
+    <div class="foot-brand">
+      <a class="foot-lockup" href="/" translate="no"><b>FOSS</b>Studio</a>
+      <p class="foot-tagline">This studio records the session and hands you the files. If the session is a
+      podcast, <a href="https://fosscast.org" translate="no">FOSSCast</a> is the other half: a separate
+      self-hosted app that publishes it, with its own website and RSS feed.</p>
+    </div>
+
+    <nav class="foot-nav" aria-label="Footer">
+      <p class="foot-nav-title">Pages</p>
+      <div class="foot-nav-links">
+        <a href="#show">In the room</a>
+        <a href="#rest">Everything</a>
+        <a href="#install">Install</a>
+        <a href="install.html">Install notes</a>
+        <a href="#faq">Questions</a>
+        <a href="https://lightmorphic.com">Lightmorphic</a>
+      </div>
+    </nav>
+
   </div>
-  <div class="gh-foot">
+</footer>
+
+<div class="gh-foot">
+  <div class="gh-inner">
     <div class="gh-marks">
       <a href="https://github.com/lightmorphic/fossstudio" aria-label="FOSSStudio on GitHub">
         <svg viewBox="0 0 16 16" width="22" height="22" aria-hidden="true" fill="currentColor">
@@ -1244,17 +1333,26 @@
       <a href="https://github.com/lightmorphic/fossstudio/releases">Releases</a>
     </nav>
   </div>
-  <div class="subfoot">
-    <p>&copy; Lightmorphic Ltd. Registered in England and Wales, company number 17423646.
-    Registered office: 82A James Carter Road, Mildenhall, IP28 7DE.
-    <!-- The date this page last changed. GitHub Pages has no build step,
-       so it is typed: change it whenever you change the page above. -->
-    <span style="display:block">Page last updated <time datetime="2026-09-14">14 September 2026</time>.</span></p>
-    <p class="made-by">Created and supported by
-    <a href="https://castmorphic.com">Castmorphic</a>.</p>
-    <nav aria-label="Legal"><a href="privacy.html">Privacy</a> <a href="cookies.html">Cookies</a> <a href="terms.html">Terms</a> <a href="accessibility.html">Accessibility</a> <a href="complaints.html">Complaints</a></nav>
+</div>
+
+<div class="legal">
+  <div class="legal-inner">
+    <p class="legal-text">
+      &copy; Lightmorphic Ltd. Registered in England and Wales, company number 17423646.<br>
+      Registered office: 82A James Carter Road, Mildenhall, IP28 7DE.<br>
+      <!-- The date this page last changed. GitHub Pages has no build step,
+           so it is typed: change it whenever you change the page above. -->
+      Page last updated: <time datetime="2026-09-15">15 September 2026</time>.
+    </p>
+    <nav class="legal-links" aria-label="Legal">
+      <a href="privacy.html">Privacy</a>
+      <a href="cookies.html">Cookies</a>
+      <a href="terms.html">Terms</a>
+      <a href="accessibility.html">Accessibility</a>
+      <a href="complaints.html">Complaints</a>
+    </nav>
   </div>
-</footer>
+</div>
 
 <script>
   // The program monitor: click a tab, see that view
