@@ -431,6 +431,54 @@
   /* A block that stands on its words: the same measure as one column of
      a duo, so the page keeps its rhythm. */
   .solo { max-width: 34rem; margin: 2.5rem 0; }
+
+  /* CUE 01 as a bento. Twelve columns: the opening thesis takes the
+     whole width, then each half-width pair - words beside the screen
+     they describe, and the two blocks that have no screen sitting
+     together - and the library shot across the foot. Every row adds up
+     to twelve, so there is no hole and no filler card to plug one.
+     The words get the same panel, line and radius the index cards
+     already use; the screenshots are already framed and are left alone
+     rather than boxed twice. */
+  .bento {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    grid-auto-flow: row dense;
+    gap: 1.1rem;
+    margin: 2.5rem 0;
+  }
+  .bento > * { grid-column: span 6; }
+  .bento > .full { grid-column: span 12; }
+  /* One corner radius across the whole bento: the screenshots' frames
+     carry 14px everywhere else on the page, and a card next to a card
+     with a different corner reads as a mistake. */
+  .bento .monitor { border-radius: 12px; }
+  .bento .words {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 1.4rem 1.5rem;
+  }
+  .bento .words h3 { font-size: 1.35rem; font-weight: 800; letter-spacing: -0.01em; margin-bottom: 0.55rem; }
+  .bento .words p { color: var(--muted); }
+  .bento .words ul { list-style: none; padding: 0; margin-top: 0.9rem; color: var(--muted); }
+  .bento .words li { margin: 0.45rem 0; padding-left: 1.4rem; position: relative; }
+  .bento .words li::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0.62em;
+    width: 0.55rem; height: 0.14rem;
+    background: var(--accent);
+  }
+  @media (max-width: 1024px) {
+    .bento { grid-template-columns: repeat(6, 1fr); }
+    .bento > * { grid-column: span 3; }
+    .bento > .full { grid-column: span 6; }
+  }
+  @media (max-width: 768px) {
+    .bento { grid-template-columns: 1fr; }
+    .bento > *, .bento > .full { grid-column: span 1; }
+  }
   /* A solo block is one column of a duo standing on its own, so it takes
      the duo's type and the same dashed list marks. They were scoped to
      .duo alone until 14 September 2026, which left the solo blocks with
@@ -738,8 +786,8 @@
   <div class="wrap">
     <div class="cue-mark"><span class="tc">CUE 01</span><h2>A podcast, or a meeting</h2><span class="side">GUESTS / HOSTS / RECORDING</span></div>
 
-    <div class="solo">
-      <div>
+    <div class="bento">
+      <div class="words full">
         <h3>The same room, either way</h3>
         <p>A podcast and a meeting are the same thing until the end: a link,
         people talking, a recording. What differs is what you do with the
@@ -753,10 +801,8 @@
           <li>No attendance report, no transcript sent away, no terms that change next year</li>
         </ul>
       </div>
-    </div>
 
-    <div class="duo">
-      <div>
+      <div class="words">
         <h3>Guests just join</h3>
         <p>Send one link to a guest or a colleague. They pick camera, mic and
         speaker, hear a test sound, watch their level bounce, zoom their camera
@@ -773,10 +819,8 @@
         <div class="strip"><i style="background:var(--green)"></i>PREVIEW &middot; CAM 1<span class="tc">READY</span></div>
         <img src="shots/preview.jpg" alt="The guest preview screen: camera check, zoom, microphone, speaker test and noise suppression" width="2000" height="1250" loading="lazy">
       </figure>
-    </div>
 
-    <div class="solo">
-      <div>
+      <div class="words">
         <h3>The host runs the room</h3>
         <p>A panel only the host sees: record, spotlight whoever is talking,
         balance quiet and loud voices, mute one person or everybody, put a
@@ -789,10 +833,8 @@
           <li>Overlays appear for everyone and stay in the recording at the moment you fired them</li>
         </ul>
       </div>
-    </div>
 
-    <div class="duo">
-      <div>
+      <div class="words">
         <h3>What you see is what records</h3>
         <p>The video of everyone is the picture people were on: every tile in
         the same order, the name banners, the logo and title exactly where you
@@ -807,7 +849,7 @@
           <li>Rename, preview, download - per file or zipped bundles</li>
         </ul>
       </div>
-      <figure class="monitor">
+      <figure class="monitor full">
         <div class="strip"><i style="background:var(--teal)"></i>LIBRARY<span class="tc">READY</span></div>
         <img src="shots/dashboard.png" alt="The dashboard listing sessions and processed recordings ready to download" width="2000" height="1154" loading="lazy">
       </figure>
