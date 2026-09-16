@@ -92,7 +92,7 @@ export function tileLayout(n, spotIndex = -1, W = 1280, H = 720) {
   const boxes = spotlightLayout(n, W, H, PAD, GAP);
   // boxes[0] is the featured slot: hand it to the featured input and
   // give the strip to everyone else, in their existing order
-  const out = new Array(n);
+  const out = Array.from({ length: n });
   out[spotIndex] = boxes[0];
   let s = 1;
   for (let i = 0; i < n; i++) if (i !== spotIndex) out[i] = boxes[s++];

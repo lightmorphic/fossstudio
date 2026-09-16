@@ -25,7 +25,7 @@ import { chromium } from "playwright";
 import { studioLogin } from "./helpers.mjs";
 
 const B = process.argv[2] || "http://127.0.0.1:3999";
-const PW = process.argv[3] || "testpass123";
+const PW = process.argv[3] || "test pass phrase 123";
 
 let pass = true;
 const check = (label, ok) => { console.log(`${ok ? "OK  " : "FAIL"} ${label}`); pass &&= ok; };
@@ -68,7 +68,7 @@ const sections = await page.$$eval("#pane-help .help-sec", (els) => els.map((e) 
 console.log(`    answers: ${sections.join(", ")}`);
 check("the pane answers questions rather than listing topics",
   (await page.$$eval("#pane-help h2", (els) => els.map((e) => e.textContent)))
-    .filter((t) => /\?$/.test(t.trim())).length >= 5);
+    .filter((t) => t.trim().endsWith("?")).length >= 5);
 
 // A wall of text is not help. Every answer has to be short enough to
 // read, and most of them have something beside the prose - a picture of

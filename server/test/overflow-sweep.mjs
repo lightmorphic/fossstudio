@@ -1,7 +1,7 @@
 import { chromium } from "playwright";
 import { makeRoom } from "./helpers.mjs";
 const B = process.argv[2] || "http://127.0.0.1:3999";
-const ROOM = await makeRoom(B, process.argv[3] || "testpass123");
+const ROOM = await makeRoom(B, process.argv[3] || "test pass phrase 123");
 const browser = await chromium.launch({ args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"] });
 const ctx = await browser.newContext({ permissions: ["camera", "microphone"], viewport: { width: 1400, height: 1000 } });
 const page = await ctx.newPage();

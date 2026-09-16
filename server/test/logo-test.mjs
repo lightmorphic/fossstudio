@@ -7,7 +7,7 @@ import path from "node:path";
 import { studioLogin, makeRoom, solidPng } from "./helpers.mjs";
 
 const B = process.argv[2] || "http://127.0.0.1:3999";
-const PW = process.argv[3] || "testpass123";
+const PW = process.argv[3] || "test pass phrase 123";
 let pass = true;
 const check = (label, ok) => { console.log(`${ok ? "OK  " : "FAIL"} ${label}`); pass &&= ok; };
 
@@ -29,7 +29,7 @@ const ctx = await browser.newContext({ permissions: ["camera", "microphone"], vi
 const login = await ctx.newPage();
 await login.goto(`${B}/host/login.html`);
 await login.fill("#username", "admin");
-await login.fill("#password", "testpass123");
+await login.fill("#password", "test pass phrase 123");
 await login.click("button[type=submit]");
 await login.waitForURL("**/host/");
 await login.close();

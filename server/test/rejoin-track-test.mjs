@@ -23,11 +23,11 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import fsp from "node:fs/promises";
-import { makeRoom, studioLogin, downloadRecordingFile, mediaSeconds, REPO } from "./helpers.mjs";
+import { makeRoom, studioLogin, downloadRecordingFile, mediaSeconds } from "./helpers.mjs";
 import { assembleTrack } from "../src/recording/splice.js";
 
 const B = process.argv[2] || "http://127.0.0.1:3999";
-const PW = process.argv[3] || "testpass123";
+const PW = process.argv[3] || "test pass phrase 123";
 // Files are fetched over the download route rather than read out of
 // the studio's data folder: a studio started with its own DATA_DIR
 // keeps them somewhere this test has no business guessing, and a guess
@@ -65,7 +65,7 @@ const browser = await chromium.launch({
 
 // One browser context per person: the guest's person id lives in that
 // context's localStorage, which is exactly what has to survive the drop.
-async function context(cam) {
+async function context(_cam) {
   return browser.newContext({
     permissions: ["camera", "microphone"],
     viewport: { width: 1280, height: 800 }
@@ -275,7 +275,7 @@ check(`recording filed (status: ${rec?.status})`, rec?.status === "ready");
 
 const files = rec?.files || [];
 const nadia = files.filter((f) => /^Nadia.*-audio\./.test(f));
-console.log(`    Nadia's files: ${files.filter((f) => /^Nadia/.test(f)).join(", ") || "none"}`);
+console.log(`    Nadia's files: ${files.filter((f) => f.startsWith("Nadia")).join(", ") || "none"}`);
 check(`one audio file for Nadia, not two (${nadia.length})`, nadia.length === 1);
 
 if (nadia.length === 1) {

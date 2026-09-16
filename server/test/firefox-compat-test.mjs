@@ -11,7 +11,7 @@ import fs from "node:fs";
 import { studioLogin, makeRoom, STUDIO, probeMedia } from "./helpers.mjs";
 
 const B = process.argv[2] || "http://127.0.0.1:3999";
-const PW = process.argv[3] || "testpass123";
+const PW = process.argv[3] || "test pass phrase 123";
 const OUT = "/tmp/fossstudio-firefox-test";
 fs.mkdirSync(OUT, { recursive: true });
 
@@ -190,7 +190,7 @@ const browser = await firefox.launch({ firefoxUserPrefs: FF_PREFS });
     await new Promise((r) => setTimeout(r, 1000));
   }
   check(`Firefox-recorded session processed to ready (status: ${rec?.status})`, rec?.status === "ready");
-  const everyone = (rec?.files || []).find((f) => /^everyone\./.test(f));
+  const everyone = (rec?.files || []).find((f) => f.startsWith("everyone."));
   const mine = (rec?.files || []).filter((f) => /-audio\./.test(f));
   check("a video of everyone came back", !!everyone);
   check(`a track per person came back (${mine.length})`, mine.length >= 1);

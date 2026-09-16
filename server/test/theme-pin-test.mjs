@@ -4,7 +4,7 @@ import { chromium } from "playwright";
 import { studioLogin, makeRoom } from "./helpers.mjs";
 
 const B = process.argv[2] || "http://127.0.0.1:3999";
-const PW = process.argv[3] || "testpass123";
+const PW = process.argv[3] || "test pass phrase 123";
 
 const cookie = await studioLogin(B, PW);
 const setBg = (bg) => fetch(`${B}/api/settings`, {

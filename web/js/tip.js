@@ -96,7 +96,7 @@
 
   document.addEventListener("pointerover", (e) => {
     const el = e.target.closest?.("[data-tip]");
-    el ? show(el) : hide();
+    if (el) show(el); else hide();
   });
   document.addEventListener("pointerdown", (e) => {
     // A tap on the control itself keeps the tip (its text may change);

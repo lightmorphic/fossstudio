@@ -7,7 +7,7 @@ const B = process.argv[2] || "http://127.0.0.1:3999";
 const OUT = fs.mkdtempSync(path.join(os.tmpdir(), "fossstudio-banner-test-"));
 // Chromium's own fake camera is enough here: this test reads the name
 // banners out of the DOM, and never looks at what the camera shows.
-const ROOM = await makeRoom(B, "testpass123");
+const ROOM = await makeRoom(B, "test pass phrase 123");
 let pass = true;
 const check = (l, ok) => { console.log(`${ok ? "OK  " : "FAIL"} ${l}`); pass &&= ok; };
 
@@ -18,7 +18,7 @@ async function join(name, tagline, asHost) {
     const login = await ctx.newPage();
     await login.goto(`${B}/host/login.html`);
     await login.fill("#username", "admin");
-    await login.fill("#password", "testpass123");
+    await login.fill("#password", "test pass phrase 123");
     await login.click("button[type=submit]");
     await login.waitForURL("**/host/");
     await login.close();

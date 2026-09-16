@@ -4,7 +4,6 @@
 // let them straight back in. Reversible from the dashboard, exactly
 // like the chat block list, and logged the same durable way.
 import fs from "node:fs/promises";
-import fsSync from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { config } from "./config.js";

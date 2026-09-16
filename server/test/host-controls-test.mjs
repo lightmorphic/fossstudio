@@ -4,7 +4,7 @@ import { chromium } from "playwright";
 import { makeRoom } from "./helpers.mjs";
 
 const B = process.argv[2] || "http://127.0.0.1:3999";
-const PW = process.argv[3] || "testpass123";
+const PW = process.argv[3] || "test pass phrase 123";
 const ROOM = await makeRoom(B, PW);
 
 const browser = await chromium.launch({
@@ -32,7 +32,7 @@ const hostCtx = await browser.newContext({ permissions: ["camera", "microphone"]
 const login = await hostCtx.newPage();
 await login.goto(`${B}/host/login.html`);
 await login.fill("#username", "admin");
-await login.fill("#password", "testpass123");
+await login.fill("#password", "test pass phrase 123");
 await login.click("button[type=submit]");
 await login.waitForURL("**/host/");
 await login.close();

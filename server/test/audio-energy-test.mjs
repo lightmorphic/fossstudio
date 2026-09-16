@@ -4,13 +4,13 @@ import { chromium } from "playwright";
 import { makeRoom } from "./helpers.mjs";
 
 const B = process.argv[2] || "http://127.0.0.1:3999";
-const PW = process.argv[3] || "testpass123";
+const PW = process.argv[3] || "test pass phrase 123";
 
 const browser = await chromium.launch({
   args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream", "--autoplay-policy=no-user-gesture-required"]
 });
 
-async function join(room, name, noise) {
+async function join(room, name, _noise) {
   const ctx = await browser.newContext({ permissions: ["camera", "microphone"] });
   const page = await ctx.newPage();
   await page.goto(`${B}/s/${room}`);

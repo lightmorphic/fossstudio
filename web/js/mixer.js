@@ -75,7 +75,7 @@
     if (n < 1) return [];
     if (spotIndex < 0 || spotIndex >= n || n === 1) return gridLayout(n);
     const boxes = spotlightLayout(n);
-    const out = new Array(n);
+    const out = Array.from({ length: n });
     out[spotIndex] = boxes[0];
     let s = 1;
     for (let i = 0; i < n; i++) if (i !== spotIndex) out[i] = boxes[s++];

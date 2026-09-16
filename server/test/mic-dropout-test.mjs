@@ -27,10 +27,10 @@ import { execFileSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
-import { makeRoom, studioLogin, downloadRecordingFile, REPO } from "./helpers.mjs";
+import { makeRoom, studioLogin, downloadRecordingFile } from "./helpers.mjs";
 
 const B = process.argv[2] || "http://127.0.0.1:3999";
-const PW = process.argv[3] || "testpass123";
+const PW = process.argv[3] || "test pass phrase 123";
 // The bench in pass one needs somewhere to put a file, and passes
 // three's files come over the download route rather than out of a data
 // folder this test would have to guess at - a studio with its own
@@ -273,7 +273,7 @@ const silencesIn = (file) => {
 const dash = await ctx.newPage();
 await dash.goto(`${B}/host/login.html`);
 await dash.fill("#username", "admin");
-await dash.fill("#password", "testpass123");
+await dash.fill("#password", "test pass phrase 123");
 await dash.click("button[type=submit]");
 await dash.waitForURL("**/host/");
 
@@ -284,7 +284,7 @@ host.on("pageerror", (e) => console.log("[host] pageerror:", e.message));
 // RNNoise, which hid this fault from everyone who left the default
 // alone. The page's own crash-loop breaker is the way to ask for off.
 await host.addInitScript(() => {
-  try { localStorage.setItem("fossstudio-joining", "rnnoise"); } catch (e) { /* private browsing */ }
+  try { localStorage.setItem("fossstudio-joining", "rnnoise"); } catch { /* private browsing */ }
 });
 await host.goto(`${B}/s/${ROOM}?as=host`);
 await host.waitForSelector("#joinBtn:not([disabled])");

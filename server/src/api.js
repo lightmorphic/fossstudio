@@ -10,7 +10,7 @@ import {
   changePassword, get2faState, setup2fa, confirm2fa, disable2fa
 } from "./auth.js";
 import {
-  getSettings, updateSettings, listSessions, createSession, deleteSession, findSession,
+  getSettings, updateSettings, listSessions, createSession, deleteSession,
   renameSession
 } from "./settings.js";
 import { getAccount, updateAccount, claimAccount, hasAccount } from "./account.js";
@@ -266,11 +266,13 @@ api.get("/2fa", requireAuth, async (req, res) => res.json(await get2faState()));
 api.post("/2fa/setup", requireAuth, async (req, res) => res.json(await setup2fa()));
 api.post("/2fa/enable", requireAuth, async (req, res) => {
   const ok = await confirm2fa(req.body.code);
-  ok ? res.json({ ok: true }) : res.status(400).json({ error: "That code isn't right - check your authenticator app." });
+  if (ok) res.json({ ok: true });
+  else res.status(400).json({ error: "That code isn't right - check your authenticator app." });
 });
 api.post("/2fa/disable", requireAuth, async (req, res) => {
   const ok = await disable2fa(req.body.code);
-  ok ? res.json({ ok: true }) : res.status(400).json({ error: "That code isn't right - check your authenticator app." });
+  if (ok) res.json({ ok: true });
+  else res.status(400).json({ error: "That code isn't right - check your authenticator app." });
 });
 
 // ---------- settings & theme ----------

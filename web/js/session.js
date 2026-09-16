@@ -509,7 +509,8 @@
           const p = pending.get(msg.id);
           if (!p) return;
           pending.delete(msg.id);
-          msg.ok ? p.resolve(msg.data) : p.reject(new Error(msg.error));
+          if (msg.ok) p.resolve(msg.data);
+          else p.reject(new Error(msg.error));
         } else if (msg.event && eventHandlers[msg.event]) {
           eventHandlers[msg.event](msg.data);
         } else if (msg.event) {
@@ -1331,6 +1332,8 @@
       img.src = dataUrl;
       bannerImgs.set(peerId, img);
     }
+    // A copy: the loop deletes from the map it is walking.
+    // oxlint-disable-next-line unicorn/no-useless-spread
     for (const peerId of [...bannerImgs.keys()]) if (!(peerId in images)) bannerImgs.delete(peerId);
     if (title) {
       if (titleImg?.src !== title) { titleImg = new Image(); titleImg.src = title; }
@@ -1531,7 +1534,7 @@
     els.tmSmaller.onclick = () => setScale((control.titleScale || 1) - 0.1);
 
     const toggleTitlePart = (key) => {
-      const show = { logo: true, text: true, ...(control.titleShow || {}) };
+      const show = { logo: true, text: true, ...control.titleShow };
       show[key] = !show[key];
       control.titleShow = show;
       applyTitleShow();
@@ -1590,7 +1593,7 @@
         y: gh - bh > 0 ? top / (gh - bh) : 0
       };
     });
-    els.banner.addEventListener("pointerup", (e) => {
+    els.banner.addEventListener("pointerup", () => {
       if (dragging?.frac) {
         control.titlePos = dragging.frac; // optimistic; broadcast confirms
         request("hostControl", { action: "titlePos", ...dragging.frac }).catch(() => {});
@@ -1967,10 +1970,9 @@
 
     const startOne = (track, kind, fmt, type, bitrate) => {
       if (!track || !type) return;
-      const recorder = new MediaRecorder(new MediaStream([track]), {
-        mimeType: type,
-        ...(bitrate ? { videoBitsPerSecond: bitrate } : {})
-      });
+      const options = { mimeType: type };
+      if (bitrate) options.videoBitsPerSecond = bitrate;
+      const recorder = new MediaRecorder(new MediaStream([track]), options);
       let seq = 0;
       let queue = Promise.resolve();
       recorder.ondataavailable = (e) => {
@@ -2189,7 +2191,7 @@
 
   // ---------- Consuming ----------
 
-  async function consumeProducer(peerId, producerId, source) {
+  async function consumeProducer(peerId, producerId, _source) {
     const { consumerId, kind, rtpParameters } = await request("consume", {
       transportId: recvTransport.id,
       producerId,
@@ -2436,7 +2438,7 @@
             ? err.message
             : "Couldn't join the session. Give it a moment and try again."
       );
-      try { ws && ws.close(); } catch { /* ignore */ }
+      try { if (ws) ws.close(); } catch { /* ignore */ }
     }
   }
 
@@ -2502,7 +2504,7 @@
       document.addEventListener("click", kick);
     } catch (err) {
       console.error("clean feed join failed:", err.message);
-      try { ws && ws.close(); } catch { /* ignore */ }
+      try { if (ws) ws.close(); } catch { /* ignore */ }
       setTimeout(joinOutput, 3000);
     }
   }
@@ -2515,7 +2517,7 @@
     joined = false;
     earlyEvents.length = 0; // never replay a dead connection's events
     if (recorders.length) stopSelfRecording();
-    try { ws && ws.close(); } catch { /* ignore */ }
+    try { if (ws) ws.close(); } catch { /* ignore */ }
     for (const { consumer } of consumers.values()) consumer.close();
     consumers.clear();
     tiles.forEach((t) => t.el.remove());
@@ -2581,7 +2583,7 @@
   els.camBtn.onclick = () => {
     if (!camProducer) return;
     const stopping = !camProducer.paused;
-    stopping ? camProducer.pause() : camProducer.resume();
+    if (stopping) camProducer.pause(); else camProducer.resume();
     camProducer.track.enabled = !stopping;
     els.camBtn.classList.toggle("off", stopping);
     els.camBtn.innerHTML = stopping ? ICONS.camOff : ICONS.cam;
@@ -2638,7 +2640,7 @@
     initPreview();
   };
 
-  window.addEventListener("beforeunload", () => { try { ws && ws.close(); } catch { /* ignore */ } });
+  window.addEventListener("beforeunload", () => { try { if (ws) ws.close(); } catch { /* ignore */ } });
 
   try {
     if (localStorage.getItem(JOINING_KEY) === "rnnoise") {
@@ -2656,5 +2658,5 @@
       .catch(() => {});
   }
 
-  outputMode ? joinOutput() : initPreview();
+  if (outputMode) joinOutput(); else initPreview();
 })();

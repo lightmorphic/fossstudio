@@ -13,7 +13,7 @@ import { makeRoom, solidPng } from "./helpers.mjs";
 import { titleWidth, TITLE_WIDTH_FRACTION } from "./layout.js";
 
 const B = process.argv[2] || "http://127.0.0.1:3993";
-const PASS = process.argv[3] || "testpass123";
+const PASS = process.argv[3] || "test pass phrase 123";
 
 let pass = true;
 function check(label, ok, extra = "") {
@@ -76,7 +76,7 @@ try {
   const login = await hostCtx.newPage();
   await login.goto(`${B}/host/login.html`);
   await login.fill("#username", "admin");
-  await login.fill("#password", "testpass123");
+  await login.fill("#password", "test pass phrase 123");
   await login.click("button[type=submit]");
   await login.waitForURL("**/host/");
   await login.close();
@@ -215,7 +215,7 @@ try {
   // same shape. The block is drawn against a 532px design width and the
   // mixer scales it by what it actually is, so a narrow block has to
   // arrive narrow rather than stretched back out to a fixed width.
-  const shapes = await host2.evaluate(async () => {
+  const measured = await host2.evaluate(async () => {
     const out = {};
     const title = document.getElementById("bannerTitle");
     const block = document.getElementById("banner");
@@ -235,19 +235,19 @@ try {
     }
     return out;
   });
-  console.log("   ", JSON.stringify(shapes));
+  console.log("   ", JSON.stringify(measured));
   check(`a short name makes a narrower block than a long one ` +
-    `(${shapes.short.onScreen} against ${shapes.long.onScreen})`,
-    shapes.short.onScreen < shapes.long.onScreen * 0.8);
+    `(${measured.short.onScreen} against ${measured.long.onScreen})`,
+    measured.short.onScreen < measured.long.onScreen * 0.8);
   check(`the margin either side does not move with the words ` +
-    `(${shapes.short.padLeft}/${shapes.short.padRight} against ${shapes.long.padLeft}/${shapes.long.padRight})`,
-    Math.abs(shapes.short.padLeft - shapes.long.padLeft) < 1 &&
-    Math.abs(shapes.short.padRight - shapes.long.padRight) < 1);
+    `(${measured.short.padLeft}/${measured.short.padRight} against ${measured.long.padLeft}/${measured.long.padRight})`,
+    Math.abs(measured.short.padLeft - measured.long.padLeft) < 1 &&
+    Math.abs(measured.short.padRight - measured.long.padRight) < 1);
   for (const name of ["short", "long"]) {
     check(`the ${name} block the recording draws is the shape the screen shows ` +
-      `(${shapes[name].drawn} against ${shapes[name].onScreen})`,
-      shapes[name].drawn !== null &&
-      Math.abs(shapes[name].drawn - shapes[name].onScreen) / shapes[name].onScreen < 0.06);
+      `(${measured[name].drawn} against ${measured[name].onScreen})`,
+      measured[name].drawn !== null &&
+      Math.abs(measured[name].drawn - measured[name].onScreen) / measured[name].onScreen < 0.06);
   }
 } catch (err) {
   check(`test run: ${err.message}`, false);

@@ -67,7 +67,7 @@ function cleanFormats(value, known, fallback) {
 export async function migrateSettings() {
   const current = await readJson(FILE);
   const old = current ? null : await legacyAccountSettings();
-  const next = { ...SETTINGS_DEFAULTS, ...(old || {}), ...(current || {}) };
+  const next = { ...SETTINGS_DEFAULTS, ...old, ...current };
   let changed = !current;
 
   // The old single choice becomes a list of one. "best" was every

@@ -18,7 +18,6 @@
 // chunks already uploaded both survive, so nothing is lost beyond the
 // seconds nobody sent.
 import crypto from "node:crypto";
-import { activeBackdropPath } from "../rooms.js";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { config } from "../config.js";
@@ -93,7 +92,8 @@ export function uploadCreds(rec, peer) {
 export async function saveIndex(entry) {
   const list = await readJson("recordings.json", []);
   const i = list.findIndex((r) => r.id === entry.id);
-  i === -1 ? list.unshift(entry) : (list[i] = entry);
+  if (i === -1) list.unshift(entry);
+  else list[i] = entry;
   await writeJson("recordings.json", list);
 }
 

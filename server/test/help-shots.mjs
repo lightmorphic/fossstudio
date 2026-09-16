@@ -114,15 +114,6 @@ await dash.click("button[type=submit]");
 await dash.waitForURL("**/host/");
 await dash.waitForTimeout(700);
 
-// Only the content column: the menus are in the picture of the whole
-// dashboard and repeating them in every shot wastes the width.
-async function pane(hash, name, { fill = false } = {}) {
-  await dash.goto(`${B}/host/${hash}`);
-  await dash.waitForTimeout(fill ? 900 : 500);
-  const el = await dash.$(".content section:not([hidden])");
-  await el.screenshot({ path: keep(name) });
-}
-
 // Where the public address lives, which is the one setting that decides
 // whether anybody hears anything.
 await dash.goto(`${B}/host/#settings/place`);
