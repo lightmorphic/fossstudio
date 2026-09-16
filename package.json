@@ -1,0 +1,14 @@
+{
+  "name": "fossstudio-checks",
+  "version": "0.0.0",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "description": "Lint only. FOSSStudio runs from server/, which has its own package.json; nothing here is needed to run it.",
+  "scripts": {
+    "lint": "oxlint server web scripts"
+  },
+  "devDependencies": {
+    "@oxlint/plugins": "1.83.0",
+    "oxlint": "1.83.0"
+  }
+}

@@ -63,3 +63,15 @@ report describing the problem instead, and it will be just as useful.
 *This is a plain-language statement of intent, not legal advice. If a
 contribution ever matters enough to argue about, get a solicitor to
 look at it.*
+
+## The linter
+
+There is an Oxlint setup at the root of the repository, with a small
+vendored plugin under `tools/oxlint/anti-slop/` that looks for the
+habits of machine-written code. It is a check on us; FOSSStudio itself
+runs from `server/`, which has its own dependencies and is unaffected.
+
+```bash
+npm install     # only for the linter
+npm run lint
+```

@@ -1082,7 +1082,7 @@
   };
 
   $("backupNowBtn").onclick = async () => {
-    const { name } = await apiFetch("/api/ops/backup", { method: "POST" });
+    await apiFetch("/api/ops/backup", { method: "POST" });
     loadBackups();
   };
 
