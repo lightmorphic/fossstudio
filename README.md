@@ -29,6 +29,10 @@ The longer install notes below cover bringing your own Nginx, a Cloudflare tunne
 - **Nothing phones home.** No analytics, no tracking, no crash reporting, no update check, no call to any domain but your own.
 - **A host panel in the session:** spotlight, per-guest volume, level balancing, mute one or everyone, a subscribe reminder and your own advertising banner, and the recording button.
 
+![The host panel open in a session: spotlight, per-guest volume and mute, the banner and the recording button](docs/shots/host-panel.jpg)
+
+![The dashboard: a box to name the next episode and get a link, and every session made so far](docs/shots/dashboard.png)
+
 ## What is not proven yet
 
 Every browser used to prove the media path so far has been on a single machine. Two people in different houses is ordinary WebRTC through mediasoup with a relay behind it and should be fine - it just has not been watched working. Record a test session before a show that matters, and keep a second recording running for anything you cannot do again. That is ordinary studio practice rather than a warning about this one.
