@@ -13,13 +13,10 @@
   if (/(?:^|;\s*)fs_embed=1(?:;|$)/.test(document.cookie)) document.body.classList.add("embedded");
 
   async function apiFetch(url, opts = {}) {
-    const res = await fetch(url, {
-      ...opts,
-      headers: {
-        ...(opts.body && !(opts.body instanceof Blob) ? { "Content-Type": "application/json" } : {}),
-        ...(opts.headers || {})
-      }
-    });
+    const headers = {};
+    if (opts.body && !(opts.body instanceof Blob)) headers["Content-Type"] = "application/json";
+    Object.assign(headers, opts.headers);
+    const res = await fetch(url, { ...opts, headers });
     if (res.status === 401) { location.href = "/host/login.html"; throw new Error("logged out"); }
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || "Something went wrong.");

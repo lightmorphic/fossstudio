@@ -3,7 +3,7 @@ import { chromium } from "playwright";
 import { makeRoom } from "./helpers.mjs";
 const B = "http://127.0.0.1:3999";
 const S = "/tmp/claude-1000/-home-charlie-GitHub-fossstudio/30aef10b-264b-4404-9752-f5d84c9a6596/scratchpad";
-const ROOM = await makeRoom(B, "testpass123");
+const ROOM = await makeRoom(B, "test pass phrase 123");
 const cams = ["vcam1","vcam2","vcam3","vcam4","vcam5","vcam6","vcam7","cam1","cam2","cam3"];
 const names = ["Alexandra Featherstone","Dev","Margot","Ken","Amara","Rob","Priya","Sam","Jules","Nate"];
 const sessions = [];
@@ -14,7 +14,7 @@ for (let i = 0; i < 10; i++) {
     const login = await ctx.newPage();
     await login.goto(`${B}/host/login.html`);
     await login.fill("#username", "admin");
-    await login.fill("#password", "testpass123");
+    await login.fill("#password", "test pass phrase 123");
     await login.click("button[type=submit]");
     await login.waitForURL("**/host/");
     await login.close();

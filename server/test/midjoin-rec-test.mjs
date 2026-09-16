@@ -4,8 +4,8 @@ import { chromium } from "playwright";
 import { makeRoom, studioLogin, CAMS } from "./helpers.mjs";
 
 const B = "http://127.0.0.1:3999";
-const ROOM = await makeRoom(B, "testpass123");
-const cookie = await studioLogin(B, "testpass123");
+const ROOM = await makeRoom(B, "test pass phrase 123");
+const cookie = await studioLogin(B, "test pass phrase 123");
 
 async function join(cam, name, asHost) {
   const browser = await chromium.launch({ args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream", `--use-file-for-fake-video-capture=${CAMS}/${cam}`, "--autoplay-policy=no-user-gesture-required"] });
@@ -14,7 +14,7 @@ async function join(cam, name, asHost) {
     const login = await ctx.newPage();
     await login.goto(`${B}/host/login.html`);
     await login.fill("#username", "admin");
-    await login.fill("#password", "testpass123");
+    await login.fill("#password", "test pass phrase 123");
     await login.click("button[type=submit]");
     await login.waitForURL("**/host/");
     await login.close();
@@ -44,7 +44,7 @@ const list = await fetch(`${B}/api/recordings`, { headers: { Cookie: cookie } })
 const rec = list.find((r) => r.roomId === ROOM);
 const audio = (rec?.files || []).filter((f) => /-audio\.(wav|opus|webm|mp4)$/i.test(f));
 console.log("filed:", (rec?.files || []).join(", ") || "nothing");
-const ok = audio.length === 2 && audio.some((f) => /^Latecomer/.test(f));
+const ok = audio.length === 2 && audio.some((f) => f.startsWith("Latecomer"));
 console.log(ok ? "PASS  mid-recording joiner uploaded their track" : "FAIL  latecomer's track missing");
 await host.browser.close();
 await late.browser.close();

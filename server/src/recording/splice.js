@@ -48,10 +48,6 @@ const ID = {
   block: 0xa1
 };
 
-const MASTERS = new Set([
-  ID.segment, ID.tracks, ID.trackEntry, ID.audio, ID.cluster, ID.blockGroup
-]);
-
 // An EBML variable-length integer. `strip` clears the leading marker
 // bit, which is right for a size and wrong for an id.
 function readVint(buf, pos, strip) {

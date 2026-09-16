@@ -17,7 +17,7 @@ const cookie = await apiLogin(B, PW);
 const signedIn = (p, opts = {}) => fetch(`${B}${p}`, {
   redirect: "manual",
   ...opts,
-  headers: { "Content-Type": "application/json", Cookie: cookie, ...(opts.headers || {}) }
+  headers: { "Content-Type": "application/json", Cookie: cookie, ...opts.headers }
 });
 
 // The account, and only the account

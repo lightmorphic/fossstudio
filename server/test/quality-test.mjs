@@ -18,10 +18,10 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
-import { makeRoom, studioLogin, downloadRecordingFile, mediaSeconds, REPO } from "./helpers.mjs";
+import { makeRoom, studioLogin, downloadRecordingFile, mediaSeconds } from "./helpers.mjs";
 
 const B = process.argv[2] || "http://127.0.0.1:3999";
-const PW = process.argv[3] || "testpass123";
+const PW = process.argv[3] || "test pass phrase 123";
 // Files come over the download route, not out of a data folder this
 // test would have to guess at: a studio started with its own DATA_DIR
 // keeps them elsewhere, and a guess that misses reads as a recording
@@ -111,7 +111,7 @@ for (const [value, expectExt] of [["wav", "wav"], ["opus", "opus"]]) {
     if (rec && rec.status === "ready") break;
     await page.waitForTimeout(2000);
   }
-  const audio = (rec?.files || []).find((f) => /^Eric-audio\./.test(f));
+  const audio = (rec?.files || []).find((f) => f.startsWith("Eric-audio."));
   check(`"${value}" gives a track back at all (${audio || "none"})`, !!audio);
   const file = await downloadRecordingFile(B, cookie, rec.id, audio, DOWNLOADS);
   const bytes = fs.statSync(file).size;

@@ -82,7 +82,7 @@ form.onsubmit = async (e) => {
           var data = await res.json().catch(() => ({}));
           errEl.textContent = data.error || "That passkey did not work.";
           errEl.hidden = false;
-        } catch (err) {
+        } catch {
           errEl.textContent = "Your browser would not use a passkey here.";
           errEl.hidden = false;
         }

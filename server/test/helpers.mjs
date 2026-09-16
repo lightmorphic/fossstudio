@@ -3,8 +3,8 @@ import fs from "node:fs";
 import path from "node:path";
 
 // Shared test helpers. There is one account: the suite starts a server
-// with HOST_PASSWORD=testpass123 and signs in as that.
-export const STUDIO = { username: "admin", password: "testpass123" };
+// with HOST_PASSWORD=test pass phrase 123 and signs in as that.
+export const STUDIO = { username: "admin", password: "test pass phrase 123" };
 
 // Paths, worked out from this file rather than written down, so a
 // checkout that moves does not take the tests with it.

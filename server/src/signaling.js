@@ -112,7 +112,6 @@ export function attachSignaling() {
             // Everyone arrives muted - host included, even alone; you
             // unmute yourself when you're ready to talk
             room.control.muted[peer.id] = true;
-            const settings = await getSettings();
             const canServerRecord = role === "host";
             reply({
               peerId: peer.id,
@@ -167,6 +166,8 @@ export function attachSignaling() {
             // the new one on it before the old comes off - a track
             // never goes empty. Viewers (the OBS feed) hold no seat.
             if (role !== "viewer") {
+              // A copy: closing a socket can take its peer out of the room.
+              // oxlint-disable-next-line unicorn/no-useless-spread
               for (const other of [...room.peers.values()]) {
                 if (other.id === peer.id || other.role === "viewer") continue;
                 const samePerson = personId && other.personId === personId;

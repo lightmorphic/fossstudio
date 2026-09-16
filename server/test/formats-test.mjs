@@ -14,7 +14,7 @@ const B = process.argv[2] || "http://127.0.0.1:3999";
 let pass = true;
 const check = (l, ok) => { console.log(`${ok ? "OK  " : "FAIL"} ${l}`); pass &&= ok; };
 
-const cookie = await studioLogin(B, "testpass123");
+const cookie = await studioLogin(B, "test pass phrase 123");
 await fetch(`${B}/api/settings`, {
   method: "PUT",
   headers: { "Content-Type": "application/json", Cookie: cookie },
@@ -23,7 +23,7 @@ await fetch(`${B}/api/settings`, {
     audioFormats: ["wav", "opus"], cameraFormats: ["mp4", "vp8"]
   })
 });
-const ROOM = await makeRoom(B, "testpass123");
+const ROOM = await makeRoom(B, "test pass phrase 123");
 
 const browser = await chromium.launch({
   args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream",
@@ -35,7 +35,7 @@ async function join(name, asHost, room = ROOM) {
     const login = await ctx.newPage();
     await login.goto(`${B}/host/login.html`);
     await login.fill("#username", "admin");
-    await login.fill("#password", "testpass123");
+    await login.fill("#password", "test pass phrase 123");
     await login.click("button[type=submit]");
     await login.waitForURL("**/host/");
     await login.close();
@@ -92,7 +92,7 @@ await fetch(`${B}/api/settings`, {
   headers: { "Content-Type": "application/json", Cookie: cookie },
   body: JSON.stringify({ showFormat: "vp8", separateFiles: false })
 });
-const ROOM2 = await makeRoom(B, "testpass123");
+const ROOM2 = await makeRoom(B, "test pass phrase 123");
 const host2 = await join("Host", true, ROOM2);
 const guest2 = await join("Greta", false, ROOM2);
 await new Promise((r) => setTimeout(r, 2000));

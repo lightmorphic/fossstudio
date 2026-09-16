@@ -3,7 +3,7 @@ import { chromium } from "playwright";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { studioLogin, makeRoom, apiLogin, CAMS } from "./helpers.mjs";
+import { studioLogin, makeRoom, CAMS } from "./helpers.mjs";
 const B = process.argv[2] || "http://127.0.0.1:3999";
 // Own temp dir: this used to point at one machine's scratch directory
 const S = fs.mkdtempSync(path.join(os.tmpdir(), "fossstudio-overlay-test-"));
@@ -17,9 +17,9 @@ let pass = true;
 const check = (l, ok) => { console.log(`${ok ? "OK  " : "FAIL"} ${l}`); pass &&= ok; };
 
 // upload the test ad as the host
-const hostCookie = await studioLogin(B, "testpass123");
+const hostCookie = await studioLogin(B, "test pass phrase 123");
 await fetch(`${B}/api/adbanner`, { method: "POST", headers: { "Content-Type": "image/png", Cookie: hostCookie }, body: fs.readFileSync(`${S}/testad.png`) });
-const ROOM = await makeRoom(B, "testpass123");
+const ROOM = await makeRoom(B, "test pass phrase 123");
 
 const browser = await chromium.launch({ args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream", `--use-file-for-fake-video-capture=${CAMS}/vcam1.y4m`, "--autoplay-policy=no-user-gesture-required"] });
 async function join(name, asHost) {
@@ -28,7 +28,7 @@ async function join(name, asHost) {
     const login = await ctx.newPage();
     await login.goto(`${B}/host/login.html`);
     await login.fill("#username", "admin");
-    await login.fill("#password", "testpass123");
+    await login.fill("#password", "test pass phrase 123");
     await login.click("button[type=submit]");
     await login.waitForURL("**/host/");
     await login.close();

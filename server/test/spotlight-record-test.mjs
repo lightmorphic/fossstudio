@@ -8,7 +8,7 @@ import { makeRoom, probeMedia } from "./helpers.mjs";
 import { tileLayout } from "./layout.js";
 
 const B = process.argv[2] || "http://127.0.0.1:3993";
-const PASS = process.argv[3] || "testpass123";
+const PASS = process.argv[3] || "test pass phrase 123";
 
 let pass = true;
 function check(label, ok, extra = "") {
@@ -39,7 +39,7 @@ try {
   const login = await hostCtx.newPage();
   await login.goto(`${B}/host/login.html`);
   await login.fill("#username", "admin");
-  await login.fill("#password", "testpass123");
+  await login.fill("#password", "test pass phrase 123");
   await login.click("button[type=submit]");
   await login.waitForURL("**/host/");
 
@@ -77,7 +77,7 @@ try {
   check(`recording filed (status: ${rec?.status})`, rec?.status === "ready");
   if (rec?.status !== "ready") throw new Error("nothing to inspect");
 
-  const everyone = (rec.files || []).find((f) => /^everyone\./.test(f));
+  const everyone = (rec.files || []).find((f) => f.startsWith("everyone."));
   check("a video of everyone came back", !!everyone, (rec.files || []).join(", "));
   if (!everyone) throw new Error("nothing to inspect");
   player = login;

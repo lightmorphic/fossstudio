@@ -5,7 +5,7 @@ import fs from "node:fs";
 import { studioLogin, shotStudio, joinAll, pngToJpeg, STUDIO, REPO } from "./helpers.mjs";
 
 const B = "http://127.0.0.1:3999";
-const PW = "testpass123";
+const PW = "test pass phrase 123";
 const OUT = `${REPO}docs/shots`;
 fs.mkdirSync(OUT, { recursive: true });
 

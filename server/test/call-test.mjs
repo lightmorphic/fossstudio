@@ -6,7 +6,7 @@ import { makeRoom } from "./helpers.mjs";
 
 const BASE = process.argv[2] || "http://127.0.0.1:3999";
 const GUESTS = Number(process.argv[3] || 3);
-const PW = process.argv[4] || "testpass123";
+const PW = process.argv[4] || "test pass phrase 123";
 const ROOM = await makeRoom(BASE, PW);
 
 const browser = await chromium.launch({

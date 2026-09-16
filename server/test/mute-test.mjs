@@ -2,7 +2,7 @@
 import { chromium } from "playwright";
 import { makeRoom } from "./helpers.mjs";
 const B = "http://127.0.0.1:3999";
-const ROOM = await makeRoom(B, "testpass123");
+const ROOM = await makeRoom(B, "test pass phrase 123");
 const browser = await chromium.launch({ args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream", "--autoplay-policy=no-user-gesture-required"] });
 let pass = true;
 const check = (label, ok) => { console.log(`${ok ? "OK  " : "FAIL"} ${label}`); pass &&= ok; };
@@ -13,7 +13,7 @@ async function join(name, asHost) {
     const login = await ctx.newPage();
     await login.goto(`${B}/host/login.html`);
     await login.fill("#username", "admin");
-    await login.fill("#password", "testpass123");
+    await login.fill("#password", "test pass phrase 123");
     await login.click("button[type=submit]");
     await login.waitForURL("**/host/");
     await login.close();
@@ -103,7 +103,7 @@ await new Promise((r) => setTimeout(r, 1200));
 // muted" finds the host before it finds a guest. Skip it.
 await host.$$eval(".hp-guest:not(:first-child) .mute", (btns) => {
   const b = btns.find((x) => x.getAttribute("aria-pressed") === "true");
-  b && b.click();
+  if (b) b.click();
 });
 await new Promise((r) => setTimeout(r, 1200));
 const unmutedCount = await host.$$eval(".hp-guest:not(:first-child) .mute",
