@@ -68,13 +68,3 @@ and keep them somewhere safe.
 - A restart during a take costs only the seconds nobody had uploaded
   yet. The server does no work on a recording after the fact, so there
   is never anything in flight for a deploy to interrupt.
-
-## Uptime check
-
-A GitHub Actions job (in this repo, `.github/workflows/uptime.yml`)
-pings the project's own instance every 15 minutes from outside and
-emails the maintainer if it does not answer. It runs only on the
-upstream repository. To watch your own studio the same way, fork it,
-change the address and the repository check, and set your own SMTP
-secrets in your repository settings - see the workflow file for the
-names.
